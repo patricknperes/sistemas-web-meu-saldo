@@ -11,7 +11,6 @@ import {
     RiEditLine,
     RiFileList3Line,
     RiLoader4Line,
-    RiWallet3Line,
 } from "react-icons/ri";
 
 import {
@@ -153,8 +152,8 @@ function TransactionList({
         totalLabel ??
         (
             isIncome
-                ? "Total das receitas"
-                : "Total das despesas"
+                ? "Total de receitas"
+                : "Total de despesas"
         );
 
     const normalizedTotalItems =
@@ -224,11 +223,6 @@ function TransactionList({
         normalizedTotalPages &&
         !loading;
 
-    /*
-     * O rodapé com paginação e quantidade
-     * por página só aparece quando existem
-     * mais de 10 registros.
-     */
     const showPagination =
         normalizedTotalItems > 10;
 
@@ -260,16 +254,6 @@ function TransactionList({
         isIncome
             ? "text-success"
             : "text-danger";
-
-    const totalContainerClassName =
-        isIncome
-            ? "bg-success-muted text-success"
-            : "bg-danger-muted text-danger";
-
-    const countLabel = `${normalizedTotalItems} ${normalizedTotalItems === 1
-        ? resolvedSingularLabel
-        : resolvedPluralLabel
-        }`;
 
     function handlePageChange(
         nextPage
@@ -344,20 +328,26 @@ function TransactionList({
     return (
         <section
             className="
-                w-full min-w-0
+                w-full
+                min-w-0
                 overflow-hidden
                 rounded-2xl
-                border border-border
+                border
+                border-border
                 bg-surface
                 shadow-card
             "
         >
             <header
                 className="
-                    flex min-w-0
-                    flex-col gap-4
-                    border-b border-border
-                    px-4 py-4
+                    flex
+                    min-w-0
+                    flex-col
+                    gap-4
+                    border-b
+                    border-border
+                    px-4
+                    py-4
                     sm:flex-row
                     sm:items-center
                     sm:justify-between
@@ -365,100 +355,99 @@ function TransactionList({
                 "
             >
                 <div className="min-w-0">
-                    <h2
-                        title={title}
+                    <div
                         className="
-                            truncate
-                            text-base
-                            font-semibold
-                            tracking-tight
-                            text-foreground
+                            flex
+                            min-w-0
+                            items-center
+                            gap-2
                         "
                     >
-                        {title}
-                    </h2>
+                        <h2
+                            title={title}
+                            className="
+                                truncate
+                                text-base
+                                font-semibold
+                                tracking-tight
+                                text-foreground
+                            "
+                        >
+                            {title}
+                        </h2>
+
+                        <span
+                            aria-label={`${normalizedTotalItems} registros`}
+                            className="
+                                shrink-0
+                                rounded-md
+                                bg-surface-muted
+                                px-2
+                                py-0.5
+                                text-[11px]
+                                font-medium
+                                text-muted-foreground
+                            "
+                        >
+                            {normalizedTotalItems}
+                        </span>
+                    </div>
 
                     <p
-                        aria-live="polite"
                         className="
-                            mt-0.5
-                            truncate
+                            mt-1
                             text-xs
                             text-muted-foreground
                         "
                     >
-                        {countLabel}
+                        Visualize e gerencie seus
+                        registros.
                     </p>
                 </div>
 
                 <div
-                    className={`
-                        flex min-w-0
-                        items-center gap-3
-                        rounded-xl
-                        px-3.5 py-2.5
-                        sm:max-w-[280px]
-
-                        ${totalContainerClassName}
-                    `}
+                    className="
+                        min-w-0
+                        sm:text-right
+                    "
                 >
-                    <span
+                    <p
+                        title={
+                            resolvedTotalLabel
+                        }
                         className="
-                            flex size-8
-                            shrink-0
-                            items-center
-                            justify-center
-                            rounded-lg
-                            bg-surface/60
+                            truncate
+                            text-[11px]
+                            font-medium
+                            text-muted-foreground
                         "
                     >
-                        <RiWallet3Line
-                            size={17}
-                            aria-hidden="true"
-                        />
-                    </span>
+                        {resolvedTotalLabel}
+                    </p>
 
-                    <div className="min-w-0">
-                        <p
-                            title={
-                                resolvedTotalLabel
-                            }
-                            className="
-                                truncate
-                                text-[11px]
-                                font-medium
-                                opacity-80
-                            "
-                        >
-                            {resolvedTotalLabel}
-                        </p>
+                    <p
+                        title={formatCurrency(
+                            totalCents
+                        )}
+                        className={`
+                            mt-0.5
+                            truncate
+                            text-lg
+                            font-semibold
+                            tracking-tight
 
-                        <p
-                            title={formatCurrency(
-                                totalCents
-                            )}
-                            className="
-                                mt-0.5
-                                truncate
-                                text-sm
-                                font-semibold
-                                tracking-tight
-                            "
-                        >
-                            {formatCurrency(
-                                totalCents
-                            )}
-                        </p>
-                    </div>
+                            ${amountClassName}
+                        `}
+                    >
+                        {formatCurrency(
+                            totalCents
+                        )}
+                    </p>
                 </div>
             </header>
 
             {loading ? (
-                <LoadingState
-                    pluralLabel={
-                        resolvedPluralLabel
-                    }
-                />
+                <LoadingState />
             ) : transactions.length ===
                 0 ? (
                 <EmptyState
@@ -467,54 +456,30 @@ function TransactionList({
                     }
                 />
             ) : (
-                <>
-                    <DesktopTable
-                        transactions={
-                            transactions
-                        }
-                        singularLabel={
-                            resolvedSingularLabel
-                        }
-                        amountClassName={
-                            amountClassName
-                        }
-                        deletingId={
-                            deletingId
-                        }
-                        onEdit={onEdit}
-                        onDelete={
-                            onDelete
-                        }
-                    />
-
-                    <MobileCardList
-                        transactions={
-                            transactions
-                        }
-                        singularLabel={
-                            resolvedSingularLabel
-                        }
-                        amountClassName={
-                            amountClassName
-                        }
-                        deletingId={
-                            deletingId
-                        }
-                        onEdit={onEdit}
-                        onDelete={
-                            onDelete
-                        }
-                    />
-                </>
+                <TransactionContent
+                    transactions={
+                        transactions
+                    }
+                    singularLabel={
+                        resolvedSingularLabel
+                    }
+                    deletingId={
+                        deletingId
+                    }
+                    amountClassName={
+                        amountClassName
+                    }
+                    onEdit={onEdit}
+                    onDelete={
+                        onDelete
+                    }
+                />
             )}
 
             {showPagination && (
                 <Pagination
                     currentPage={
                         displayedPage
-                    }
-                    totalPages={
-                        normalizedTotalPages
                     }
                     totalItems={
                         normalizedTotalItems
@@ -559,550 +524,313 @@ function TransactionList({
     );
 }
 
-function LoadingState({
-    pluralLabel,
-}) {
-    return (
-        <div
-            role="status"
-            aria-live="polite"
-            className="
-                flex min-h-64
-                flex-col
-                items-center
-                justify-center
-                gap-3
-                px-5 py-12
-                text-center
-            "
-        >
-            <RiLoader4Line
-                size={24}
-                aria-hidden="true"
-                className="
-                    animate-spin
-                    text-muted-foreground
-                "
-            />
-
-            <p
-                className="
-                    text-sm
-                    text-muted-foreground
-                "
-            >
-                Carregando{" "}
-                {pluralLabel}...
-            </p>
-        </div>
-    );
-}
-
-function EmptyState({
-    message,
-}) {
-    return (
-        <div
-            className="
-                flex min-h-64
-                flex-col
-                items-center
-                justify-center
-                px-5 py-12
-                text-center
-            "
-        >
-            <span
-                className="
-                    flex size-11
-                    items-center
-                    justify-center
-                    rounded-xl
-                    bg-surface-muted
-                    text-muted-foreground
-                "
-            >
-                <RiFileList3Line
-                    size={21}
-                    aria-hidden="true"
-                />
-            </span>
-
-            <h3
-                className="
-                    mt-4
-                    text-sm
-                    font-medium
-                    text-foreground
-                "
-            >
-                Nenhum registro
-                encontrado
-            </h3>
-
-            <p
-                className="
-                    mt-1
-                    max-w-sm
-                    text-sm
-                    leading-6
-                    text-muted-foreground
-                "
-            >
-                {message}
-            </p>
-        </div>
-    );
-}
-
-function DesktopTable({
+function TransactionContent({
     transactions,
     singularLabel,
-    amountClassName,
     deletingId,
+    amountClassName,
     onEdit,
     onDelete,
 }) {
     return (
-        <div
-            className="
-                hidden w-full
-                lg:block
-            "
-        >
-            <table
+        <div className="min-w-0">
+            <div
                 className="
-                    w-full
-                    table-fixed
-                    border-collapse
-                    text-left
+                    hidden
+                    grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_120px_140px_80px]
+                    items-center
+                    gap-4
+                    border-b
+                    border-border
+                    bg-surface-muted/35
+                    px-5
+                    py-2.5
+                    text-[11px]
+                    font-medium
+                    text-muted-foreground
+                    md:grid
                 "
             >
-                <thead>
-                    <tr
-                        className="
-                            bg-surface-muted/60
-                            text-xs
-                            font-medium
-                            text-muted-foreground
-                        "
-                    >
-                        <th
-                            scope="col"
-                            className="
-                                w-[32%]
-                                px-5 py-3
-                            "
-                        >
-                            Descrição
-                        </th>
+                <span>Descrição</span>
 
-                        <th
-                            scope="col"
-                            className="
-                                w-[20%]
-                                px-4 py-3
-                            "
-                        >
-                            Categoria
-                        </th>
+                <span>
+                    Categoria
+                </span>
 
-                        <th
-                            scope="col"
-                            className="
-                                w-[16%]
-                                px-4 py-3
-                            "
-                        >
-                            Data
-                        </th>
+                <span>Data</span>
 
-                        <th
-                            scope="col"
-                            className="
-                                w-[20%]
-                                px-4 py-3
-                                text-right
-                            "
-                        >
-                            Valor
-                        </th>
+                <span className="text-right">
+                    Valor
+                </span>
 
-                        <th
-                            scope="col"
-                            className="
-                                w-[12%]
-                                px-5 py-3
-                                text-right
-                            "
-                        >
-                            Ações
-                        </th>
-                    </tr>
-                </thead>
+                <span className="text-right">
+                    Ações
+                </span>
+            </div>
 
-                <tbody>
+            <AnimatePresence
+                initial={false}
+                mode="popLayout"
+            >
+                <div
+                    className="
+                        divide-y
+                        divide-border
+                    "
+                >
                     {transactions.map(
-                        (transaction) => {
+                        (
+                            transaction,
+                            index
+                        ) => {
                             const deleting =
                                 deletingId ===
                                 transaction.id;
 
                             return (
-                                <tr
+                                <TransactionRow
                                     key={
                                         transaction.id
                                     }
-                                    className="
-                                        border-t
-                                        border-border
-                                        transition-colors
-                                        hover:bg-surface-muted/35
-                                    "
-                                >
-                                    <td
-                                        className="
-                                            min-w-0
-                                            px-5 py-4
-                                            align-middle
-                                        "
-                                    >
-                                        <div className="min-w-0">
-                                            <p
-                                                title={
-                                                    transaction.description
-                                                }
-                                                className="
-                                                    truncate
-                                                    text-sm
-                                                    font-medium
-                                                    text-foreground
-                                                "
-                                            >
-                                                {
-                                                    transaction.description
-                                                }
-                                            </p>
-
-                                            {transaction.notes && (
-                                                <p
-                                                    title={
-                                                        transaction.notes
-                                                    }
-                                                    className="
-                                                        mt-1
-                                                        truncate
-                                                        text-xs
-                                                        text-muted-foreground
-                                                    "
-                                                >
-                                                    {
-                                                        transaction.notes
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-                                    </td>
-
-                                    <td
-                                        className="
-                                            min-w-0
-                                            px-4 py-4
-                                            align-middle
-                                        "
-                                    >
-                                        <span
-                                            title={
-                                                transaction.category
-                                            }
-                                            className="
-                                                block
-                                                truncate
-                                                text-sm
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {
-                                                transaction.category
-                                            }
-                                        </span>
-                                    </td>
-
-                                    <td
-                                        className="
-                                            px-4 py-4
-                                            align-middle
-                                        "
-                                    >
-                                        <span
-                                            className="
-                                                block
-                                                truncate
-                                                text-sm
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {formatDate(
-                                                transaction.date
-                                            )}
-                                        </span>
-                                    </td>
-
-                                    <td
-                                        className="
-                                            min-w-0
-                                            px-4 py-4
-                                            text-right
-                                            align-middle
-                                        "
-                                    >
-                                        <span
-                                            title={formatCurrency(
-                                                transaction.amountCents
-                                            )}
-                                            className={`
-                                                block
-                                                truncate
-                                                text-sm
-                                                font-semibold
-                                                ${amountClassName}
-                                            `}
-                                        >
-                                            {formatCurrency(
-                                                transaction.amountCents
-                                            )}
-                                        </span>
-                                    </td>
-
-                                    <td
-                                        className="
-                                            px-5 py-4
-                                            align-middle
-                                        "
-                                    >
-                                        <ActionButtons
-                                            transaction={
-                                                transaction
-                                            }
-                                            singularLabel={
-                                                singularLabel
-                                            }
-                                            deleting={
-                                                deleting
-                                            }
-                                            onEdit={
-                                                onEdit
-                                            }
-                                            onDelete={
-                                                onDelete
-                                            }
-                                        />
-                                    </td>
-                                </tr>
+                                    transaction={
+                                        transaction
+                                    }
+                                    index={index}
+                                    deleting={
+                                        deleting
+                                    }
+                                    singularLabel={
+                                        singularLabel
+                                    }
+                                    amountClassName={
+                                        amountClassName
+                                    }
+                                    onEdit={onEdit}
+                                    onDelete={
+                                        onDelete
+                                    }
+                                />
                             );
                         }
                     )}
-                </tbody>
-            </table>
+                </div>
+            </AnimatePresence>
         </div>
     );
 }
 
-function MobileCardList({
-    transactions,
+function TransactionRow({
+    transaction,
+    index,
+    deleting,
     singularLabel,
     amountClassName,
-    deletingId,
     onEdit,
     onDelete,
 }) {
+    const category =
+        transaction.category ||
+        "Sem categoria";
+
     return (
-        <div
+        <motion.article
+            layout
+            initial={{
+                opacity: 0,
+                y: 4,
+            }}
+            animate={{
+                opacity: 1,
+                y: 0,
+            }}
+            exit={{
+                opacity: 0,
+                height: 0,
+            }}
+            transition={{
+                duration: 0.18,
+                delay: Math.min(
+                    index * 0.02,
+                    0.12
+                ),
+            }}
             className="
-                grid w-full
-                min-w-0 gap-3
-                p-3
-                sm:grid-cols-2
-                lg:hidden
+                group
+                min-w-0
+                px-4
+                py-4
+                transition-colors
+                hover:bg-surface-muted/25
+                sm:px-5
             "
         >
-            <AnimatePresence
-                initial={false}
-                mode="popLayout"
+            <div
+                className="
+                    grid
+                    min-w-0
+                    gap-3
+                    md:grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_120px_140px_80px]
+                    md:items-center
+                    md:gap-4
+                "
             >
-                {transactions.map(
-                    (transaction) => {
-                        const deleting =
-                            deletingId ===
-                            transaction.id;
+                <div className="min-w-0">
+                    <h3
+                        title={
+                            transaction.description
+                        }
+                        className="
+                            truncate
+                            text-sm
+                            font-medium
+                            text-foreground
+                        "
+                    >
+                        {
+                            transaction.description
+                        }
+                    </h3>
 
-                        return (
-                            <motion.article
-                                key={
-                                    transaction.id
-                                }
-                                layout
-                                initial={{
-                                    opacity: 0,
-                                    y: 8,
-                                }}
-                                animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                }}
-                                exit={{
-                                    opacity: 0,
-                                    scale: 0.98,
-                                }}
-                                transition={{
-                                    duration: 0.18,
-                                    ease: [
-                                        0.22,
-                                        1,
-                                        0.36,
-                                        1,
-                                    ],
-                                }}
-                                className="
-                                    flex min-w-0
-                                    flex-col
-                                    rounded-xl
-                                    border border-border
-                                    bg-background
-                                    p-4
-                                "
-                            >
-                                <div
-                                    className="
-                                        flex min-w-0
-                                        items-start
-                                        justify-between
-                                        gap-3
-                                    "
-                                >
-                                    <div
-                                        className="
-                                            min-w-0
-                                            flex-1
-                                        "
-                                    >
-                                        <h3
-                                            title={
-                                                transaction.description
-                                            }
-                                            className="
-                                                truncate
-                                                text-sm
-                                                font-semibold
-                                                text-foreground
-                                            "
-                                        >
-                                            {
-                                                transaction.description
-                                            }
-                                        </h3>
+                    {transaction.notes && (
+                        <p
+                            title={
+                                transaction.notes
+                            }
+                            className="
+                                mt-1
+                                truncate
+                                text-xs
+                                text-muted-foreground
+                            "
+                        >
+                            {
+                                transaction.notes
+                            }
+                        </p>
+                    )}
 
-                                        <p
-                                            title={
-                                                transaction.category
-                                            }
-                                            className="
-                                                mt-1
-                                                truncate
-                                                text-xs
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {
-                                                transaction.category
-                                            }
-                                        </p>
-                                    </div>
+                    <div
+                        className="
+                            mt-2
+                            flex
+                            min-w-0
+                            flex-wrap
+                            items-center
+                            gap-x-2
+                            gap-y-1
+                            text-xs
+                            text-muted-foreground
+                            md:hidden
+                        "
+                    >
+                        <span
+                            title={category}
+                            className="
+                                max-w-[160px]
+                                truncate
+                            "
+                        >
+                            {category}
+                        </span>
 
-                                    <strong
-                                        title={formatCurrency(
-                                            transaction.amountCents
-                                        )}
-                                        className={`
-                                            max-w-[48%]
-                                            shrink-0
-                                            truncate
-                                            text-sm
-                                            font-semibold
-                                            ${amountClassName}
-                                        `}
-                                    >
-                                        {formatCurrency(
-                                            transaction.amountCents
-                                        )}
-                                    </strong>
-                                </div>
+                        <span
+                            aria-hidden="true"
+                        >
+                            ·
+                        </span>
 
-                                {transaction.notes && (
-                                    <p
-                                        title={
-                                            transaction.notes
-                                        }
-                                        className="
-                                            mt-3
-                                            truncate-text-2
-                                            text-xs
-                                            leading-5
-                                            text-muted-foreground
-                                        "
-                                    >
-                                        {
-                                            transaction.notes
-                                        }
-                                    </p>
-                                )}
+                        <span>
+                            {formatDate(
+                                transaction.date
+                            )}
+                        </span>
+                    </div>
+                </div>
 
-                                <div
-                                    className="
-                                        mt-auto
-                                        flex min-w-0
-                                        items-center
-                                        justify-between
-                                        gap-3
-                                        pt-4
-                                    "
-                                >
-                                    <span
-                                        className="
-                                            min-w-0
-                                            truncate
-                                            text-xs
-                                            text-muted-foreground
-                                        "
-                                    >
-                                        {formatDate(
-                                            transaction.date
-                                        )}
-                                    </span>
+                <span
+                    title={category}
+                    className="
+                        hidden
+                        truncate
+                        text-sm
+                        text-muted-foreground
+                        md:block
+                    "
+                >
+                    {category}
+                </span>
 
-                                    <ActionButtons
-                                        transaction={
-                                            transaction
-                                        }
-                                        singularLabel={
-                                            singularLabel
-                                        }
-                                        deleting={
-                                            deleting
-                                        }
-                                        onEdit={onEdit}
-                                        onDelete={
-                                            onDelete
-                                        }
-                                        compact
-                                    />
-                                </div>
-                            </motion.article>
-                        );
+                <span
+                    className="
+                        hidden
+                        truncate
+                        text-sm
+                        text-muted-foreground
+                        md:block
+                    "
+                >
+                    {formatDate(
+                        transaction.date
+                    )}
+                </span>
+
+                <div
+                    className="
+                        flex
+                        min-w-0
+                        items-center
+                        justify-between
+                        gap-3
+                        md:block
+                        md:text-right
+                    "
+                >
+                    <span
+                        className="
+                            text-xs
+                            text-muted-foreground
+                            md:hidden
+                        "
+                    >
+                        Valor
+                    </span>
+
+                    <strong
+                        title={formatCurrency(
+                            transaction.amountCents
+                        )}
+                        className={`
+                            min-w-0
+                            truncate
+                            text-sm
+                            font-semibold
+
+                            ${amountClassName}
+                        `}
+                    >
+                        {formatCurrency(
+                            transaction.amountCents
+                        )}
+                    </strong>
+                </div>
+
+                <ActionButtons
+                    transaction={
+                        transaction
                     }
-                )}
-            </AnimatePresence>
-        </div>
+                    singularLabel={
+                        singularLabel
+                    }
+                    deleting={
+                        deleting
+                    }
+                    onEdit={onEdit}
+                    onDelete={
+                        onDelete
+                    }
+                />
+            </div>
+        </motion.article>
     );
 }
 
@@ -1112,19 +840,15 @@ function ActionButtons({
     deleting,
     onEdit,
     onDelete,
-    compact = false,
 }) {
     return (
         <div
-            className={`
-                flex shrink-0
-                items-center gap-1
-
-                ${compact
-                    ? ""
-                    : "justify-end"
-                }
-            `}
+            className="
+                flex
+                items-center
+                justify-end
+                gap-1
+            "
         >
             <button
                 type="button"
@@ -1137,21 +861,22 @@ function ActionButtons({
                 aria-label={`Editar ${singularLabel} ${transaction.description}`}
                 title={`Editar ${singularLabel}`}
                 className="
-                    inline-flex size-9
+                    inline-flex
+                    size-8
                     shrink-0
                     items-center
                     justify-center
                     rounded-lg
                     text-muted-foreground
                     transition-colors
-                    hover:bg-surface-hover
+                    hover:bg-surface-muted
                     hover:text-foreground
                     disabled:pointer-events-none
                     disabled:opacity-40
                 "
             >
                 <RiEditLine
-                    size={17}
+                    size={16}
                     aria-hidden="true"
                 />
             </button>
@@ -1167,7 +892,8 @@ function ActionButtons({
                 aria-label={`Excluir ${singularLabel} ${transaction.description}`}
                 title={`Excluir ${singularLabel}`}
                 className="
-                    inline-flex size-9
+                    inline-flex
+                    size-8
                     shrink-0
                     items-center
                     justify-center
@@ -1182,13 +908,15 @@ function ActionButtons({
             >
                 {deleting ? (
                     <RiLoader4Line
-                        size={17}
+                        size={16}
                         aria-hidden="true"
-                        className="animate-spin"
+                        className="
+                            animate-spin
+                        "
                     />
                 ) : (
                     <RiDeleteBinLine
-                        size={17}
+                        size={16}
                         aria-hidden="true"
                     />
                 )}
@@ -1197,9 +925,173 @@ function ActionButtons({
     );
 }
 
+function LoadingState() {
+    return (
+        <div
+            role="status"
+            aria-live="polite"
+            className="
+                divide-y
+                divide-border
+            "
+        >
+            {Array.from({
+                length: 5,
+            }).map(
+                (_, index) => (
+                    <div
+                        key={index}
+                        className="
+                            grid
+                            animate-pulse
+                            gap-3
+                            px-4
+                            py-4
+                            sm:px-5
+                            md:grid-cols-[minmax(220px,1.8fr)_minmax(120px,0.8fr)_120px_140px_80px]
+                            md:items-center
+                            md:gap-4
+                        "
+                    >
+                        <div
+                            className="
+                                min-w-0
+                            "
+                        >
+                            <div
+                                className="
+                                    h-4
+                                    w-2/3
+                                    rounded
+                                    bg-surface-muted
+                                "
+                            />
+
+                            <div
+                                className="
+                                    mt-2
+                                    h-3
+                                    w-1/2
+                                    rounded
+                                    bg-surface-muted
+                                "
+                            />
+                        </div>
+
+                        <div
+                            className="
+                                hidden
+                                h-4
+                                w-20
+                                rounded
+                                bg-surface-muted
+                                md:block
+                            "
+                        />
+
+                        <div
+                            className="
+                                hidden
+                                h-4
+                                w-16
+                                rounded
+                                bg-surface-muted
+                                md:block
+                            "
+                        />
+
+                        <div
+                            className="
+                                h-4
+                                w-24
+                                rounded
+                                bg-surface-muted
+                                md:ml-auto
+                            "
+                        />
+
+                        <div
+                            className="
+                                hidden
+                                h-8
+                                w-16
+                                rounded-lg
+                                bg-surface-muted
+                                md:block
+                            "
+                        />
+                    </div>
+                )
+            )}
+
+            <span className="sr-only">
+                Carregando transações...
+            </span>
+        </div>
+    );
+}
+
+function EmptyState({
+    message,
+}) {
+    return (
+        <div
+            className="
+                flex
+                min-h-64
+                flex-col
+                items-center
+                justify-center
+                px-5
+                py-12
+                text-center
+            "
+        >
+            <span
+                className="
+                    flex
+                    size-10
+                    items-center
+                    justify-center
+                    rounded-lg
+                    bg-surface-muted
+                    text-muted-foreground
+                "
+            >
+                <RiFileList3Line
+                    size={19}
+                    aria-hidden="true"
+                />
+            </span>
+
+            <h3
+                className="
+                    mt-4
+                    text-sm
+                    font-medium
+                    text-foreground
+                "
+            >
+                Nenhum registro encontrado
+            </h3>
+
+            <p
+                className="
+                    mt-1.5
+                    max-w-sm
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                "
+            >
+                {message}
+            </p>
+        </div>
+    );
+}
+
 function Pagination({
     currentPage,
-    totalPages,
     totalItems,
     firstVisibleItem,
     lastVisibleItem,
@@ -1217,10 +1109,14 @@ function Pagination({
     return (
         <footer
             className="
-                flex min-w-0
-                flex-col gap-4
-                border-t border-border
-                px-4 py-4
+                flex
+                min-w-0
+                flex-col
+                gap-4
+                border-t
+                border-border
+                px-4
+                py-3.5
                 sm:px-5
                 lg:flex-row
                 lg:items-center
@@ -1229,21 +1125,20 @@ function Pagination({
         >
             <div
                 className="
-                    flex min-w-0
-                    flex-col gap-3
+                    flex
+                    min-w-0
+                    flex-col
+                    gap-3
                     sm:flex-row
                     sm:items-center
                 "
             >
                 <p
                     className="
-                        min-w-0
                         text-xs
                         text-muted-foreground
-                        sm:text-sm
                     "
                 >
-                    Mostrando{" "}
                     <span
                         className="
                             font-medium
@@ -1252,7 +1147,9 @@ function Pagination({
                     >
                         {firstVisibleItem}
                     </span>
+
                     {"–"}
+
                     <span
                         className="
                             font-medium
@@ -1260,8 +1157,10 @@ function Pagination({
                         "
                     >
                         {lastVisibleItem}
-                    </span>{" "}
-                    de{" "}
+                    </span>
+
+                    {" de "}
+
                     <span
                         className="
                             font-medium
@@ -1274,25 +1173,35 @@ function Pagination({
 
                 <div
                     className="
-                        flex items-center
+                        hidden
+                        h-4
+                        w-px
+                        bg-border
+                        sm:block
+                    "
+                />
+
+                <div
+                    className="
+                        flex
+                        items-center
                         gap-2
                     "
                 >
                     <label
                         htmlFor="transaction-page-size"
                         className="
-                            shrink-0
                             text-xs
                             text-muted-foreground
                         "
                     >
-                        Itens por página
+                        Por página
                     </label>
 
                     <div
                         className="
                             relative
-                            w-20 shrink-0
+                            w-16
                         "
                     >
                         <select
@@ -1303,13 +1212,15 @@ function Pagination({
                             }
                             disabled={loading}
                             className="
-                                h-9 w-full
+                                h-8
+                                w-full
                                 appearance-none
                                 rounded-lg
-                                border border-border
+                                border
+                                border-border
                                 bg-background
-                                py-1
-                                pl-3 pr-8
+                                pl-2.5
+                                pr-7
                                 text-xs
                                 font-medium
                                 text-foreground
@@ -1343,12 +1254,13 @@ function Pagination({
                         </select>
 
                         <RiArrowDownSLine
-                            size={16}
+                            size={14}
                             aria-hidden="true"
                             className="
                                 pointer-events-none
                                 absolute
-                                right-2.5 top-1/2
+                                right-2
+                                top-1/2
                                 -translate-y-1/2
                                 text-muted-foreground
                             "
@@ -1360,10 +1272,11 @@ function Pagination({
             <nav
                 aria-label="Paginação"
                 className="
-                    flex min-w-0
+                    flex
+                    min-w-0
                     items-center
                     justify-between
-                    gap-2
+                    gap-1
                     sm:justify-end
                 "
             >
@@ -1376,121 +1289,106 @@ function Pagination({
                     aria-label="Página anterior"
                     title="Página anterior"
                     className="
-                        inline-flex size-9
+                        inline-flex
+                        size-8
                         shrink-0
                         items-center
                         justify-center
                         rounded-lg
-                        border border-border
-                        bg-surface
                         text-muted-foreground
                         transition-colors
-                        hover:bg-surface-hover
+                        hover:bg-surface-muted
                         hover:text-foreground
                         disabled:pointer-events-none
-                        disabled:opacity-35
+                        disabled:opacity-30
                     "
                 >
                     <RiArrowLeftSLine
-                        size={20}
+                        size={18}
                         aria-hidden="true"
                     />
                 </button>
 
-                <div
-                    className="
-                        flex min-w-0
-                        items-center gap-1
-                    "
-                >
-                    {paginationItems.map(
-                        (
-                            item,
-                            index
-                        ) => {
-                            if (
-                                typeof item ===
-                                "string"
-                            ) {
-                                return (
-                                    <span
-                                        key={`${item}-${index}`}
-                                        aria-hidden="true"
-                                        className="
-                                            inline-flex
-                                            size-9
-                                            items-center
-                                            justify-center
-                                            text-sm
-                                            text-muted-foreground
-                                        "
-                                    >
-                                        …
-                                    </span>
-                                );
-                            }
-
-                            const isCurrent =
-                                item ===
-                                currentPage;
-
+                {paginationItems.map(
+                    (
+                        item,
+                        index
+                    ) => {
+                        if (
+                            typeof item ===
+                            "string"
+                        ) {
                             return (
-                                <button
-                                    key={
-                                        item
-                                    }
-                                    type="button"
-                                    onClick={() =>
-                                        onPageChange(
-                                            item
-                                        )
-                                    }
-                                    disabled={
-                                        loading
-                                    }
-                                    aria-label={`Ir para a página ${item}`}
-                                    aria-current={
-                                        isCurrent
-                                            ? "page"
-                                            : undefined
-                                    }
-                                    className={`
+                                <span
+                                    key={`${item}-${index}`}
+                                    aria-hidden="true"
+                                    className="
                                         inline-flex
-                                        size-9
-                                        shrink-0
+                                        size-8
                                         items-center
                                         justify-center
-                                        rounded-lg
-                                        border
                                         text-xs
-                                        font-medium
-                                        transition-colors
-                                        disabled:pointer-events-none
-                                        disabled:opacity-50
-
-                                        ${isCurrent
-                                            ? `
-                                                    border-primary
-                                                    bg-primary
-                                                    text-primary-foreground
-                                                `
-                                            : `
-                                                    border-transparent
-                                                    bg-surface
-                                                    text-muted-foreground
-                                                    hover:border-border
-                                                    hover:bg-surface-hover
-                                                    hover:text-foreground
-                                                `
-                                        }
-                                    `}
+                                        text-muted-foreground
+                                    "
                                 >
-                                    {item}
-                                </button>
+                                    …
+                                </span>
                             );
                         }
-                    )}
-                </div>
+
+                        const isCurrent =
+                            item ===
+                            currentPage;
+
+                        return (
+                            <button
+                                key={item}
+                                type="button"
+                                onClick={() =>
+                                    onPageChange(
+                                        item
+                                    )
+                                }
+                                disabled={
+                                    loading
+                                }
+                                aria-label={`Ir para a página ${item}`}
+                                aria-current={
+                                    isCurrent
+                                        ? "page"
+                                        : undefined
+                                }
+                                className={`
+                                    inline-flex
+                                    size-8
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    text-xs
+                                    font-medium
+                                    transition-colors
+                                    disabled:pointer-events-none
+                                    disabled:opacity-50
+
+                                    ${isCurrent
+                                        ? `
+                                                bg-primary
+                                                text-primary-foreground
+                                            `
+                                        : `
+                                                text-muted-foreground
+                                                hover:bg-surface-muted
+                                                hover:text-foreground
+                                            `
+                                    }
+                                `}
+                            >
+                                {item}
+                            </button>
+                        );
+                    }
+                )}
 
                 <button
                     type="button"
@@ -1499,23 +1397,22 @@ function Pagination({
                     aria-label="Próxima página"
                     title="Próxima página"
                     className="
-                        inline-flex size-9
+                        inline-flex
+                        size-8
                         shrink-0
                         items-center
                         justify-center
                         rounded-lg
-                        border border-border
-                        bg-surface
                         text-muted-foreground
                         transition-colors
-                        hover:bg-surface-hover
+                        hover:bg-surface-muted
                         hover:text-foreground
                         disabled:pointer-events-none
-                        disabled:opacity-35
+                        disabled:opacity-30
                     "
                 >
                     <RiArrowRightSLine
-                        size={20}
+                        size={18}
                         aria-hidden="true"
                     />
                 </button>
