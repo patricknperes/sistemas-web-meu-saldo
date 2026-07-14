@@ -1,16 +1,23 @@
-import { useState } from "react";
+import {
+    useState,
+} from "react";
 
 import {
-    Link,
     useLocation,
     useNavigate,
 } from "react-router";
 
 import {
-    FiLogIn,
-} from "react-icons/fi";
+    RiLoader4Line,
+    RiLockPasswordLine,
+    RiLoginBoxLine,
+    RiMailLine,
+} from "react-icons/ri";
 
 import { useAuth } from "../../hooks/useAuth.js";
+
+import AuthInput from "../../components/auth/AuthInput.jsx";
+import Snackbar from "../../components/feedback/Snackbar.jsx";
 
 function Login() {
     const navigate = useNavigate();
@@ -65,90 +72,122 @@ function Login() {
     }
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-4">
-            <section className="w-full max-w-md rounded-lg bg-white p-6 shadow">
-                <div className="mb-6 flex items-center gap-3">
-                    <FiLogIn size={26} />
+        <>
+            <Snackbar
+                type="error"
+                message={errorMessage}
+                onClose={() => setErrorMessage("")}
+            />
 
-                    <h1 className="text-2xl font-bold">
-                        Entrar
-                    </h1>
+            <div className="min-w-0">
+                <div className="mb-6 min-w-0">
+                    <div
+                        className="
+                            mb-4
+                            flex size-11
+                            items-center justify-center
+                            rounded-control
+                            bg-surface-muted
+                            text-foreground
+                        "
+                    >
+                        <RiLoginBoxLine size={22} />
+                    </div>
+
+                    <h2
+                        className="
+                            truncate
+                            text-2xl font-semibold
+                            tracking-tight
+                            text-foreground
+                        "
+                    >
+                        Bem-vindo novamente
+                    </h2>
+
+                    <p
+                        className="
+                            mt-1.5
+                            text-sm
+                            text-muted-foreground
+                        "
+                    >
+                        Entre com seus dados para acessar
+                        sua conta.
+                    </p>
                 </div>
 
-                {errorMessage && (
-                    <div className="mb-4 rounded-md bg-red-100 p-3 text-sm text-red-700">
-                        {errorMessage}
-                    </div>
-                )}
-
                 <form
-                    className="space-y-4"
+                    className="min-w-0 space-y-4"
                     onSubmit={handleSubmit}
                 >
-                    <div>
-                        <label
-                            htmlFor="email"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            E-mail
-                        </label>
+                    <AuthInput
+                        id="login-email"
+                        name="email"
+                        type="email"
+                        label="E-mail"
+                        icon={RiMailLine}
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="seu@email.com"
+                        disabled={submitting}
+                    />
 
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            autoComplete="email"
-                            placeholder="seu@email.com"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
-                        />
-                    </div>
-
-                    <div>
-                        <label
-                            htmlFor="password"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            Senha
-                        </label>
-
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                            autoComplete="current-password"
-                            placeholder="Digite sua senha"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
-                        />
-                    </div>
+                    <AuthInput
+                        id="login-password"
+                        name="password"
+                        type="password"
+                        label="Senha"
+                        icon={RiLockPasswordLine}
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        autoComplete="current-password"
+                        placeholder="Digite sua senha"
+                        disabled={submitting}
+                    />
 
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full rounded-md bg-slate-900 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy={submitting}
+                        className="
+                            mt-2
+                            inline-flex min-h-12
+                            w-full min-w-0
+                            items-center justify-center
+                            gap-2
+                            rounded-control
+                            bg-primary
+                            px-4
+                            text-sm font-medium
+                            text-primary-foreground
+                            transition
+                            hover:bg-primary-hover
+                            active:scale-[0.99]
+                            disabled:pointer-events-none
+                            disabled:opacity-60
+                        "
                     >
-                        {submitting
-                            ? "Entrando..."
-                            : "Entrar"}
+                        {submitting && (
+                            <RiLoader4Line
+                                size={19}
+                                className="animate-spin"
+                            />
+                        )}
+
+                        <span className="truncate">
+                            {submitting
+                                ? "Entrando..."
+                                : "Entrar"}
+                        </span>
                     </button>
                 </form>
-
-                <p className="mt-4 text-center text-sm text-slate-600">
-                    Não possui uma conta?{" "}
-                    <Link
-                        to="/cadastro"
-                        className="font-medium text-slate-900 underline"
-                    >
-                        Cadastre-se
-                    </Link>
-                </p>
-            </section>
-        </main>
+            </div>
+        </>
     );
 }
 

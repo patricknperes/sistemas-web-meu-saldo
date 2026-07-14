@@ -1,58 +1,81 @@
 import {
-    FiBarChart2,
-    FiDollarSign,
-    FiLogOut,
-    FiTrendingDown,
-    FiTrendingUp,
-    FiUser,
-    FiUsers,
-    FiClock,
-    FiX,
-} from "react-icons/fi";
+    LayoutGroup,
+} from "motion/react";
 
 import {
-    NavLink,
+    RiArrowDownCircleLine,
+    RiArrowUpCircleLine,
+    RiCloseLine,
+    RiDashboardLine,
+    RiGroupLine,
+    RiHistoryLine,
+    RiLogoutBoxRLine,
+    RiUser3Line,
+    RiWallet3Line,
+} from "react-icons/ri";
+
+import {
+    Link,
     useNavigate,
 } from "react-router";
 
 import { useAuth } from "../../hooks/useAuth.js";
 
+import UserAvatar from "../ui/UserAvatar.jsx";
+import SidebarItem from "./SidebarItem.jsx";
+
 const menuItems = [
     {
         label: "Dashboard",
         path: "/dashboard",
-        icon: FiBarChart2,
+        icon: RiDashboardLine,
     },
     {
         label: "Receitas",
         path: "/receitas",
-        icon: FiTrendingUp,
+        icon: RiArrowUpCircleLine,
     },
     {
         label: "Despesas",
         path: "/despesas",
-        icon: FiTrendingDown,
+        icon: RiArrowDownCircleLine,
     },
     {
         label: "Histórico",
         path: "/historico",
-        icon: FiClock,
-    }, ,
+        icon: RiHistoryLine,
+    },
     {
         label: "Meu perfil",
         path: "/perfil",
-        icon: FiUser,
+        icon: RiUser3Line,
     },
     {
         label: "Usuários",
         path: "/usuarios",
-        icon: FiUsers,
+        icon: RiGroupLine,
         adminOnly: true,
     },
 ];
 
+function getUserInformation(user) {
+    const fullName =
+        user?.name?.trim() || "Usuário";
+
+    const roleLabel =
+        user?.role === "ADMIN"
+            ? "Administrador"
+            : "Usuário";
+
+    return {
+        fullName,
+        roleLabel,
+    };
+}
+
 function Sidebar({
-    isOpen,
+    mode = "desktop",
+    collapsed = false,
     onClose,
 }) {
     const navigate = useNavigate();
@@ -62,6 +85,16 @@ function Sidebar({
         logout,
     } = useAuth();
 
+    const mobile = mode === "mobile";
+
+    const labelsVisible =
+        mobile || !collapsed;
+
+    const {
+        fullName,
+        roleLabel,
+    } = getUserInformation(user);
+
     const visibleMenuItems = menuItems.filter(
         (item) =>
             !item.adminOnly ||
@@ -70,91 +103,268 @@ function Sidebar({
 
     function handleLogout() {
         logout();
-        onClose();
+        onClose?.();
 
         navigate("/login", {
             replace: true,
         });
     }
 
+    function handleNavigation() {
+        if (mobile) {
+            onClose?.();
+        }
+    }
+
     return (
         <aside
-            className={[
-                "fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-900 text-white",
-                "transform transition-transform duration-200",
-                "lg:static lg:min-h-screen lg:translate-x-0",
-                isOpen
-                    ? "translate-x-0"
-                    : "-translate-x-full",
-            ].join(" ")}
+            aria-label="Menu principal"
+            className={`
+                flex h-full shrink-0
+                flex-col
+                overflow-hidden
+                border-r border-border
+                bg-surface
+                transition-[width]
+                duration-300
+                ease-smooth
+
+                ${mobile
+                    ? "w-full"
+                    : `
+                            hidden h-dvh
+                            lg:flex
+
+                            ${collapsed
+                        ? "w-[72px]"
+                        : "w-[272px]"
+                    }
+                        `
+                }
+            `}
         >
-            <div className="flex h-16 items-center justify-between border-b border-slate-700 px-4">
-                <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-slate-900">
-                        <FiDollarSign size={20} />
-                    </div>
+            <header
+                className={`
+                    flex h-16 shrink-0
+                    items-center
+                    border-b border-border
+                    px-4
 
-                    <div className="min-w-0">
-                        <h1 className="truncate font-bold">
-                            Minhas Finanças
-                        </h1>
-
-                        <p className="truncate text-xs text-slate-400">
-                            Gerenciamento financeiro
-                        </p>
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={onClose}
-                    aria-label="Fechar menu"
-                    className="rounded-md p-2 text-slate-300 hover:bg-slate-800 lg:hidden"
+                    ${labelsVisible
+                        ? "justify-between"
+                        : "justify-center"
+                    }
+                `}
+            >
+                <Link
+                    to="/dashboard"
+                    onClick={handleNavigation}
+                    aria-label="Ir para a Dashboard"
+                    title={
+                        collapsed
+                            ? "Meu Saldo"
+                            : undefined
+                    }
+                    className="
+                        flex min-w-0
+                        items-center gap-3
+                        overflow-hidden
+                    "
                 >
-                    <FiX size={21} />
-                </button>
-            </div>
+                    <span
+                        className="
+                            flex size-10
+                            shrink-0
+                            items-center justify-center
+                            rounded-xl
+                            bg-primary
+                            text-primary-foreground
+                        "
+                    >
+                        <RiWallet3Line size={21} />
+                    </span>
 
-            <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-                {visibleMenuItems.map((item) => {
-                    const Icon = item.icon;
+                    {labelsVisible && (
+                        <span className="min-w-0">
+                            <strong
+                                className="
+                                    block truncate
+                                    text-sm font-semibold
+                                    text-foreground
+                                "
+                            >
+                                Meu Saldo
+                            </strong>
 
-                    return (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            onClick={onClose}
-                            className={({ isActive }) =>
-                                [
-                                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-                                    isActive
-                                        ? "bg-slate-700 text-white"
-                                        : "text-slate-300 hover:bg-slate-800 hover:text-white",
-                                ].join(" ")
-                            }
+                            <span
+                                className="
+                                    block truncate
+                                    text-xs
+                                    text-muted-foreground
+                                "
+                            >
+                                Controle financeiro
+                            </span>
+                        </span>
+                    )}
+                </Link>
+
+                {mobile && (
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Fechar menu lateral"
+                        className="
+                            inline-flex size-9
+                            shrink-0
+                            items-center justify-center
+                            rounded-lg
+                            text-muted-foreground
+                            transition-colors
+                            hover:bg-surface-hover
+                            hover:text-foreground
+                        "
+                    >
+                        <RiCloseLine size={20} />
+                    </button>
+                )}
+            </header>
+
+            <LayoutGroup
+                id={`sidebar-${mode}`}
+            >
+                <nav
+                    className="
+                        flex min-h-0 flex-1
+                        flex-col gap-1
+                        overflow-x-hidden
+                        overflow-y-auto
+                        p-3
+                        scrollbar-subtle
+                    "
+                >
+                    {visibleMenuItems.map(
+                        (item) => (
+                            <SidebarItem
+                                key={item.path}
+                                item={item}
+                                collapsed={
+                                    !mobile &&
+                                    collapsed
+                                }
+                                onNavigate={
+                                    handleNavigation
+                                }
+                                layoutId={`sidebar-active-${mode}`}
+                            />
+                        )
+                    )}
+                </nav>
+            </LayoutGroup>
+
+            <footer
+                className="
+                    shrink-0
+                    border-t border-border
+                    p-3
+                "
+            >
+                {labelsVisible ? (
+                    <div
+                        className="
+                            flex min-w-0
+                            items-center gap-2
+                        "
+                    >
+                        <Link
+                            to="/perfil"
+                            onClick={handleNavigation}
+                            title={fullName}
+                            aria-label={`Abrir perfil de ${fullName}`}
+                            className="
+                                flex min-w-0 flex-1
+                                items-center gap-3
+                                overflow-hidden
+                                rounded-xl
+                                p-1
+                                transition-colors
+                                hover:bg-surface-hover
+                            "
                         >
-                            <Icon
-                                size={19}
-                                className="shrink-0"
+                            <UserAvatar
+                                name={fullName}
+                                size="md"
+                                showTitle={false}
                             />
 
-                            <span>{item.label}</span>
-                        </NavLink>
-                    );
-                })}
-            </nav>
+                            <span className="min-w-0 flex-1">
+                                <strong
+                                    title={fullName}
+                                    className="
+                                        block truncate
+                                        text-sm font-medium
+                                        text-foreground
+                                    "
+                                >
+                                    {fullName}
+                                </strong>
 
-            <div className="border-t border-slate-700 p-3">
-                <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
-                >
-                    <FiLogOut size={19} />
+                                <span
+                                    className="
+                                        block truncate
+                                        text-xs
+                                        text-muted-foreground
+                                    "
+                                >
+                                    {roleLabel}
+                                </span>
+                            </span>
+                        </Link>
 
-                    <span>Sair</span>
-                </button>
-            </div>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            aria-label="Sair da conta"
+                            title="Sair"
+                            className="
+                                inline-flex size-9
+                                shrink-0
+                                items-center justify-center
+                                rounded-lg
+                                text-muted-foreground
+                                transition-colors
+                                hover:bg-danger-muted
+                                hover:text-danger
+                            "
+                        >
+                            <RiLogoutBoxRLine
+                                size={19}
+                            />
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        aria-label="Sair da conta"
+                        title="Sair"
+                        className="
+                            mx-auto
+                            flex size-10
+                            items-center justify-center
+                            rounded-xl
+                            text-muted-foreground
+                            transition-colors
+                            hover:bg-danger-muted
+                            hover:text-danger
+                        "
+                    >
+                        <RiLogoutBoxRLine
+                            size={19}
+                        />
+                    </button>
+                )}
+            </footer>
         </aside>
     );
 }

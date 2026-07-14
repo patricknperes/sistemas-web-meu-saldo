@@ -7,18 +7,18 @@ import {
 import AdminRoute from "./AdminRoute.jsx";
 import PrivateRoute from "./PrivateRoute.jsx";
 
+import AuthLayout from "../components/auth/AuthLayout.jsx";
 import PrivateLayout from "../components/layout/PrivateLayout.jsx";
 
 import Dashboard from "../pages/Dashboard/Dashboard.jsx";
 import Expenses from "../pages/Expenses/Expenses.jsx";
+import History from "../pages/History/History.jsx";
 import Login from "../pages/Login/Login.jsx";
+import NotFound from "../pages/NotFound/NotFound.jsx";
 import Profile from "../pages/Profile/Profile.jsx";
 import Register from "../pages/Register/Register.jsx";
 import Revenues from "../pages/Revenues/Revenues.jsx";
 import Users from "../pages/Users/Users.jsx";
-import NotFound from "../pages/NotFound/NotFound.jsx";
-import History from "../pages/History/History.jsx";
-
 
 function AppRoutes() {
     return (
@@ -33,15 +33,17 @@ function AppRoutes() {
                 }
             />
 
-            <Route
-                path="/login"
-                element={<Login />}
-            />
+            <Route element={<AuthLayout />}>
+                <Route
+                    path="login"
+                    element={<Login />}
+                />
 
-            <Route
-                path="/cadastro"
-                element={<Register />}
-            />
+                <Route
+                    path="cadastro"
+                    element={<Register />}
+                />
+            </Route>
 
             <Route element={<PrivateRoute />}>
                 <Route element={<PrivateLayout />}>

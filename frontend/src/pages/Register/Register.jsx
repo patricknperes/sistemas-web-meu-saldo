@@ -1,13 +1,23 @@
-import { useState } from "react";
+import {
+    useState,
+} from "react";
 
 import {
-    Link,
     useNavigate,
 } from "react-router";
 
-import { FiUserPlus } from "react-icons/fi";
+import {
+    RiLoader4Line,
+    RiLockPasswordLine,
+    RiMailLine,
+    RiUser3Line,
+    RiUserAddLine,
+} from "react-icons/ri";
 
 import { useAuth } from "../../hooks/useAuth.js";
+
+import AuthInput from "../../components/auth/AuthInput.jsx";
+import Snackbar from "../../components/feedback/Snackbar.jsx";
 
 function Register() {
     const navigate = useNavigate();
@@ -74,134 +84,161 @@ function Register() {
     }
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-4">
-            <section className="w-full max-w-md rounded-lg bg-white p-6 shadow">
-                <div className="mb-6 flex items-center gap-3">
-                    <FiUserPlus size={26} />
+        <>
+            <Snackbar
+                type="error"
+                message={errorMessage}
+                onClose={() => setErrorMessage("")}
+            />
 
-                    <h1 className="text-2xl font-bold">
-                        Criar conta
-                    </h1>
+            <div className="min-w-0">
+                <div className="mb-6 min-w-0">
+                    <div
+                        className="
+                            mb-4
+                            flex size-11
+                            items-center justify-center
+                            rounded-control
+                            bg-surface-muted
+                            text-foreground
+                        "
+                    >
+                        <RiUserAddLine size={22} />
+                    </div>
+
+                    <h2
+                        className="
+                            truncate
+                            text-2xl font-semibold
+                            tracking-tight
+                            text-foreground
+                        "
+                    >
+                        Crie sua conta
+                    </h2>
+
+                    <p
+                        className="
+                            mt-1.5
+                            text-sm
+                            text-muted-foreground
+                        "
+                    >
+                        Preencha os dados abaixo para começar
+                        a organizar suas finanças.
+                    </p>
                 </div>
 
-                {errorMessage && (
-                    <div className="mb-4 rounded-md bg-red-100 p-3 text-sm text-red-700">
-                        {errorMessage}
-                    </div>
-                )}
-
                 <form
-                    className="space-y-4"
+                    className="min-w-0 space-y-4"
                     onSubmit={handleSubmit}
                 >
-                    <div>
-                        <label
-                            htmlFor="name"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            Nome
-                        </label>
+                    <AuthInput
+                        id="register-name"
+                        name="name"
+                        type="text"
+                        label="Nome"
+                        icon={RiUser3Line}
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        autoComplete="name"
+                        placeholder="Digite seu nome"
+                        disabled={submitting}
+                    />
 
-                        <input
-                            id="name"
-                            name="name"
-                            type="text"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                            autoComplete="name"
-                            placeholder="Digite seu nome"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
-                        />
-                    </div>
+                    <AuthInput
+                        id="register-email"
+                        name="email"
+                        type="email"
+                        label="E-mail"
+                        icon={RiMailLine}
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        autoComplete="email"
+                        inputMode="email"
+                        placeholder="seu@email.com"
+                        disabled={submitting}
+                    />
 
-                    <div>
-                        <label
-                            htmlFor="email"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            E-mail
-                        </label>
-
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                            autoComplete="email"
-                            placeholder="seu@email.com"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
-                        />
-                    </div>
-
-                    <div>
-                        <label
-                            htmlFor="password"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            Senha
-                        </label>
-
-                        <input
-                            id="password"
+                    <div
+                        className="
+                            grid min-w-0 gap-4
+                            sm:grid-cols-2
+                        "
+                    >
+                        <AuthInput
+                            id="register-password"
                             name="password"
                             type="password"
+                            label="Senha"
+                            icon={RiLockPasswordLine}
                             value={formData.password}
                             onChange={handleChange}
                             required
                             minLength={8}
                             autoComplete="new-password"
-                            placeholder="Mínimo de 8 caracteres"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                            placeholder="Mínimo de 8"
+                            disabled={submitting}
                         />
-                    </div>
 
-                    <div>
-                        <label
-                            htmlFor="passwordConfirmation"
-                            className="mb-1 block text-sm font-medium"
-                        >
-                            Confirmar senha
-                        </label>
-
-                        <input
-                            id="passwordConfirmation"
+                        <AuthInput
+                            id="register-password-confirmation"
                             name="passwordConfirmation"
                             type="password"
-                            value={formData.passwordConfirmation}
+                            label="Confirmar senha"
+                            icon={RiLockPasswordLine}
+                            value={
+                                formData.passwordConfirmation
+                            }
                             onChange={handleChange}
                             required
                             minLength={8}
                             autoComplete="new-password"
-                            placeholder="Digite a senha novamente"
-                            className="w-full rounded-md border border-slate-300 px-3 py-2 outline-none focus:border-slate-600"
+                            placeholder="Repita a senha"
+                            disabled={submitting}
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full rounded-md bg-slate-900 px-4 py-2 text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        aria-busy={submitting}
+                        className="
+                            mt-2
+                            inline-flex min-h-12
+                            w-full min-w-0
+                            items-center justify-center
+                            gap-2
+                            rounded-control
+                            bg-primary
+                            px-4
+                            text-sm font-medium
+                            text-primary-foreground
+                            transition
+                            hover:bg-primary-hover
+                            active:scale-[0.99]
+                            disabled:pointer-events-none
+                            disabled:opacity-60
+                        "
                     >
-                        {submitting
-                            ? "Cadastrando..."
-                            : "Cadastrar"}
+                        {submitting && (
+                            <RiLoader4Line
+                                size={19}
+                                className="animate-spin"
+                            />
+                        )}
+
+                        <span className="truncate">
+                            {submitting
+                                ? "Criando conta..."
+                                : "Criar conta"}
+                        </span>
                     </button>
                 </form>
-
-                <p className="mt-4 text-center text-sm text-slate-600">
-                    Já possui uma conta?{" "}
-                    <Link
-                        to="/login"
-                        className="font-medium text-slate-900 underline"
-                    >
-                        Entrar
-                    </Link>
-                </p>
-            </section>
-        </main>
+            </div>
+        </>
     );
 }
 

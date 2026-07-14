@@ -1,13 +1,74 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="description"
+      content="Meu Saldo — sistema de gerenciamento financeiro pessoal."
+    />
+
+    <meta
+      id="theme-color"
+      name="theme-color"
+      content="#f8fafc"
+    />
+
+    <meta
+      name="color-scheme"
+      content="light dark"
+    />
+
+    <title>Meu Saldo</title>
+
+    <script>
+      (() => {
+        try {
+          const savedTheme = localStorage.getItem("theme");
+
+          const prefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches;
+
+          const shouldUseDarkTheme =
+            savedTheme === "dark" ||
+            (savedTheme !== "light" && prefersDark);
+
+          document.documentElement.classList.toggle(
+            "dark",
+            shouldUseDarkTheme,
+          );
+
+          document
+            .querySelector("#theme-color")
+            ?.setAttribute(
+              "content",
+              shouldUseDarkTheme ? "#09090b" : "#f8fafc",
+            );
+        } catch {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
   </head>
+
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <script
+      type="module"
+      src="/src/main.jsx"
+    ></script>
   </body>
 </html>

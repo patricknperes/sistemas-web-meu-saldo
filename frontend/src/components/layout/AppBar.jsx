@@ -1,82 +1,95 @@
 import {
-    FiBell,
-    FiMenu,
-    FiUser,
-} from "react-icons/fi";
+    RiMenuFoldLine,
+    RiMenuLine,
+    RiMenuUnfoldLine,
+} from "react-icons/ri";
 
-import {
-    Link,
-    useLocation,
-} from "react-router";
+import ThemeToggle from "../theme/ThemeToggle.jsx";
+import UserMenu from "./UserMenu.jsx";
 
-import { useAuth } from "../../hooks/useAuth.js";
-
-const pageTitles = {
-    "/dashboard": "Dashboard",
-    "/receitas": "Receitas",
-    "/despesas": "Despesas",
-    "/historico": "Histórico",
-    "/perfil": "Meu perfil",
-    "/usuarios": "Usuários",
-};
-
-function AppBar({ onMenuClick }) {
-    const location = useLocation();
-    const { user } = useAuth();
-
-    const pageTitle =
-        pageTitles[location.pathname] ??
-        "Minhas Finanças";
-
-    const roleLabel =
-        user?.role === "ADMIN"
-            ? "Administrador"
-            : "Usuário";
-
+function AppBar({
+    sidebarCollapsed,
+    mobileSidebarOpen,
+    onOpenMobileSidebar,
+    onToggleDesktopSidebar,
+}) {
     return (
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
-            <div className="flex min-w-0 items-center gap-3">
+        <header
+            className="
+                sticky top-0 z-20
+                flex h-16 shrink-0
+                items-center justify-between
+                border-b border-border
+                bg-surface/95
+                px-3
+                backdrop-blur-sm
+                sm:px-4
+            "
+        >
+            <div className="flex min-w-0 items-center">
                 <button
                     type="button"
-                    onClick={onMenuClick}
-                    aria-label="Abrir menu"
-                    className="rounded-md p-2 text-slate-700 hover:bg-slate-100 lg:hidden"
+                    onClick={onOpenMobileSidebar}
+                    aria-label="Abrir menu lateral"
+                    aria-expanded={mobileSidebarOpen}
+                    className="
+                        inline-flex size-9
+                        shrink-0
+                        items-center justify-center
+                        rounded-lg
+                        text-muted-foreground
+                        transition-colors
+                        hover:bg-surface-hover
+                        hover:text-foreground
+                        lg:hidden
+                    "
                 >
-                    <FiMenu size={22} />
+                    <RiMenuLine size={20} />
                 </button>
 
-                <h2 className="truncate text-lg font-semibold text-slate-800 sm:text-xl">
-                    {pageTitle}
-                </h2>
+                <button
+                    type="button"
+                    onClick={onToggleDesktopSidebar}
+                    aria-label={
+                        sidebarCollapsed
+                            ? "Expandir menu lateral"
+                            : "Recolher menu lateral"
+                    }
+                    aria-expanded={!sidebarCollapsed}
+                    title={
+                        sidebarCollapsed
+                            ? "Expandir menu"
+                            : "Recolher menu"
+                    }
+                    className="
+                        hidden size-9
+                        shrink-0
+                        items-center justify-center
+                        rounded-lg
+                        text-muted-foreground
+                        transition-colors
+                        hover:bg-surface-hover
+                        hover:text-foreground
+                        lg:inline-flex
+                    "
+                >
+                    {sidebarCollapsed ? (
+                        <RiMenuUnfoldLine size={19} />
+                    ) : (
+                        <RiMenuFoldLine size={19} />
+                    )}
+                </button>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-                <button
-                    type="button"
-                    aria-label="Notificações"
-                    className="hidden rounded-md p-2 text-slate-600 hover:bg-slate-100 sm:block"
-                >
-                    <FiBell size={20} />
-                </button>
+            <div
+                className="
+                    flex min-w-0
+                    items-center gap-1
+                "
+            >
+                <ThemeToggle />
 
-                <Link
-                    to="/perfil"
-                    className="flex items-center gap-3 rounded-md p-1 hover:bg-slate-100"
-                >
-                    <div className="hidden text-right md:block">
-                        <p className="max-w-40 truncate text-sm font-medium text-slate-800">
-                            {user?.name}
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-                            {roleLabel}
-                        </p>
-                    </div>
-
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-slate-700 sm:h-10 sm:w-10">
-                        <FiUser size={20} />
-                    </div>
-                </Link>
+                <UserMenu />
             </div>
         </header>
     );
