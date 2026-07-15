@@ -16,6 +16,7 @@ import {
 import {
     RiAlertLine,
     RiCloseLine,
+    RiDeleteBinLine,
     RiLoader4Line,
 } from "react-icons/ri";
 
@@ -29,11 +30,18 @@ function ConfirmDialog({
     onConfirm,
     onCancel,
 }) {
-    const titleId = useId();
-    const descriptionId = useId();
+    const titleId =
+        useId();
 
-    const dialogReference = useRef(null);
-    const cancelButtonReference = useRef(null);
+    const descriptionId =
+        useId();
+
+    const dialogReference =
+        useRef(null);
+
+    const cancelButtonReference =
+        useRef(null);
+
     const previousActiveElementReference =
         useRef(null);
 
@@ -48,22 +56,34 @@ function ConfirmDialog({
         const previousOverflow =
             document.body.style.overflow;
 
-        document.body.style.overflow = "hidden";
+        document.body.style.overflow =
+            "hidden";
 
-        const focusTimeout = window.setTimeout(() => {
-            cancelButtonReference.current?.focus();
-        }, 0);
+        const focusFrame =
+            window.requestAnimationFrame(
+                () => {
+                    cancelButtonReference
+                        .current
+                        ?.focus();
+                }
+            );
 
-        function handleKeyDown(event) {
+        function handleKeyDown(
+            event
+        ) {
             if (
-                event.key === "Escape" &&
+                event.key ===
+                "Escape" &&
                 !loading
             ) {
                 onCancel?.();
                 return;
             }
 
-            if (event.key !== "Tab") {
+            if (
+                event.key !==
+                "Tab"
+            ) {
                 return;
             }
 
@@ -75,18 +95,23 @@ function ConfirmDialog({
             }
 
             const focusableElements =
-                dialog.querySelectorAll(
-                    [
-                        "button:not(:disabled)",
-                        "a[href]",
-                        "input:not(:disabled)",
-                        "select:not(:disabled)",
-                        "textarea:not(:disabled)",
-                        '[tabindex]:not([tabindex="-1"])',
-                    ].join(",")
+                Array.from(
+                    dialog.querySelectorAll(
+                        [
+                            "button:not(:disabled)",
+                            "a[href]",
+                            "input:not(:disabled)",
+                            "select:not(:disabled)",
+                            "textarea:not(:disabled)",
+                            '[tabindex]:not([tabindex="-1"])',
+                        ].join(",")
+                    )
                 );
 
-            if (focusableElements.length === 0) {
+            if (
+                focusableElements.length ===
+                0
+            ) {
                 event.preventDefault();
                 return;
             }
@@ -96,20 +121,24 @@ function ConfirmDialog({
 
             const lastElement =
                 focusableElements[
-                focusableElements.length - 1
+                focusableElements.length -
+                1
                 ];
 
             if (
                 event.shiftKey &&
-                document.activeElement === firstElement
+                document.activeElement ===
+                firstElement
             ) {
                 event.preventDefault();
                 lastElement.focus();
+                return;
             }
 
             if (
                 !event.shiftKey &&
-                document.activeElement === lastElement
+                document.activeElement ===
+                lastElement
             ) {
                 event.preventDefault();
                 firstElement.focus();
@@ -122,7 +151,9 @@ function ConfirmDialog({
         );
 
         return () => {
-            window.clearTimeout(focusTimeout);
+            window.cancelAnimationFrame(
+                focusFrame
+            );
 
             document.body.style.overflow =
                 previousOverflow;
@@ -142,9 +173,12 @@ function ConfirmDialog({
         onCancel,
     ]);
 
-    function handleBackdropClick(event) {
+    function handleBackdropClick(
+        event
+    ) {
         if (
-            event.target === event.currentTarget &&
+            event.target ===
+            event.currentTarget &&
             !loading
         ) {
             onCancel?.();
@@ -167,7 +201,10 @@ function ConfirmDialog({
         onConfirm?.();
     }
 
-    if (typeof document === "undefined") {
+    if (
+        typeof document ===
+        "undefined"
+    ) {
         return null;
     }
 
@@ -177,7 +214,9 @@ function ConfirmDialog({
                 <motion.div
                     key="confirm-dialog-backdrop"
                     role="presentation"
-                    onMouseDown={handleBackdropClick}
+                    onMouseDown={
+                        handleBackdropClick
+                    }
                     initial={{
                         opacity: 0,
                     }}
@@ -188,24 +227,34 @@ function ConfirmDialog({
                         opacity: 0,
                     }}
                     transition={{
-                        duration: 0.18,
+                        duration: 0.2,
                     }}
                     className="
-                        fixed inset-0 z-[200]
-                        flex items-center justify-center
-                        bg-overlay
-                        p-4
+                        fixed inset-0
+                        z-[200]
+                        flex items-end
+                        justify-center
+                        bg-slate-950/55
+                        backdrop-blur-sm
+                        sm:items-center
+                        sm:p-5
                     "
                 >
                     <motion.div
-                        ref={dialogReference}
+                        ref={
+                            dialogReference
+                        }
                         role="dialog"
                         aria-modal="true"
-                        aria-labelledby={titleId}
-                        aria-describedby={descriptionId}
+                        aria-labelledby={
+                            titleId
+                        }
+                        aria-describedby={
+                            descriptionId
+                        }
                         initial={{
                             opacity: 0,
-                            y: 14,
+                            y: 28,
                             scale: 0.97,
                         }}
                         animate={{
@@ -215,11 +264,11 @@ function ConfirmDialog({
                         }}
                         exit={{
                             opacity: 0,
-                            y: 10,
+                            y: 20,
                             scale: 0.98,
                         }}
                         transition={{
-                            duration: 0.2,
+                            duration: 0.25,
                             ease: [
                                 0.22,
                                 1,
@@ -230,57 +279,207 @@ function ConfirmDialog({
                         className="
                             w-full max-w-md
                             overflow-hidden
-                            rounded-card
+                            rounded-t-[28px]
                             border border-border
                             bg-surface
                             text-foreground
-                            shadow-dialog
+                            shadow-2xl
+                            sm:rounded-[28px]
                         "
                     >
+                        <header
+                            className="
+                                relative
+                                isolate
+                                overflow-hidden
+                                bg-gradient-to-br
+                                from-rose-500
+                                via-rose-600
+                                to-red-700
+                                px-5 py-5
+                                text-white
+                                sm:px-6
+                            "
+                        >
+                            <div
+                                aria-hidden="true"
+                                className="
+                                    absolute
+                                    -right-10 -top-12
+                                    size-32
+                                    rounded-full
+                                    bg-white/15
+                                    blur-2xl
+                                "
+                            />
+
+                            <div
+                                aria-hidden="true"
+                                className="
+                                    absolute
+                                    -bottom-16 left-1/3
+                                    size-36
+                                    rounded-full
+                                    bg-black/10
+                                    blur-3xl
+                                "
+                            />
+
+                            <div
+                                className="
+                                    relative z-10
+                                    flex min-w-0
+                                    items-start gap-3
+                                "
+                            >
+                                <span
+                                    className="
+                                        flex size-11
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-2xl
+                                        bg-white/15
+                                        ring-1
+                                        ring-inset
+                                        ring-white/20
+                                        backdrop-blur-sm
+                                    "
+                                >
+                                    <RiAlertLine
+                                        size={21}
+                                        aria-hidden="true"
+                                    />
+                                </span>
+
+                                <div
+                                    className="
+                                        min-w-0 flex-1
+                                    "
+                                >
+                                    <span
+                                        className="
+                                            inline-flex
+                                            rounded-full
+                                            bg-white/15
+                                            px-2.5 py-1
+                                            text-[10px]
+                                            font-bold
+                                            uppercase
+                                            tracking-[0.1em]
+                                            text-white/85
+                                            ring-1
+                                            ring-inset
+                                            ring-white/15
+                                        "
+                                    >
+                                        Atenção
+                                    </span>
+
+                                    <h2
+                                        id={titleId}
+                                        title={title}
+                                        className="
+                                            mt-2
+                                            truncate
+                                            text-lg
+                                            font-semibold
+                                            tracking-tight
+                                            sm:text-xl
+                                        "
+                                    >
+                                        {title}
+                                    </h2>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleCancel
+                                    }
+                                    disabled={
+                                        loading
+                                    }
+                                    aria-label="Fechar diálogo"
+                                    title="Fechar"
+                                    className="
+                                        inline-flex size-10
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-white/10
+                                        text-white/80
+                                        ring-1
+                                        ring-inset
+                                        ring-white/15
+                                        transition
+                                        hover:bg-white/20
+                                        hover:text-white
+                                        focus-visible:outline-none
+                                        focus-visible:ring-4
+                                        focus-visible:ring-white/15
+                                        disabled:pointer-events-none
+                                        disabled:opacity-40
+                                    "
+                                >
+                                    <RiCloseLine
+                                        size={20}
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </div>
+                        </header>
+
                         <div
                             className="
-                                flex min-w-0
-                                items-start gap-4
-                                p-5
-                                sm:p-6
+                                px-5 py-5
+                                sm:px-6
                             "
                         >
                             <div
                                 className="
-                                    flex size-10 shrink-0
-                                    items-center justify-center
-                                    rounded-full
-                                    bg-danger-muted
-                                    text-danger
+                                    flex items-start
+                                    gap-3
+                                    rounded-2xl
+                                    border
+                                    border-rose-500/15
+                                    bg-rose-500/[0.045]
+                                    p-4
                                 "
                             >
-                                <RiAlertLine
-                                    size={21}
-                                    aria-hidden="true"
-                                />
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                                <h2
-                                    id={titleId}
-                                    title={title}
+                                <span
                                     className="
-                                        truncate
-                                        text-base font-semibold
-                                        text-foreground
+                                        mt-0.5
+                                        flex size-9
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-rose-500/10
+                                        text-rose-600
+                                        ring-1
+                                        ring-inset
+                                        ring-rose-500/15
+                                        dark:text-rose-400
                                     "
                                 >
-                                    {title}
-                                </h2>
+                                    <RiDeleteBinLine
+                                        size={17}
+                                        aria-hidden="true"
+                                    />
+                                </span>
 
                                 <p
-                                    id={descriptionId}
+                                    id={
+                                        descriptionId
+                                    }
                                     className="
-                                        mt-1.5
-                                        max-h-24
+                                        max-h-32
                                         overflow-y-auto
                                         break-words
-                                        text-sm leading-6
+                                        text-sm
+                                        leading-6
                                         text-muted-foreground
                                         scrollbar-subtle
                                     "
@@ -289,59 +488,65 @@ function ConfirmDialog({
                                 </p>
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                disabled={loading}
-                                aria-label="Fechar diálogo"
-                                title="Fechar"
+                            <p
                                 className="
-                                    -mr-2 -mt-2
-                                    inline-flex size-9
-                                    shrink-0
-                                    items-center justify-center
-                                    rounded-lg
+                                    mt-4
+                                    text-xs
+                                    leading-5
                                     text-muted-foreground
-                                    transition-colors
-                                    hover:bg-surface-hover
-                                    hover:text-foreground
-                                    disabled:pointer-events-none
-                                    disabled:opacity-50
                                 "
                             >
-                                <RiCloseLine size={20} />
-                            </button>
+                                Confirme apenas se tiver certeza. Esta ação pode não ser reversível.
+                            </p>
                         </div>
 
-                        <div
+                        <footer
                             className="
-                                flex flex-col-reverse
-                                gap-2
-                                border-t border-border
-                                bg-surface-muted/40
-                                p-4
+                                flex
+                                flex-col-reverse
+                                gap-2.5
+                                border-t
+                                border-border
+                                bg-surface-muted/35
+                                px-5 py-4
                                 sm:flex-row
                                 sm:justify-end
+                                sm:px-6
                             "
                         >
                             <button
-                                ref={cancelButtonReference}
+                                ref={
+                                    cancelButtonReference
+                                }
                                 type="button"
-                                onClick={handleCancel}
-                                disabled={loading}
+                                onClick={
+                                    handleCancel
+                                }
+                                disabled={
+                                    loading
+                                }
                                 className="
-                                    inline-flex min-h-11
-                                    items-center justify-center
-                                    rounded-control
+                                    inline-flex
+                                    min-h-11
+                                    w-full
+                                    items-center
+                                    justify-center
+                                    rounded-xl
                                     border border-border
                                     bg-surface
-                                    px-4
-                                    text-sm font-medium
+                                    px-5
+                                    text-sm
+                                    font-semibold
                                     text-foreground
-                                    transition-colors
+                                    transition
+                                    hover:border-border-strong
                                     hover:bg-surface-hover
+                                    focus-visible:outline-none
+                                    focus-visible:ring-2
+                                    focus-visible:ring-ring/20
                                     disabled:pointer-events-none
                                     disabled:opacity-50
+                                    sm:w-auto
                                 "
                             >
                                 <span className="truncate">
@@ -351,40 +556,66 @@ function ConfirmDialog({
 
                             <button
                                 type="button"
-                                onClick={handleConfirm}
-                                disabled={loading}
-                                aria-busy={loading}
+                                onClick={
+                                    handleConfirm
+                                }
+                                disabled={
+                                    loading
+                                }
+                                aria-busy={
+                                    loading
+                                }
                                 className="
-                                    inline-flex min-h-11
-                                    items-center justify-center
+                                    inline-flex
+                                    min-h-11
+                                    w-full
+                                    items-center
+                                    justify-center
                                     gap-2
-                                    rounded-control
-                                    bg-danger
-                                    px-4
-                                    text-sm font-medium
+                                    rounded-xl
+                                    bg-gradient-to-r
+                                    from-rose-500
+                                    via-rose-600
+                                    to-red-700
+                                    px-5
+                                    text-sm
+                                    font-semibold
                                     text-white
-                                    transition-colors
-                                    hover:bg-danger-hover
+                                    shadow-lg
+                                    shadow-rose-500/20
+                                    transition
+                                    hover:-translate-y-0.5
+                                    hover:shadow-xl
+                                    hover:shadow-rose-500/25
+                                    focus-visible:outline-none
+                                    focus-visible:ring-2
+                                    focus-visible:ring-rose-500/25
                                     disabled:pointer-events-none
                                     disabled:opacity-60
-                                    dark:text-zinc-950
+                                    sm:w-auto
                                 "
                             >
-                                {loading && (
+                                {loading ? (
                                     <RiLoader4Line
                                         size={18}
                                         aria-hidden="true"
                                         className="animate-spin"
+                                    />
+                                ) : (
+                                    <RiDeleteBinLine
+                                        size={18}
+                                        aria-hidden="true"
                                     />
                                 )}
 
                                 <span className="truncate">
                                     {loading
                                         ? "Excluindo..."
-                                        : confirmLabel}
+                                        : confirmLabel
+                                    }
                                 </span>
                             </button>
-                        </div>
+                        </footer>
                     </motion.div>
                 </motion.div>
             )}

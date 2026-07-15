@@ -20,65 +20,136 @@ function AppBar({
                 flex h-16 shrink-0
                 items-center justify-between
                 border-b border-border
-                bg-surface/95
+                bg-surface/90
                 px-3
-                backdrop-blur-sm
-                sm:px-4
+                backdrop-blur-xl
+                supports-[backdrop-filter]:bg-surface/80
+                sm:px-5
             "
         >
-            <div className="flex min-w-0 items-center">
+            <div
+                className="
+                    flex min-w-0
+                    items-center gap-3
+                "
+            >
                 <button
                     type="button"
-                    onClick={onOpenMobileSidebar}
+                    onClick={
+                        onOpenMobileSidebar
+                    }
                     aria-label="Abrir menu lateral"
-                    aria-expanded={mobileSidebarOpen}
+                    aria-expanded={
+                        mobileSidebarOpen
+                    }
+                    title="Abrir menu"
                     className="
-                        inline-flex size-9
+                        flex size-10
                         shrink-0
-                        items-center justify-center
-                        rounded-lg
+                        items-center
+                        justify-center
+                        rounded-xl
                         text-muted-foreground
-                        transition-colors
+                        outline-none
+                        transition
                         hover:bg-surface-hover
                         hover:text-foreground
+                        focus-visible:ring-2
+                        focus-visible:ring-ring/20
+                        active:scale-95
                         lg:hidden
                     "
                 >
-                    <RiMenuLine size={20} />
+                    <RiMenuLine
+                        size={21}
+                        aria-hidden="true"
+                    />
                 </button>
 
                 <button
                     type="button"
-                    onClick={onToggleDesktopSidebar}
+                    onClick={
+                        onToggleDesktopSidebar
+                    }
                     aria-label={
                         sidebarCollapsed
                             ? "Expandir menu lateral"
                             : "Recolher menu lateral"
                     }
-                    aria-expanded={!sidebarCollapsed}
+                    aria-expanded={
+                        !sidebarCollapsed
+                    }
                     title={
                         sidebarCollapsed
                             ? "Expandir menu"
                             : "Recolher menu"
                     }
                     className="
-                        hidden size-9
+                        hidden size-10
                         shrink-0
-                        items-center justify-center
-                        rounded-lg
+                        items-center
+                        justify-center
+                        rounded-xl
                         text-muted-foreground
-                        transition-colors
+                        outline-none
+                        transition
                         hover:bg-surface-hover
                         hover:text-foreground
-                        lg:inline-flex
+                        focus-visible:ring-2
+                        focus-visible:ring-ring/20
+                        active:scale-95
+                        lg:flex
                     "
                 >
                     {sidebarCollapsed ? (
-                        <RiMenuUnfoldLine size={19} />
+                        <RiMenuUnfoldLine
+                            size={20}
+                            aria-hidden="true"
+                        />
                     ) : (
-                        <RiMenuFoldLine size={19} />
+                        <RiMenuFoldLine
+                            size={20}
+                            aria-hidden="true"
+                        />
                     )}
                 </button>
+
+                <div
+                    aria-hidden="true"
+                    className="
+                        hidden h-5 w-px
+                        bg-border
+                        lg:block
+                    "
+                />
+
+                <div
+                    className="
+                        hidden min-w-0
+                        lg:block
+                    "
+                >
+                    <p
+                        className="
+                            truncate
+                            text-sm
+                            font-semibold
+                            text-foreground
+                        "
+                    >
+                        Meu Saldo
+                    </p>
+
+                    <p
+                        className="
+                            mt-0.5 truncate
+                            text-[11px]
+                            text-muted-foreground
+                        "
+                    >
+                        Controle financeiro
+                    </p>
+                </div>
             </div>
 
             <div
@@ -88,6 +159,14 @@ function AppBar({
                 "
             >
                 <ThemeToggle />
+
+                <div
+                    aria-hidden="true"
+                    className="
+                        mx-1 h-5 w-px
+                        bg-border
+                    "
+                />
 
                 <UserMenu />
             </div>

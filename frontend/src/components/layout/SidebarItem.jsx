@@ -17,7 +17,10 @@ function SidebarItem({
     return (
         <NavLink
             to={item.path}
-            end={item.path === "/dashboard"}
+            end={
+                item.path ===
+                "/dashboard"
+            }
             onClick={onNavigate}
             title={
                 collapsed
@@ -25,7 +28,10 @@ function SidebarItem({
                     : undefined
             }
             aria-label={item.label}
-            className={({ isActive }) => `
+            className={({
+                isActive,
+            }) => `
+                group
                 relative
                 grid h-11 min-w-0
                 items-center
@@ -33,8 +39,10 @@ function SidebarItem({
                 rounded-xl
                 text-sm font-medium
                 outline-none
-                transition-colors
+                transition-all
                 duration-200
+                focus-visible:ring-2
+                focus-visible:ring-blue-500/20
 
                 ${collapsed
                     ? `
@@ -50,9 +58,7 @@ function SidebarItem({
                 }
 
                 ${isActive
-                    ? `
-                            text-primary-foreground
-                        `
+                    ? "text-white"
                     : `
                             text-muted-foreground
                             hover:bg-surface-hover
@@ -69,14 +75,17 @@ function SidebarItem({
                             aria-hidden="true"
                             transition={{
                                 type: "spring",
-                                stiffness: 480,
+                                stiffness: 460,
                                 damping: 38,
-                                mass: 0.7,
+                                mass: 0.72,
                             }}
                             className={`
                                 absolute z-0
-                                bg-primary
-                                shadow-sm
+                                bg-gradient-to-r
+                                from-blue-600
+                                to-indigo-600
+                                shadow-md
+                                shadow-blue-500/20
 
                                 ${collapsed
                                     ? `

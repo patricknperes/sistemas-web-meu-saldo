@@ -1,6 +1,11 @@
 import {
-    FiArrowLeft,
+    motion,
+} from "motion/react";
+
+import {
     FiAlertCircle,
+    FiArrowLeft,
+    FiHome,
 } from "react-icons/fi";
 
 import {
@@ -9,34 +14,300 @@ import {
 
 function NotFound() {
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-            <section className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-8 text-center">
-                <FiAlertCircle
-                    size={48}
-                    className="mx-auto mb-4 text-slate-500"
+        <main
+            className="
+                relative
+                flex min-h-screen
+                items-center
+                justify-center
+                overflow-hidden
+                bg-background
+                px-4 py-10
+                text-foreground
+                sm:px-6
+            "
+        >
+            <div
+                aria-hidden="true"
+                className="
+                    pointer-events-none
+                    absolute inset-0
+                    overflow-hidden
+                "
+            >
+                <div
+                    className="
+                        absolute
+                        -right-32 -top-40
+                        size-[360px]
+                        rounded-full
+                        bg-primary/[0.06]
+                        blur-3xl
+                    "
                 />
 
-                <p className="mb-2 text-sm font-medium text-slate-500">
-                    Erro 404
-                </p>
+                <div
+                    className="
+                        absolute
+                        -bottom-44 -left-28
+                        size-[340px]
+                        rounded-full
+                        bg-sky-500/[0.05]
+                        blur-3xl
+                    "
+                />
+            </div>
 
-                <h1 className="mb-3 text-2xl font-bold text-slate-800">
-                    Página não encontrada
-                </h1>
+            <motion.section
+                initial={{
+                    opacity: 0,
+                    y: 18,
+                    scale: 0.98,
+                }}
+                animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                }}
+                transition={{
+                    duration: 0.35,
+                    ease: [
+                        0.22,
+                        1,
+                        0.36,
+                        1,
+                    ],
+                }}
+                className="
+                    relative
+                    w-full max-w-lg
+                    overflow-hidden
+                    rounded-[30px]
+                    border border-border
+                    bg-surface
+                    shadow-2xl
+                    shadow-slate-950/10
+                "
+            >
+                <div
+                    aria-hidden="true"
+                    className="
+                        h-1.5 w-full
+                        bg-gradient-to-r
+                        from-sky-500
+                        via-blue-600
+                        to-indigo-600
+                    "
+                />
 
-                <p className="mb-6 text-sm text-slate-600">
-                    O endereço acessado não existe ou foi removido.
-                </p>
-
-                <Link
-                    to="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-4 py-2 text-sm text-white"
+                <div
+                    className="
+                        relative
+                        px-5 py-8
+                        text-center
+                        sm:px-8
+                        sm:py-10
+                    "
                 >
-                    <FiArrowLeft />
+                    <span
+                        aria-hidden="true"
+                        className="
+                            pointer-events-none
+                            absolute
+                            left-1/2 top-5
+                            -translate-x-1/2
+                            select-none
+                            text-[108px]
+                            font-black
+                            leading-none
+                            tracking-tighter
+                            text-primary/[0.045]
+                            sm:text-[132px]
+                        "
+                    >
+                        404
+                    </span>
 
-                    Voltar para a Dashboard
-                </Link>
-            </section>
+                    <motion.div
+                        initial={{
+                            rotate: -8,
+                            scale: 0.85,
+                        }}
+                        animate={{
+                            rotate: 0,
+                            scale: 1,
+                        }}
+                        transition={{
+                            delay: 0.08,
+                            type: "spring",
+                            stiffness: 280,
+                            damping: 18,
+                        }}
+                        className="
+                            relative
+                            mx-auto
+                            flex size-16
+                            items-center
+                            justify-center
+                            rounded-2xl
+                            bg-gradient-to-br
+                            from-sky-500
+                            via-blue-600
+                            to-indigo-700
+                            text-white
+                            shadow-lg
+                            shadow-blue-500/25
+                        "
+                    >
+                        <FiAlertCircle
+                            size={28}
+                            aria-hidden="true"
+                        />
+                    </motion.div>
+
+                    <span
+                        className="
+                            mt-6
+                            inline-flex
+                            items-center
+                            rounded-full
+                            bg-primary-muted
+                            px-3 py-1.5
+                            text-[11px]
+                            font-bold
+                            uppercase
+                            tracking-[0.12em]
+                            text-primary
+                        "
+                    >
+                        Erro 404
+                    </span>
+
+                    <h1
+                        className="
+                            mt-4
+                            text-2xl
+                            font-semibold
+                            tracking-tight
+                            text-foreground
+                            sm:text-3xl
+                        "
+                    >
+                        Página não encontrada
+                    </h1>
+
+                    <p
+                        className="
+                            mx-auto mt-3
+                            max-w-md
+                            text-sm
+                            leading-6
+                            text-muted-foreground
+                        "
+                    >
+                        O endereço acessado não existe, foi alterado ou não está mais disponível.
+                    </p>
+
+                    <div
+                        className="
+                            mt-7
+                            flex flex-col
+                            gap-2.5
+                            sm:flex-row
+                            sm:justify-center
+                        "
+                    >
+                        <Link
+                            to="/dashboard"
+                            className="
+                                inline-flex
+                                min-h-11
+                                w-full
+                                items-center
+                                justify-center
+                                gap-2
+                                rounded-xl
+                                bg-gradient-to-r
+                                from-sky-500
+                                via-blue-600
+                                to-indigo-700
+                                px-5
+                                text-sm
+                                font-semibold
+                                text-white
+                                shadow-lg
+                                shadow-blue-500/20
+                                transition
+                                hover:-translate-y-0.5
+                                hover:shadow-xl
+                                hover:shadow-blue-500/25
+                                focus-visible:outline-none
+                                focus-visible:ring-4
+                                focus-visible:ring-blue-500/20
+                                sm:w-auto
+                            "
+                        >
+                            <FiHome
+                                size={17}
+                                aria-hidden="true"
+                            />
+
+                            Ir para a Dashboard
+                        </Link>
+
+                        <Link
+                            to="/"
+                            className="
+                                inline-flex
+                                min-h-11
+                                w-full
+                                items-center
+                                justify-center
+                                gap-2
+                                rounded-xl
+                                border border-border
+                                bg-surface
+                                px-5
+                                text-sm
+                                font-semibold
+                                text-foreground
+                                transition
+                                hover:border-border-strong
+                                hover:bg-surface-hover
+                                focus-visible:outline-none
+                                focus-visible:ring-4
+                                focus-visible:ring-ring/10
+                                sm:w-auto
+                            "
+                        >
+                            <FiArrowLeft
+                                size={17}
+                                aria-hidden="true"
+                            />
+
+                            Voltar ao início
+                        </Link>
+                    </div>
+                </div>
+
+                <footer
+                    className="
+                        border-t border-border
+                        bg-surface-muted/35
+                        px-5 py-4
+                        text-center
+                    "
+                >
+                    <p
+                        className="
+                            text-xs
+                            text-muted-foreground
+                        "
+                    >
+                        Verifique o endereço informado ou retorne à área principal do sistema.
+                    </p>
+                </footer>
+            </motion.section>
         </main>
     );
 }

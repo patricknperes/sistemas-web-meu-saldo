@@ -2,23 +2,35 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 
 import {
+    AnimatePresence,
+    motion,
+} from "motion/react";
+
+import {
+    createPortal,
+} from "react-dom";
+
+import {
     FiAlertCircle,
+    FiCheck,
     FiChevronDown,
+    FiFilter,
     FiLoader,
     FiRefreshCw,
     FiSearch,
     FiShield,
-    FiToggleLeft,
-    FiToggleRight,
+    FiPower,
     FiTrash2,
     FiUser,
     FiUserCheck,
     FiUsers,
     FiUserX,
+    FiX,
 } from "react-icons/fi";
 
 import ConfirmDialog from "../../components/feedback/ConfirmDialog.jsx";
@@ -153,6 +165,1297 @@ function SummaryCard({
                 </p>
             </div>
         </article>
+    );
+}
+
+
+
+const ROLE_OPTIONS = [
+    {
+        value: "USER",
+        label: "Usuário",
+        description:
+            "Acesso padrão às funções do sistema.",
+        icon: FiUser,
+        iconClass:
+            "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+        selectedClass:
+            "border-sky-500/25 bg-sky-500/[0.06]",
+    },
+    {
+        value: "ADMIN",
+        label: "Administrador",
+        description:
+            "Gerencia usuários, funções e permissões.",
+        icon: FiShield,
+        iconClass:
+            "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+        selectedClass:
+            "border-violet-500/25 bg-violet-500/[0.06]",
+    },
+];
+
+function RoleSelect({
+    userName,
+    value = "USER",
+    loading = false,
+    disabled = false,
+    ownAccount = false,
+    compact = false,
+    onChange,
+}) {
+    const [
+        open,
+        setOpen,
+    ] = useState(false);
+
+    const [
+        position,
+        setPosition,
+    ] = useState({
+        top: 0,
+        left: 0,
+        width: 220,
+    });
+
+    const triggerReference =
+        useRef(null);
+
+    const menuReference =
+        useRef(null);
+
+    const selectedOption =
+        ROLE_OPTIONS.find(
+            (option) =>
+                option.value === value
+        ) ??
+        ROLE_OPTIONS[0];
+
+    const SelectedIcon =
+        selectedOption.icon;
+
+    function updatePosition() {
+        const trigger =
+            triggerReference.current;
+
+        if (!trigger) {
+            return;
+        }
+
+        const rectangle =
+            trigger.getBoundingClientRect();
+
+        const viewportPadding = 12;
+        const menuWidth =
+            Math.max(
+                compact
+                    ? rectangle.width
+                    : 220,
+                rectangle.width
+            );
+
+        const clampedWidth =
+            Math.min(
+                menuWidth,
+                window.innerWidth -
+                viewportPadding * 2
+            );
+
+        const estimatedMenuHeight =
+            154;
+
+        const spaceBelow =
+            window.innerHeight -
+            rectangle.bottom;
+
+        const shouldOpenAbove =
+            spaceBelow <
+            estimatedMenuHeight +
+            16 &&
+            rectangle.top >
+            estimatedMenuHeight +
+            16;
+
+        const preferredLeft =
+            compact
+                ? rectangle.left
+                : rectangle.right -
+                clampedWidth;
+
+        const clampedLeft =
+            Math.min(
+                Math.max(
+                    preferredLeft,
+                    viewportPadding
+                ),
+                window.innerWidth -
+                clampedWidth -
+                viewportPadding
+            );
+
+        setPosition({
+            top: shouldOpenAbove
+                ? rectangle.top -
+                estimatedMenuHeight -
+                8
+                : rectangle.bottom + 8,
+
+            left: clampedLeft,
+            width: clampedWidth,
+        });
+    }
+
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+
+        updatePosition();
+
+        function handlePointerDown(
+            event
+        ) {
+            const clickedTrigger =
+                triggerReference.current
+                    ?.contains(
+                        event.target
+                    );
+
+            const clickedMenu =
+                menuReference.current
+                    ?.contains(
+                        event.target
+                    );
+
+            if (
+                !clickedTrigger &&
+                !clickedMenu
+            ) {
+                setOpen(false);
+            }
+        }
+
+        function handleKeyDown(
+            event
+        ) {
+            if (
+                event.key ===
+                "Escape"
+            ) {
+                event.preventDefault();
+                setOpen(false);
+
+                triggerReference
+                    .current
+                    ?.focus();
+            }
+        }
+
+        function handleViewportChange() {
+            setOpen(false);
+        }
+
+        document.addEventListener(
+            "pointerdown",
+            handlePointerDown
+        );
+
+        window.addEventListener(
+            "keydown",
+            handleKeyDown
+        );
+
+        window.addEventListener(
+            "resize",
+            handleViewportChange
+        );
+
+        window.addEventListener(
+            "scroll",
+            handleViewportChange,
+            true
+        );
+
+        return () => {
+            document.removeEventListener(
+                "pointerdown",
+                handlePointerDown
+            );
+
+            window.removeEventListener(
+                "keydown",
+                handleKeyDown
+            );
+
+            window.removeEventListener(
+                "resize",
+                handleViewportChange
+            );
+
+            window.removeEventListener(
+                "scroll",
+                handleViewportChange,
+                true
+            );
+        };
+    }, [open]);
+
+    function toggleOpen() {
+        if (
+            disabled ||
+            loading
+        ) {
+            return;
+        }
+
+        if (!open) {
+            updatePosition();
+        }
+
+        setOpen(
+            (currentValue) =>
+                !currentValue
+        );
+    }
+
+    function selectRole(nextRole) {
+        if (
+            nextRole === value
+        ) {
+            setOpen(false);
+            return;
+        }
+
+        onChange?.(nextRole);
+        setOpen(false);
+    }
+
+    const dropdown =
+        typeof document !==
+            "undefined"
+            ? createPortal(
+                <AnimatePresence>
+                    {open && (
+                        <motion.div
+                            ref={
+                                menuReference
+                            }
+                            role="listbox"
+                            aria-label={`Selecionar função de ${userName}`}
+                            initial={{
+                                opacity: 0,
+                                y: -6,
+                                scale: 0.97,
+                            }}
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                            }}
+                            exit={{
+                                opacity: 0,
+                                y: -4,
+                                scale: 0.98,
+                            }}
+                            transition={{
+                                duration: 0.17,
+                                ease: [
+                                    0.22,
+                                    1,
+                                    0.36,
+                                    1,
+                                ],
+                            }}
+                            style={{
+                                position: "fixed",
+                                top:
+                                    position.top,
+
+                                left:
+                                    position.left,
+
+                                width:
+                                    position.width,
+
+                                zIndex: 400,
+                            }}
+                            className="
+                                overflow-hidden
+                                rounded-2xl
+                                border border-border
+                                bg-surface
+                                p-1.5
+                                text-foreground
+                                shadow-2xl
+                                shadow-slate-950/15
+                                backdrop-blur-xl
+                            "
+                        >
+                            {ROLE_OPTIONS.map(
+                                (option) => {
+                                    const OptionIcon =
+                                        option.icon;
+
+                                    const selected =
+                                        option.value ===
+                                        value;
+
+                                    return (
+                                        <button
+                                            key={
+                                                option.value
+                                            }
+                                            type="button"
+                                            role="option"
+                                            aria-selected={
+                                                selected
+                                            }
+                                            onClick={() =>
+                                                selectRole(
+                                                    option.value
+                                                )
+                                            }
+                                            className={`
+                                                flex w-full
+                                                min-w-0
+                                                items-center
+                                                gap-3
+                                                rounded-xl
+                                                border
+                                                px-2.5 py-2.5
+                                                text-left
+                                                outline-none
+                                                transition
+                                                focus-visible:ring-2
+                                                focus-visible:ring-ring/20
+
+                                                ${selected
+                                                    ? option.selectedClass
+                                                    : `
+                                                            border-transparent
+                                                            hover:bg-surface-hover
+                                                        `
+                                                }
+                                            `}
+                                        >
+                                            <span
+                                                className={`
+                                                    flex size-9
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-xl
+
+                                                    ${option.iconClass}
+                                                `}
+                                            >
+                                                <OptionIcon
+                                                    size={17}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+
+                                            <span
+                                                className="
+                                                    min-w-0
+                                                    flex-1
+                                                "
+                                            >
+                                                <span
+                                                    className="
+                                                        block truncate
+                                                        text-xs
+                                                        font-semibold
+                                                        text-foreground
+                                                    "
+                                                >
+                                                    {
+                                                        option.label
+                                                    }
+                                                </span>
+
+                                                <span
+                                                    className="
+                                                        mt-0.5
+                                                        block
+                                                        line-clamp-1
+                                                        text-[10px]
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    {
+                                                        option.description
+                                                    }
+                                                </span>
+                                            </span>
+
+                                            {selected && (
+                                                <span
+                                                    className="
+                                                        flex size-6
+                                                        shrink-0
+                                                        items-center
+                                                        justify-center
+                                                        rounded-full
+                                                        bg-primary
+                                                        text-primary-foreground
+                                                    "
+                                                >
+                                                    <FiCheck
+                                                        size={13}
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                }
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )
+            : null;
+
+    return (
+        <>
+            <button
+                ref={
+                    triggerReference
+                }
+                type="button"
+                onClick={
+                    toggleOpen
+                }
+                disabled={
+                    disabled ||
+                    loading
+                }
+                aria-label={`Função de ${userName}`}
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                title={
+                    ownAccount
+                        ? "Você não pode alterar a função da própria conta"
+                        : `Alterar função de ${userName}`
+                }
+                className={`
+                    group
+                    flex min-w-0
+                    items-center
+                    justify-between
+                    gap-2
+                    rounded-xl
+                    border border-border
+                    bg-background
+                    px-2.5
+                    text-left
+                    outline-none
+                    transition
+                    hover:border-border-strong
+                    hover:bg-surface-hover
+                    focus-visible:ring-2
+                    focus-visible:ring-ring/20
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
+
+                    ${compact
+                        ? "h-9 w-full"
+                        : "h-9 w-full max-w-44"
+                    }
+                `}
+            >
+                <span
+                    className="
+                        flex min-w-0
+                        items-center gap-2
+                    "
+                >
+                    <span
+                        className={`
+                            flex size-7
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-lg
+
+                            ${selectedOption.iconClass}
+                        `}
+                    >
+                        {loading ? (
+                            <FiLoader
+                                size={14}
+                                aria-hidden="true"
+                                className="animate-spin"
+                            />
+                        ) : (
+                            <SelectedIcon
+                                size={14}
+                                aria-hidden="true"
+                            />
+                        )}
+                    </span>
+
+                    <span
+                        className="
+                            truncate
+                            text-xs
+                            font-semibold
+                            text-foreground
+                        "
+                    >
+                        {loading
+                            ? "Atualizando..."
+                            : selectedOption.label
+                        }
+                    </span>
+                </span>
+
+                <FiChevronDown
+                    size={15}
+                    aria-hidden="true"
+                    className={`
+                        shrink-0
+                        text-muted-foreground
+                        transition-transform
+                        duration-200
+
+                        ${open
+                            ? "rotate-180"
+                            : ""
+                        }
+                    `}
+                />
+            </button>
+
+            {dropdown}
+        </>
+    );
+}
+
+
+const ROLE_FILTER_OPTIONS = [
+    {
+        value: "ALL",
+        label: "Todas as funções",
+        description:
+            "Exibe usuários e administradores.",
+        icon: FiUsers,
+        iconClass:
+            "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+    },
+    {
+        value: "USER",
+        label: "Usuários",
+        description:
+            "Exibe somente contas com acesso padrão.",
+        icon: FiUser,
+        iconClass:
+            "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    },
+    {
+        value: "ADMIN",
+        label: "Administradores",
+        description:
+            "Exibe somente contas administrativas.",
+        icon: FiShield,
+        iconClass:
+            "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+    },
+];
+
+const STATUS_FILTER_OPTIONS = [
+    {
+        value: "ALL",
+        label: "Todos os acessos",
+        description:
+            "Exibe contas ativas e suspensas.",
+        icon: FiFilter,
+        iconClass:
+            "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+    },
+    {
+        value: "ACTIVE",
+        label: "Acesso ativo",
+        description:
+            "Exibe quem pode entrar no sistema.",
+        icon: FiUserCheck,
+        iconClass:
+            "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    },
+    {
+        value: "INACTIVE",
+        label: "Acesso suspenso",
+        description:
+            "Exibe contas sem acesso ao sistema.",
+        icon: FiUserX,
+        iconClass:
+            "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    },
+];
+
+function FilterSelect({
+    label,
+    value,
+    options,
+    onChange,
+}) {
+    const [open, setOpen] =
+        useState(false);
+
+    const [position, setPosition] =
+        useState({
+            top: 0,
+            left: 0,
+            width: 250,
+        });
+
+    const triggerReference =
+        useRef(null);
+
+    const menuReference =
+        useRef(null);
+
+    const selectedOption =
+        options.find(
+            (option) =>
+                option.value === value
+        ) ?? options[0];
+
+    const SelectedIcon =
+        selectedOption.icon;
+
+    const active =
+        value !== "ALL";
+
+    function updatePosition() {
+        const trigger =
+            triggerReference.current;
+
+        if (!trigger) {
+            return;
+        }
+
+        const rectangle =
+            trigger.getBoundingClientRect();
+
+        const viewportPadding = 12;
+        const desiredWidth =
+            Math.max(
+                rectangle.width,
+                250
+            );
+
+        const width =
+            Math.min(
+                desiredWidth,
+                window.innerWidth -
+                viewportPadding * 2
+            );
+
+        const estimatedHeight =
+            options.length * 58 + 12;
+
+        const spaceBelow =
+            window.innerHeight -
+            rectangle.bottom;
+
+        const openAbove =
+            spaceBelow <
+            estimatedHeight + 16 &&
+            rectangle.top >
+            estimatedHeight + 16;
+
+        const left =
+            Math.min(
+                Math.max(
+                    rectangle.right - width,
+                    viewportPadding
+                ),
+                window.innerWidth -
+                width -
+                viewportPadding
+            );
+
+        setPosition({
+            top: openAbove
+                ? rectangle.top -
+                estimatedHeight - 8
+                : rectangle.bottom + 8,
+            left,
+            width,
+        });
+    }
+
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+
+        updatePosition();
+
+        function handlePointerDown(
+            event
+        ) {
+            const clickedTrigger =
+                triggerReference.current
+                    ?.contains(
+                        event.target
+                    );
+
+            const clickedMenu =
+                menuReference.current
+                    ?.contains(
+                        event.target
+                    );
+
+            if (
+                !clickedTrigger &&
+                !clickedMenu
+            ) {
+                setOpen(false);
+            }
+        }
+
+        function handleKeyDown(event) {
+            if (
+                event.key === "Escape"
+            ) {
+                event.preventDefault();
+                setOpen(false);
+
+                triggerReference.current
+                    ?.focus();
+            }
+        }
+
+        function closeOnViewportChange() {
+            setOpen(false);
+        }
+
+        document.addEventListener(
+            "pointerdown",
+            handlePointerDown
+        );
+
+        window.addEventListener(
+            "keydown",
+            handleKeyDown
+        );
+
+        window.addEventListener(
+            "resize",
+            closeOnViewportChange
+        );
+
+        window.addEventListener(
+            "scroll",
+            closeOnViewportChange,
+            true
+        );
+
+        return () => {
+            document.removeEventListener(
+                "pointerdown",
+                handlePointerDown
+            );
+
+            window.removeEventListener(
+                "keydown",
+                handleKeyDown
+            );
+
+            window.removeEventListener(
+                "resize",
+                closeOnViewportChange
+            );
+
+            window.removeEventListener(
+                "scroll",
+                closeOnViewportChange,
+                true
+            );
+        };
+    }, [open]);
+
+    function toggleOpen() {
+        if (!open) {
+            updatePosition();
+        }
+
+        setOpen(
+            (currentValue) =>
+                !currentValue
+        );
+    }
+
+    function selectOption(
+        nextValue
+    ) {
+        onChange(nextValue);
+        setOpen(false);
+    }
+
+    const dropdown =
+        typeof document !==
+            "undefined"
+            ? createPortal(
+                <AnimatePresence>
+                    {open && (
+                        <motion.div
+                            ref={
+                                menuReference
+                            }
+                            role="listbox"
+                            aria-label={label}
+                            initial={{
+                                opacity: 0,
+                                y: -6,
+                                scale: 0.97,
+                            }}
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                scale: 1,
+                            }}
+                            exit={{
+                                opacity: 0,
+                                y: -4,
+                                scale: 0.98,
+                            }}
+                            transition={{
+                                duration: 0.17,
+                                ease: [
+                                    0.22,
+                                    1,
+                                    0.36,
+                                    1,
+                                ],
+                            }}
+                            style={{
+                                position: "fixed",
+                                top: position.top,
+                                left: position.left,
+                                width:
+                                    position.width,
+                                zIndex: 410,
+                            }}
+                            className="
+                                overflow-hidden
+                                rounded-2xl
+                                border border-border
+                                bg-surface
+                                p-1.5
+                                text-foreground
+                                shadow-2xl
+                                shadow-slate-950/15
+                                backdrop-blur-xl
+                            "
+                        >
+                            {options.map(
+                                (option) => {
+                                    const OptionIcon =
+                                        option.icon;
+
+                                    const selected =
+                                        option.value ===
+                                        value;
+
+                                    return (
+                                        <button
+                                            key={
+                                                option.value
+                                            }
+                                            type="button"
+                                            role="option"
+                                            aria-selected={
+                                                selected
+                                            }
+                                            onClick={() =>
+                                                selectOption(
+                                                    option.value
+                                                )
+                                            }
+                                            className={`
+                                                flex w-full
+                                                min-w-0
+                                                items-center
+                                                gap-3
+                                                rounded-xl
+                                                border
+                                                px-2.5 py-2.5
+                                                text-left
+                                                outline-none
+                                                transition
+                                                focus-visible:ring-2
+                                                focus-visible:ring-ring/20
+
+                                                ${selected
+                                                    ? `
+                                                            border-primary/20
+                                                            bg-primary-muted
+                                                        `
+                                                    : `
+                                                            border-transparent
+                                                            hover:bg-surface-hover
+                                                        `
+                                                }
+                                            `}
+                                        >
+                                            <span
+                                                className={`
+                                                    flex size-9
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-xl
+
+                                                    ${option.iconClass}
+                                                `}
+                                            >
+                                                <OptionIcon
+                                                    size={17}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+
+                                            <span
+                                                className="
+                                                    min-w-0
+                                                    flex-1
+                                                "
+                                            >
+                                                <span
+                                                    className="
+                                                        block truncate
+                                                        text-xs
+                                                        font-semibold
+                                                        text-foreground
+                                                    "
+                                                >
+                                                    {option.label}
+                                                </span>
+
+                                                <span
+                                                    className="
+                                                        mt-0.5
+                                                        block truncate
+                                                        text-[10px]
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    {option.description}
+                                                </span>
+                                            </span>
+
+                                            {selected && (
+                                                <span
+                                                    className="
+                                                        flex size-6
+                                                        shrink-0
+                                                        items-center
+                                                        justify-center
+                                                        rounded-full
+                                                        bg-primary
+                                                        text-primary-foreground
+                                                    "
+                                                >
+                                                    <FiCheck
+                                                        size={13}
+                                                        aria-hidden="true"
+                                                    />
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                }
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )
+            : null;
+
+    return (
+        <>
+            <button
+                ref={triggerReference}
+                type="button"
+                onClick={toggleOpen}
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={label}
+                className={`
+                    group
+                    flex h-12 w-full
+                    min-w-0
+                    items-center
+                    justify-between
+                    gap-3
+                    rounded-2xl
+                    border
+                    bg-background
+                    px-2.5 pr-3.5
+                    text-left
+                    outline-none
+                    transition
+                    hover:border-border-strong
+                    hover:bg-surface-hover
+                    focus-visible:ring-4
+                    focus-visible:ring-ring/10
+
+                    ${active
+                        ? "border-primary/25"
+                        : "border-border"
+                    }
+                `}
+            >
+                <span
+                    className="
+                        flex min-w-0
+                        items-center gap-2.5
+                    "
+                >
+                    <span
+                        className={`
+                            flex size-8
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+
+                            ${selectedOption.iconClass}
+                        `}
+                    >
+                        <SelectedIcon
+                            size={16}
+                            aria-hidden="true"
+                        />
+                    </span>
+
+                    <span className="min-w-0">
+                        <span
+                            className="
+                                block truncate
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-[0.08em]
+                                text-muted-foreground
+                            "
+                        >
+                            {label}
+                        </span>
+
+                        <span
+                            className="
+                                mt-0.5
+                                block truncate
+                                text-xs
+                                font-semibold
+                                text-foreground
+                            "
+                        >
+                            {selectedOption.label}
+                        </span>
+                    </span>
+                </span>
+
+                <FiChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    className={`
+                        shrink-0
+                        text-muted-foreground
+                        transition-transform
+                        duration-200
+
+                        ${open
+                            ? "rotate-180"
+                            : ""
+                        }
+                    `}
+                />
+            </button>
+
+            {dropdown}
+        </>
+    );
+}
+
+function UserStatusSwitch({
+    userName,
+    active,
+    loading = false,
+    disabled = false,
+    ownAccount = false,
+    compact = false,
+    onChange,
+}) {
+    const statusLabel =
+        active
+            ? "Acesso ativo"
+            : "Acesso suspenso";
+
+    const statusDescription =
+        active
+            ? "Pode entrar e utilizar o sistema."
+            : "Não pode acessar o sistema.";
+
+    const actionLabel =
+        active
+            ? `Desativar ${userName}`
+            : `Ativar ${userName}`;
+
+    return (
+        <button
+            type="button"
+            onClick={onChange}
+            disabled={disabled || loading}
+            aria-label={actionLabel}
+            aria-pressed={active}
+            title={
+                ownAccount
+                    ? "Você não pode alterar o acesso da própria conta"
+                    : actionLabel
+            }
+            className={`
+                group
+                flex min-w-0
+                items-center
+                gap-3
+                rounded-2xl
+                border
+                text-left
+                outline-none
+                transition-all
+                duration-200
+                focus-visible:ring-4
+                focus-visible:ring-ring/10
+                disabled:cursor-not-allowed
+                disabled:opacity-55
+
+                ${compact
+                    ? "w-full px-3 py-2.5"
+                    : "w-full max-w-[230px] px-3 py-2.5"
+                }
+
+                ${active
+                    ? `
+                            border-success/20
+                            bg-success-muted/55
+                            hover:border-success/35
+                            hover:bg-success-muted
+                        `
+                    : `
+                            border-warning/20
+                            bg-warning-muted/45
+                            hover:border-warning/35
+                            hover:bg-warning-muted
+                        `
+                }
+            `}
+        >
+            <span
+                className={`
+                    relative
+                    flex h-7 w-12
+                    shrink-0
+                    items-center
+                    rounded-full
+                    p-0.5
+                    shadow-inner
+                    transition-colors
+                    duration-200
+
+                    ${active
+                        ? "bg-success"
+                        : "bg-muted-foreground/35"
+                    }
+                `}
+            >
+                <motion.span
+                    animate={{
+                        x: active
+                            ? 20
+                            : 0,
+                    }}
+                    transition={{
+                        type: "spring",
+                        stiffness: 520,
+                        damping: 34,
+                        mass: 0.65,
+                    }}
+                    className="
+                        flex size-6
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-white
+                        shadow-sm
+                    "
+                >
+                    {loading ? (
+                        <FiLoader
+                            size={13}
+                            aria-hidden="true"
+                            className="
+                                animate-spin
+                                text-muted-foreground
+                            "
+                        />
+                    ) : (
+                        <FiPower
+                            size={13}
+                            aria-hidden="true"
+                            className={
+                                active
+                                    ? "text-success"
+                                    : "text-muted-foreground"
+                            }
+                        />
+                    )}
+                </motion.span>
+            </span>
+
+            <span className="min-w-0 flex-1">
+                <span
+                    className={`
+                        block truncate
+                        text-xs
+                        font-semibold
+
+                        ${active
+                            ? "text-success"
+                            : "text-warning"
+                        }
+                    `}
+                >
+                    {loading
+                        ? "Atualizando..."
+                        : statusLabel
+                    }
+                </span>
+
+                {!compact && (
+                    <span
+                        className="
+                            mt-0.5
+                            block truncate
+                            text-[10px]
+                            text-muted-foreground
+                        "
+                    >
+                        {ownAccount
+                            ? "Sua própria conta"
+                            : statusDescription
+                        }
+                    </span>
+                )}
+            </span>
+        </button>
     );
 }
 
@@ -873,209 +2176,242 @@ function Users() {
                 </section>
 
                 <section
+                    aria-label="Filtros de usuários"
                     className="
                         min-w-0
-                        rounded-2xl
+                        overflow-hidden
+                        rounded-[24px]
                         border border-border
                         bg-surface
-                        p-4
                         shadow-card
                     "
                 >
                     <div
                         className="
-                            grid gap-3
-                            md:grid-cols-[minmax(0,1fr)_180px_180px]
-                        "
-                    >
-                        <div className="relative min-w-0">
-                            <FiSearch
-                                size={17}
-                                aria-hidden="true"
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    left-3.5 top-1/2
-                                    -translate-y-1/2
-                                    text-muted-foreground
-                                "
-                            />
-
-                            <input
-                                type="search"
-                                value={searchTerm}
-                                onChange={(event) =>
-                                    setSearchTerm(
-                                        event.target.value
-                                    )
-                                }
-                                placeholder="Buscar por nome ou e-mail"
-                                aria-label="Buscar usuários"
-                                className="
-                                    h-11 w-full
-                                    min-w-0
-                                    rounded-xl
-                                    border border-border
-                                    bg-background
-                                    py-2
-                                    pl-10 pr-3.5
-                                    text-sm
-                                    text-foreground
-                                    outline-none
-                                    transition
-                                    placeholder:text-muted-foreground/70
-                                    hover:border-border-strong
-                                    focus:border-foreground/40
-                                    focus:ring-2
-                                    focus:ring-ring/15
-                                "
-                            />
-                        </div>
-
-                        <div className="relative min-w-0">
-                            <select
-                                value={roleFilter}
-                                onChange={(event) =>
-                                    setRoleFilter(
-                                        event.target.value
-                                    )
-                                }
-                                aria-label="Filtrar por função"
-                                className="
-                                    h-11 w-full
-                                    appearance-none
-                                    rounded-xl
-                                    border border-border
-                                    bg-background
-                                    px-3.5 pr-10
-                                    text-sm
-                                    text-foreground
-                                    outline-none
-                                    transition
-                                    hover:border-border-strong
-                                    focus:border-foreground/40
-                                    focus:ring-2
-                                    focus:ring-ring/15
-                                "
-                            >
-                                <option value="ALL">
-                                    Todas as funções
-                                </option>
-
-                                <option value="USER">
-                                    Usuários
-                                </option>
-
-                                <option value="ADMIN">
-                                    Administradores
-                                </option>
-                            </select>
-
-                            <FiChevronDown
-                                size={17}
-                                aria-hidden="true"
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    right-3.5 top-1/2
-                                    -translate-y-1/2
-                                    text-muted-foreground
-                                "
-                            />
-                        </div>
-
-                        <div className="relative min-w-0">
-                            <select
-                                value={statusFilter}
-                                onChange={(event) =>
-                                    setStatusFilter(
-                                        event.target.value
-                                    )
-                                }
-                                aria-label="Filtrar por estado"
-                                className="
-                                    h-11 w-full
-                                    appearance-none
-                                    rounded-xl
-                                    border border-border
-                                    bg-background
-                                    px-3.5 pr-10
-                                    text-sm
-                                    text-foreground
-                                    outline-none
-                                    transition
-                                    hover:border-border-strong
-                                    focus:border-foreground/40
-                                    focus:ring-2
-                                    focus:ring-ring/15
-                                "
-                            >
-                                <option value="ALL">
-                                    Todos os estados
-                                </option>
-
-                                <option value="ACTIVE">
-                                    Ativos
-                                </option>
-
-                                <option value="INACTIVE">
-                                    Inativos
-                                </option>
-                            </select>
-
-                            <FiChevronDown
-                                size={17}
-                                aria-hidden="true"
-                                className="
-                                    pointer-events-none
-                                    absolute
-                                    right-3.5 top-1/2
-                                    -translate-y-1/2
-                                    text-muted-foreground
-                                "
-                            />
-                        </div>
-                    </div>
-
-                    <div
-                        className="
-                            mt-3
                             flex min-w-0
                             items-center
                             justify-between
                             gap-3
+                            border-b border-border
+                            px-4 py-3.5
+                            sm:px-5
                         "
                     >
-                        <p
+                        <div
                             className="
-                                min-w-0
-                                truncate
+                                flex min-w-0
+                                items-center gap-3
+                            "
+                        >
+                            <span
+                                className="
+                                    flex size-9
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    bg-primary-muted
+                                    text-primary
+                                "
+                            >
+                                <FiFilter
+                                    size={17}
+                                    aria-hidden="true"
+                                />
+                            </span>
+
+                            <div className="min-w-0">
+                                <h2
+                                    className="
+                                        truncate
+                                        text-sm
+                                        font-semibold
+                                        text-foreground
+                                    "
+                                >
+                                    Filtrar usuários
+                                </h2>
+
+                                <p
+                                    className="
+                                        mt-0.5
+                                        truncate
+                                        text-xs
+                                        text-muted-foreground
+                                    "
+                                >
+                                    Pesquise e refine a lista sem recarregar a página.
+                                </p>
+                            </div>
+                        </div>
+
+                        <span
+                            className="
+                                shrink-0
+                                rounded-full
+                                bg-surface-muted
+                                px-2.5 py-1
                                 text-xs
+                                font-semibold
+                                tabular-nums
                                 text-muted-foreground
                             "
                         >
-                            {filteredUsers.length}{" "}
-                            {filteredUsers.length === 1
-                                ? "usuário encontrado"
-                                : "usuários encontrados"}
-                        </p>
+                            {filteredUsers.length}
+                        </span>
+                    </div>
 
-                        {hasActiveFilters && (
-                            <button
-                                type="button"
-                                onClick={clearFilters}
+                    <div className="p-4 sm:p-5">
+                        <div
+                            className="
+                                grid gap-3
+                                lg:grid-cols-[minmax(0,1fr)_220px_220px]
+                            "
+                        >
+                            <div className="relative min-w-0">
+                                <span
+                                    aria-hidden="true"
+                                    className="
+                                        pointer-events-none
+                                        absolute
+                                        left-2 top-1/2
+                                        flex size-8
+                                        -translate-y-1/2
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-surface-muted
+                                        text-muted-foreground
+                                    "
+                                >
+                                    <FiSearch size={16} />
+                                </span>
+
+                                <input
+                                    type="search"
+                                    value={searchTerm}
+                                    onChange={(event) =>
+                                        setSearchTerm(
+                                            event.target.value
+                                        )
+                                    }
+                                    placeholder="Buscar por nome ou e-mail"
+                                    aria-label="Buscar usuários"
+                                    className="
+                                        h-12 w-full
+                                        min-w-0
+                                        rounded-2xl
+                                        border border-border
+                                        bg-background
+                                        py-2
+                                        pl-12 pr-4
+                                        text-sm
+                                        font-medium
+                                        text-foreground
+                                        outline-none
+                                        transition
+                                        placeholder:font-normal
+                                        placeholder:text-muted-foreground/65
+                                        hover:border-border-strong
+                                        focus:border-primary/45
+                                        focus:ring-4
+                                        focus:ring-primary/10
+                                    "
+                                />
+                            </div>
+
+                            <FilterSelect
+                                label="Função"
+                                value={roleFilter}
+                                options={
+                                    ROLE_FILTER_OPTIONS
+                                }
+                                onChange={
+                                    setRoleFilter
+                                }
+                            />
+
+                            <FilterSelect
+                                label="Acesso"
+                                value={statusFilter}
+                                options={
+                                    STATUS_FILTER_OPTIONS
+                                }
+                                onChange={
+                                    setStatusFilter
+                                }
+                            />
+                        </div>
+
+                        <div
+                            className="
+                                mt-4
+                                flex min-w-0
+                                flex-col gap-3
+                                border-t border-border
+                                pt-4
+                                sm:flex-row
+                                sm:items-center
+                                sm:justify-between
+                            "
+                        >
+                            <p
                                 className="
-                                    shrink-0
+                                    min-w-0
                                     text-xs
-                                    font-medium
-                                    text-primary
-                                    transition-opacity
-                                    hover:opacity-75
+                                    text-muted-foreground
                                 "
                             >
-                                Limpar filtros
-                            </button>
-                        )}
+                                <strong
+                                    className="
+                                        font-semibold
+                                        text-foreground
+                                    "
+                                >
+                                    {filteredUsers.length}
+                                </strong>{" "}
+                                {filteredUsers.length === 1
+                                    ? "usuário encontrado"
+                                    : "usuários encontrados"}
+                            </p>
+
+                            {hasActiveFilters && (
+                                <button
+                                    type="button"
+                                    onClick={clearFilters}
+                                    className="
+                                        inline-flex
+                                        min-h-9
+                                        w-full
+                                        items-center
+                                        justify-center
+                                        gap-2
+                                        rounded-xl
+                                        border border-border
+                                        bg-surface
+                                        px-3
+                                        text-xs
+                                        font-semibold
+                                        text-muted-foreground
+                                        transition
+                                        hover:border-primary/20
+                                        hover:bg-primary-muted
+                                        hover:text-primary
+                                        focus-visible:outline-none
+                                        focus-visible:ring-2
+                                        focus-visible:ring-primary/20
+                                        sm:w-auto
+                                    "
+                                >
+                                    <FiX
+                                        size={14}
+                                        aria-hidden="true"
+                                    />
+
+                                    Limpar filtros
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </section>
 
@@ -1284,7 +2620,7 @@ function Users() {
                                         <tr>
                                             <th
                                                 className="
-                                                    w-[34%]
+                                                    w-[31%]
                                                     px-5 py-3
                                                 "
                                             >
@@ -1293,7 +2629,7 @@ function Users() {
 
                                             <th
                                                 className="
-                                                    w-[21%]
+                                                    w-[18%]
                                                     px-4 py-3
                                                 "
                                             >
@@ -1302,16 +2638,16 @@ function Users() {
 
                                             <th
                                                 className="
-                                                    w-[14%]
+                                                    w-[25%]
                                                     px-4 py-3
                                                 "
                                             >
-                                                Estado
+                                                Acesso
                                             </th>
 
                                             <th
                                                 className="
-                                                    w-[17%]
+                                                    w-[16%]
                                                     px-4 py-3
                                                 "
                                             >
@@ -1320,7 +2656,7 @@ function Users() {
 
                                             <th
                                                 className="
-                                                    w-[14%]
+                                                    w-[10%]
                                                     px-5 py-3
                                                     text-right
                                                 "
@@ -1362,12 +2698,17 @@ function Users() {
                                                         key={
                                                             selectedUser.id
                                                         }
-                                                        className="
+                                                        className={`
                                                             border-t
                                                             border-border
                                                             transition-colors
                                                             hover:bg-surface-hover
-                                                        "
+
+                                                            ${selectedUser.isActive
+                                                                ? ""
+                                                                : "bg-surface-muted/25"
+                                                            }
+                                                        `}
                                                     >
                                                         <td
                                                             className="
@@ -1467,91 +2808,34 @@ function Users() {
                                                                 px-4 py-3.5
                                                             "
                                                         >
-                                                            <div
-                                                                className="
-                                                                    relative
-                                                                    max-w-44
-                                                                "
-                                                            >
-                                                                <select
+                                                            <div className="max-w-44">
+                                                                <RoleSelect
+                                                                    userName={
+                                                                        selectedUser.name
+                                                                    }
                                                                     value={
                                                                         selectedUser.role ??
                                                                         "USER"
+                                                                    }
+                                                                    loading={
+                                                                        isUpdating
                                                                     }
                                                                     disabled={
                                                                         isBusy ||
                                                                         isCurrentUser
                                                                     }
+                                                                    ownAccount={
+                                                                        isCurrentUser
+                                                                    }
                                                                     onChange={(
-                                                                        event
+                                                                        nextRole
                                                                     ) =>
                                                                         handleRoleChange(
                                                                             selectedUser,
-                                                                            event
-                                                                                .target
-                                                                                .value
+                                                                            nextRole
                                                                         )
                                                                     }
-                                                                    aria-label={`Função de ${selectedUser.name}`}
-                                                                    className="
-                                                                        h-9 w-full
-                                                                        appearance-none
-                                                                        rounded-xl
-                                                                        border
-                                                                        border-border
-                                                                        bg-background
-                                                                        px-3 pr-9
-                                                                        text-xs
-                                                                        font-medium
-                                                                        text-foreground
-                                                                        outline-none
-                                                                        transition
-                                                                        hover:border-border-strong
-                                                                        focus:ring-2
-                                                                        focus:ring-ring/15
-                                                                        disabled:cursor-not-allowed
-                                                                        disabled:opacity-50
-                                                                    "
-                                                                >
-                                                                    <option value="USER">
-                                                                        Usuário
-                                                                    </option>
-
-                                                                    <option value="ADMIN">
-                                                                        Administrador
-                                                                    </option>
-                                                                </select>
-
-                                                                {isUpdating ? (
-                                                                    <FiLoader
-                                                                        size={
-                                                                            15
-                                                                        }
-                                                                        aria-hidden="true"
-                                                                        className="
-                                                                            pointer-events-none
-                                                                            absolute
-                                                                            right-3 top-1/2
-                                                                            -translate-y-1/2
-                                                                            animate-spin
-                                                                            text-muted-foreground
-                                                                        "
-                                                                    />
-                                                                ) : (
-                                                                    <FiChevronDown
-                                                                        size={
-                                                                            15
-                                                                        }
-                                                                        aria-hidden="true"
-                                                                        className="
-                                                                            pointer-events-none
-                                                                            absolute
-                                                                            right-3 top-1/2
-                                                                            -translate-y-1/2
-                                                                            text-muted-foreground
-                                                                        "
-                                                                    />
-                                                                )}
+                                                                />
                                                             </div>
                                                         </td>
 
@@ -1560,38 +2844,31 @@ function Users() {
                                                                 px-4 py-3.5
                                                             "
                                                         >
-                                                            <span
-                                                                className={`
-                                                                    inline-flex
-                                                                    items-center
-                                                                    gap-1.5
-                                                                    rounded-full
-                                                                    px-2.5 py-1
-                                                                    text-xs
-                                                                    font-medium
-
-                                                                    ${selectedUser.isActive
-                                                                        ? "bg-success-muted text-success"
-                                                                        : "bg-danger-muted text-danger"
-                                                                    }
-                                                                `}
-                                                            >
-                                                                <span
-                                                                    className={`
-                                                                        size-1.5
-                                                                        rounded-full
-
-                                                                        ${selectedUser.isActive
-                                                                            ? "bg-success"
-                                                                            : "bg-danger"
-                                                                        }
-                                                                    `}
-                                                                />
-
-                                                                {selectedUser.isActive
-                                                                    ? "Ativo"
-                                                                    : "Inativo"}
-                                                            </span>
+                                                            <UserStatusSwitch
+                                                                userName={
+                                                                    selectedUser.name
+                                                                }
+                                                                active={
+                                                                    Boolean(
+                                                                        selectedUser.isActive
+                                                                    )
+                                                                }
+                                                                loading={
+                                                                    isUpdating
+                                                                }
+                                                                disabled={
+                                                                    isBusy ||
+                                                                    isCurrentUser
+                                                                }
+                                                                ownAccount={
+                                                                    isCurrentUser
+                                                                }
+                                                                onChange={() =>
+                                                                    handleActiveChange(
+                                                                        selectedUser
+                                                                    )
+                                                                }
+                                                            />
                                                         </td>
 
                                                         <td
@@ -1617,71 +2894,6 @@ function Users() {
                                                                     gap-2
                                                                 "
                                                             >
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={
-                                                                        isBusy ||
-                                                                        isCurrentUser
-                                                                    }
-                                                                    onClick={() =>
-                                                                        handleActiveChange(
-                                                                            selectedUser
-                                                                        )
-                                                                    }
-                                                                    title={
-                                                                        isCurrentUser
-                                                                            ? "Você não pode desativar a própria conta"
-                                                                            : selectedUser.isActive
-                                                                                ? "Desativar usuário"
-                                                                                : "Ativar usuário"
-                                                                    }
-                                                                    aria-label={
-                                                                        selectedUser.isActive
-                                                                            ? `Desativar ${selectedUser.name}`
-                                                                            : `Ativar ${selectedUser.name}`
-                                                                    }
-                                                                    className={`
-                                                                        inline-flex size-9
-                                                                        items-center
-                                                                        justify-center
-                                                                        rounded-xl
-                                                                        border border-border
-                                                                        bg-surface
-                                                                        transition-colors
-                                                                        disabled:cursor-not-allowed
-                                                                        disabled:opacity-40
-
-                                                                        ${selectedUser.isActive
-                                                                            ? "text-warning hover:bg-warning-muted"
-                                                                            : "text-success hover:bg-success-muted"
-                                                                        }
-                                                                    `}
-                                                                >
-                                                                    {isUpdating ? (
-                                                                        <FiLoader
-                                                                            size={
-                                                                                17
-                                                                            }
-                                                                            className="animate-spin"
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    ) : selectedUser.isActive ? (
-                                                                        <FiToggleRight
-                                                                            size={
-                                                                                19
-                                                                            }
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    ) : (
-                                                                        <FiToggleLeft
-                                                                            size={
-                                                                                19
-                                                                            }
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    )}
-                                                                </button>
-
                                                                 <button
                                                                     type="button"
                                                                     disabled={
@@ -1743,7 +2955,8 @@ function Users() {
 
                             <div
                                 className="
-                                    grid gap-3 p-4
+                                    grid items-start
+                                    gap-3 p-4
                                     sm:grid-cols-2
                                     lg:hidden
                                 "
@@ -1781,6 +2994,7 @@ function Users() {
                                                 }
                                                 className="
                                                     min-w-0
+                                                    self-start
                                                     rounded-2xl
                                                     border
                                                     border-border
@@ -1869,24 +3083,36 @@ function Users() {
                                                         </p>
                                                     </div>
 
-                                                    <span
-                                                        className={`
-                                                            shrink-0
-                                                            rounded-full
-                                                            px-2 py-1
-                                                            text-[10px]
-                                                            font-medium
 
-                                                            ${selectedUser.isActive
-                                                                ? "bg-success-muted text-success"
-                                                                : "bg-danger-muted text-danger"
-                                                            }
-                                                        `}
-                                                    >
-                                                        {selectedUser.isActive
-                                                            ? "Ativo"
-                                                            : "Inativo"}
-                                                    </span>
+                                                </div>
+
+                                                <div className="mt-4">
+                                                    <UserStatusSwitch
+                                                        userName={
+                                                            selectedUser.name
+                                                        }
+                                                        active={
+                                                            Boolean(
+                                                                selectedUser.isActive
+                                                            )
+                                                        }
+                                                        loading={
+                                                            isUpdating
+                                                        }
+                                                        disabled={
+                                                            isBusy ||
+                                                            isCurrentUser
+                                                        }
+                                                        ownAccount={
+                                                            isCurrentUser
+                                                        }
+                                                        compact
+                                                        onChange={() =>
+                                                            handleActiveChange(
+                                                                selectedUser
+                                                            )
+                                                        }
+                                                    />
                                                 </div>
 
                                                 <div
@@ -1909,67 +3135,34 @@ function Users() {
                                                             Função
                                                         </p>
 
-                                                        <div
-                                                            className="
-                                                                relative mt-1
-                                                            "
-                                                        >
-                                                            <select
+                                                        <div className="mt-1">
+                                                            <RoleSelect
+                                                                userName={
+                                                                    selectedUser.name
+                                                                }
                                                                 value={
                                                                     selectedUser.role ??
                                                                     "USER"
+                                                                }
+                                                                loading={
+                                                                    isUpdating
                                                                 }
                                                                 disabled={
                                                                     isBusy ||
                                                                     isCurrentUser
                                                                 }
+                                                                ownAccount={
+                                                                    isCurrentUser
+                                                                }
+                                                                compact
                                                                 onChange={(
-                                                                    event
+                                                                    nextRole
                                                                 ) =>
                                                                     handleRoleChange(
                                                                         selectedUser,
-                                                                        event
-                                                                            .target
-                                                                            .value
+                                                                        nextRole
                                                                     )
                                                                 }
-                                                                className="
-                                                                    h-9 w-full
-                                                                    appearance-none
-                                                                    rounded-xl
-                                                                    border
-                                                                    border-border
-                                                                    bg-surface
-                                                                    px-3 pr-8
-                                                                    text-xs
-                                                                    font-medium
-                                                                    text-foreground
-                                                                    outline-none
-                                                                    disabled:cursor-not-allowed
-                                                                    disabled:opacity-50
-                                                                "
-                                                            >
-                                                                <option value="USER">
-                                                                    Usuário
-                                                                </option>
-
-                                                                <option value="ADMIN">
-                                                                    Administrador
-                                                                </option>
-                                                            </select>
-
-                                                            <FiChevronDown
-                                                                size={
-                                                                    14
-                                                                }
-                                                                aria-hidden="true"
-                                                                className="
-                                                                    pointer-events-none
-                                                                    absolute
-                                                                    right-2.5 top-1/2
-                                                                    -translate-y-1/2
-                                                                    text-muted-foreground
-                                                                "
                                                             />
                                                         </div>
                                                     </div>
@@ -2003,73 +3196,9 @@ function Users() {
                                                 <div
                                                     className="
                                                         mt-4
-                                                        grid grid-cols-2
-                                                        gap-2
+                                                        flex justify-end
                                                     "
                                                 >
-                                                    <button
-                                                        type="button"
-                                                        disabled={
-                                                            isBusy ||
-                                                            isCurrentUser
-                                                        }
-                                                        onClick={() =>
-                                                            handleActiveChange(
-                                                                selectedUser
-                                                            )
-                                                        }
-                                                        className={`
-                                                            inline-flex
-                                                            min-h-10
-                                                            items-center
-                                                            justify-center
-                                                            gap-2
-                                                            rounded-xl
-                                                            border
-                                                            border-border
-                                                            bg-surface
-                                                            px-3
-                                                            text-xs
-                                                            font-medium
-                                                            transition-colors
-                                                            disabled:cursor-not-allowed
-                                                            disabled:opacity-40
-
-                                                            ${selectedUser.isActive
-                                                                ? "text-warning hover:bg-warning-muted"
-                                                                : "text-success hover:bg-success-muted"
-                                                            }
-                                                        `}
-                                                    >
-                                                        {isUpdating ? (
-                                                            <FiLoader
-                                                                size={
-                                                                    16
-                                                                }
-                                                                className="animate-spin"
-                                                                aria-hidden="true"
-                                                            />
-                                                        ) : selectedUser.isActive ? (
-                                                            <FiToggleRight
-                                                                size={
-                                                                    17
-                                                                }
-                                                                aria-hidden="true"
-                                                            />
-                                                        ) : (
-                                                            <FiToggleLeft
-                                                                size={
-                                                                    17
-                                                                }
-                                                                aria-hidden="true"
-                                                            />
-                                                        )}
-
-                                                        {selectedUser.isActive
-                                                            ? "Desativar"
-                                                            : "Ativar"}
-                                                    </button>
-
                                                     <button
                                                         type="button"
                                                         disabled={
@@ -2084,6 +3213,7 @@ function Users() {
                                                         className="
                                                             inline-flex
                                                             min-h-10
+                                                            w-full
                                                             items-center
                                                             justify-center
                                                             gap-2
@@ -2091,51 +3221,34 @@ function Users() {
                                                             border
                                                             border-danger/25
                                                             bg-surface
-                                                            px-3
+                                                            px-4
                                                             text-xs
-                                                            font-medium
+                                                            font-semibold
                                                             text-danger
-                                                            transition-colors
+                                                            transition
                                                             hover:bg-danger-muted
                                                             disabled:cursor-not-allowed
                                                             disabled:opacity-40
+                                                            sm:w-auto
                                                         "
                                                     >
                                                         {isDeleting ? (
                                                             <FiLoader
-                                                                size={
-                                                                    15
-                                                                }
+                                                                size={15}
                                                                 className="animate-spin"
                                                                 aria-hidden="true"
                                                             />
                                                         ) : (
                                                             <FiTrash2
-                                                                size={
-                                                                    15
-                                                                }
+                                                                size={15}
                                                                 aria-hidden="true"
                                                             />
                                                         )}
 
-                                                        Excluir
+                                                        Excluir usuário
                                                     </button>
                                                 </div>
 
-                                                {isCurrentUser && (
-                                                    <p
-                                                        className="
-                                                            mt-3
-                                                            text-center
-                                                            text-[11px]
-                                                            text-muted-foreground
-                                                        "
-                                                    >
-                                                        As ações estão
-                                                        desativadas para sua
-                                                        própria conta.
-                                                    </p>
-                                                )}
                                             </article>
                                         );
                                     }

@@ -1,16 +1,23 @@
-import { RiUser3Line } from "react-icons/ri";
+import {
+    RiUser3Line,
+} from "react-icons/ri";
 
 const avatarSizes = {
     sm: {
-        container: "size-8 text-xs",
-        icon: 17,
+        container:
+            "size-8 text-xs",
+        icon: 16,
     },
+
     md: {
-        container: "size-10 text-sm",
-        icon: 19,
+        container:
+            "size-9 text-sm",
+        icon: 18,
     },
+
     lg: {
-        container: "size-11 text-base",
+        container:
+            "size-11 text-base",
         icon: 21,
     },
 };
@@ -22,14 +29,17 @@ function UserAvatar({
     showTitle = true,
 }) {
     const normalizedName =
-        name?.trim() || "Usuário";
+        name?.trim() ||
+        "Usuário";
 
-    const initial = normalizedName
-        .charAt(0)
-        .toUpperCase();
+    const initial =
+        normalizedName
+            .charAt(0)
+            .toUpperCase();
 
     const selectedSize =
-        avatarSizes[size] ?? avatarSizes.md;
+        avatarSizes[size] ??
+        avatarSizes.md;
 
     return (
         <span
@@ -41,13 +51,18 @@ function UserAvatar({
             aria-hidden="true"
             className={`
                 flex shrink-0
-                items-center justify-center
+                items-center
+                justify-center
                 overflow-hidden
                 rounded-full
-                border border-border
-                bg-surface-muted
+                bg-gradient-to-br
+                from-blue-500
+                to-indigo-600
                 font-semibold
-                text-foreground
+                text-white
+                shadow-sm
+                ring-2 ring-surface
+
                 ${selectedSize.container}
                 ${className}
             `}
@@ -56,7 +71,9 @@ function UserAvatar({
                 initial
             ) : (
                 <RiUser3Line
-                    size={selectedSize.icon}
+                    size={
+                        selectedSize.icon
+                    }
                 />
             )}
         </span>

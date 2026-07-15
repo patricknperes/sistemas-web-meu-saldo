@@ -13,6 +13,7 @@ import {
     RiArrowDownSLine,
     RiLogoutBoxRLine,
     RiSettings3Line,
+    RiShieldUserLine,
 } from "react-icons/ri";
 
 import {
@@ -20,56 +21,88 @@ import {
     useNavigate,
 } from "react-router";
 
-import { useAuth } from "../../hooks/useAuth.js";
+import {
+    useAuth,
+} from "../../hooks/useAuth.js";
 
 import UserAvatar from "../ui/UserAvatar.jsx";
 
+function getShortName(name) {
+    const normalizedName =
+        name?.trim() ||
+        "Usuário";
+
+    return normalizedName
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ");
+}
+
 function getUserInformation(user) {
     const fullName =
-        user?.name?.trim() || "Usuário";
-
-    const roleLabel =
-        user?.role === "ADMIN"
-            ? "Administrador"
-            : "Usuário";
+        user?.name?.trim() ||
+        "Usuário";
 
     return {
         fullName,
-        roleLabel,
+        shortName:
+            getShortName(
+                fullName
+            ),
+
+        roleLabel:
+            user?.role === "ADMIN"
+                ? "Administrador"
+                : "Usuário",
     };
 }
 
 function UserMenu() {
-    const navigate = useNavigate();
-    const menuReference = useRef(null);
+    const navigate =
+        useNavigate();
+
+    const menuReference =
+        useRef(null);
 
     const {
         user,
         logout,
     } = useAuth();
 
-    const [menuOpen, setMenuOpen] =
-        useState(false);
+    const [
+        menuOpen,
+        setMenuOpen,
+    ] = useState(false);
 
     const {
         fullName,
+        shortName,
         roleLabel,
     } = getUserInformation(user);
 
     useEffect(() => {
-        function handlePointerDown(event) {
+        function handlePointerDown(
+            event
+        ) {
             if (
                 menuReference.current &&
-                !menuReference.current.contains(
-                    event.target
-                )
+                !menuReference.current
+                    .contains(
+                        event.target
+                    )
             ) {
                 setMenuOpen(false);
             }
         }
 
-        function handleKeyDown(event) {
-            if (event.key === "Escape") {
+        function handleKeyDown(
+            event
+        ) {
+            if (
+                event.key ===
+                "Escape"
+            ) {
                 setMenuOpen(false);
             }
         }
@@ -99,7 +132,8 @@ function UserMenu() {
 
     function toggleMenu() {
         setMenuOpen(
-            (currentState) => !currentState
+            (currentState) =>
+                !currentState
         );
     }
 
@@ -111,15 +145,20 @@ function UserMenu() {
         closeMenu();
         logout();
 
-        navigate("/login", {
-            replace: true,
-        });
+        navigate(
+            "/login",
+            {
+                replace: true,
+            }
+        );
     }
 
     return (
         <div
             ref={menuReference}
-            className="relative shrink-0"
+            className="
+                relative shrink-0
+            "
         >
             <button
                 type="button"
@@ -128,36 +167,52 @@ function UserMenu() {
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
                 title={fullName}
-                className="
+                className={`
                     group
-                    flex h-11
-                    min-w-0
-                    items-center gap-1
+                    flex h-11 min-w-0
+                    items-center gap-2
                     rounded-xl
-                    p-1
-                    transition-colors
+                    px-1.5
+                    outline-none
+                    transition
                     hover:bg-surface-hover
-                "
+                    focus-visible:ring-2
+                    focus-visible:ring-ring/20
+
+                    ${menuOpen
+                        ? "bg-surface-hover"
+                        : ""
+                    }
+                `}
             >
                 <UserAvatar
                     name={fullName}
                     size="md"
                     showTitle={false}
-                    className="
-                        transition-colors
-                        group-hover:border-border-strong
-                    "
                 />
 
+                <span
+                    className="
+                        hidden min-w-0
+                        max-w-32 truncate
+                        text-sm
+                        font-medium
+                        text-foreground
+                        md:block
+                    "
+                >
+                    {shortName}
+                </span>
+
                 <RiArrowDownSLine
-                    size={17}
+                    size={16}
                     aria-hidden="true"
                     className={`
                         hidden shrink-0
                         text-muted-foreground
                         transition-transform
                         duration-200
-                        sm:block
+                        md:block
 
                         ${menuOpen
                             ? "rotate-180"
@@ -187,7 +242,7 @@ function UserMenu() {
                             scale: 0.98,
                         }}
                         transition={{
-                            duration: 0.16,
+                            duration: 0.18,
                             ease: [
                                 0.22,
                                 1,
@@ -196,52 +251,66 @@ function UserMenu() {
                             ],
                         }}
                         className="
-                            absolute right-0 top-full
-                            z-50
+                            absolute right-0
+                            top-full z-50
                             mt-2
                             w-72
                             max-w-[calc(100vw-1.5rem)]
                             overflow-hidden
-                            rounded-card
+                            rounded-2xl
                             border border-border
                             bg-surface
                             p-2
-                            shadow-dialog
+                            shadow-2xl
+                            shadow-slate-950/10
                         "
                     >
                         <div
                             className="
                                 flex min-w-0
                                 items-center gap-3
-                                px-2 py-3
+                                rounded-xl
+                                bg-background/60
+                                p-3
                             "
                         >
                             <UserAvatar
                                 name={fullName}
-                                size="md"
+                                size="lg"
                                 showTitle={false}
                             />
 
-                            <div className="min-w-0 flex-1">
+                            <div
+                                className="
+                                    min-w-0 flex-1
+                                "
+                            >
                                 <strong
                                     title={fullName}
                                     className="
                                         block truncate
-                                        text-sm font-semibold
+                                        text-sm
+                                        font-semibold
                                         text-foreground
                                     "
                                 >
-                                    {fullName}
+                                    {shortName}
                                 </strong>
 
                                 <span
                                     className="
-                                        mt-0.5
-                                        block truncate
+                                        mt-1
+                                        inline-flex
+                                        items-center gap-1.5
                                         text-xs
                                         text-muted-foreground
                                     "
                                 >
+                                    <RiShieldUserLine
+                                        size={14}
+                                        aria-hidden="true"
+                                    />
+
                                     {roleLabel}
                                 </span>
                             </div>
@@ -250,8 +319,7 @@ function UserMenu() {
                         <div
                             aria-hidden="true"
                             className="
-                                my-1
-                                h-px
+                                my-2 h-px
                                 bg-border
                             "
                         />
@@ -259,17 +327,23 @@ function UserMenu() {
                         <Link
                             to="/perfil"
                             role="menuitem"
-                            onClick={closeMenu}
+                            onClick={
+                                closeMenu
+                            }
                             className="
-                                flex min-h-10
+                                flex min-h-11
                                 min-w-0
                                 items-center gap-3
                                 rounded-xl
                                 px-3
-                                text-sm font-medium
+                                text-sm
+                                font-medium
                                 text-foreground
-                                transition-colors
+                                outline-none
+                                transition
                                 hover:bg-surface-hover
+                                focus-visible:ring-2
+                                focus-visible:ring-ring/20
                             "
                         >
                             <RiSettings3Line
@@ -289,18 +363,24 @@ function UserMenu() {
                         <button
                             type="button"
                             role="menuitem"
-                            onClick={handleLogout}
+                            onClick={
+                                handleLogout
+                            }
                             className="
-                                flex min-h-10
+                                flex min-h-11
                                 w-full min-w-0
                                 items-center gap-3
                                 rounded-xl
                                 px-3
-                                text-sm font-medium
+                                text-sm
+                                font-medium
                                 text-muted-foreground
-                                transition-colors
+                                outline-none
+                                transition
                                 hover:bg-danger-muted
                                 hover:text-danger
+                                focus-visible:ring-2
+                                focus-visible:ring-danger/20
                             "
                         >
                             <RiLogoutBoxRLine

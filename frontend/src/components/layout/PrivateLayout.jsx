@@ -36,13 +36,17 @@ function PrivateLayout() {
     const [
         sidebarCollapsed,
         setSidebarCollapsed,
-    ] = useState(getInitialCollapsedState);
+    ] = useState(
+        getInitialCollapsedState
+    );
 
     useEffect(() => {
         try {
             localStorage.setItem(
                 "sidebar-collapsed",
-                String(sidebarCollapsed)
+                String(
+                    sidebarCollapsed
+                )
             );
         } catch {
             // A Sidebar continua funcionando.
@@ -50,9 +54,16 @@ function PrivateLayout() {
     }, [sidebarCollapsed]);
 
     useEffect(() => {
-        function handleKeyDown(event) {
-            if (event.key === "Escape") {
-                setMobileSidebarOpen(false);
+        function handleKeyDown(
+            event
+        ) {
+            if (
+                event.key ===
+                "Escape"
+            ) {
+                setMobileSidebarOpen(
+                    false
+                );
             }
         }
 
@@ -75,7 +86,8 @@ function PrivateLayout() {
         }
 
         const previousOverflow =
-            document.body.style.overflow;
+            document.body.style
+                .overflow;
 
         document.body.style.overflow =
             "hidden";
@@ -96,13 +108,15 @@ function PrivateLayout() {
 
     function toggleDesktopSidebar() {
         setSidebarCollapsed(
-            (currentState) => !currentState
+            (currentState) =>
+                !currentState
         );
     }
 
     return (
         <div
             className="
+                relative
                 flex
                 h-screen h-dvh
                 min-w-0
@@ -111,9 +125,42 @@ function PrivateLayout() {
                 text-foreground
             "
         >
+            <div
+                aria-hidden="true"
+                className="
+                    pointer-events-none
+                    absolute inset-0
+                    overflow-hidden
+                "
+            >
+                <div
+                    className="
+                        absolute
+                        -right-40 -top-52
+                        size-[420px]
+                        rounded-full
+                        bg-primary/[0.025]
+                        blur-3xl
+                    "
+                />
+
+                <div
+                    className="
+                        absolute
+                        -bottom-56 left-1/3
+                        size-[420px]
+                        rounded-full
+                        bg-sky-500/[0.02]
+                        blur-3xl
+                    "
+                />
+            </div>
+
             <Sidebar
                 mode="desktop"
-                collapsed={sidebarCollapsed}
+                collapsed={
+                    sidebarCollapsed
+                }
             />
 
             <AnimatePresence>
@@ -123,7 +170,9 @@ function PrivateLayout() {
                             key="sidebar-overlay"
                             type="button"
                             aria-label="Fechar menu lateral"
-                            onClick={closeMobileSidebar}
+                            onClick={
+                                closeMobileSidebar
+                            }
                             initial={{
                                 opacity: 0,
                             }}
@@ -137,8 +186,10 @@ function PrivateLayout() {
                                 duration: 0.2,
                             }}
                             className="
-                                fixed inset-0 z-40
-                                bg-overlay
+                                fixed inset-0
+                                z-40
+                                bg-slate-950/55
+                                backdrop-blur-sm
                                 lg:hidden
                             "
                         />
@@ -156,14 +207,14 @@ function PrivateLayout() {
                             }}
                             transition={{
                                 type: "spring",
-                                stiffness: 360,
-                                damping: 36,
+                                stiffness: 340,
+                                damping: 34,
                                 mass: 0.8,
                             }}
                             className="
-                                fixed inset-y-0 left-0
-                                z-50
-                                w-[min(84vw,280px)]
+                                fixed inset-y-0
+                                left-0 z-50
+                                w-[min(86vw,288px)]
                                 lg:hidden
                             "
                         >
@@ -180,8 +231,9 @@ function PrivateLayout() {
 
             <div
                 className="
-                    flex min-w-0 flex-1
-                    flex-col
+                    relative z-10
+                    flex min-w-0
+                    flex-1 flex-col
                     overflow-hidden
                 "
             >
@@ -205,10 +257,28 @@ function PrivateLayout() {
                         min-w-0 flex-1
                         overflow-x-hidden
                         overflow-y-auto
+                        scroll-smooth
                         scrollbar-subtle
                     "
                 >
-                    <Outlet />
+                    <motion.div
+                        initial={{
+                            opacity: 0,
+                            y: 6,
+                        }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                        }}
+                        transition={{
+                            duration: 0.24,
+                        }}
+                        className="
+                            min-h-full
+                        "
+                    >
+                        <Outlet />
+                    </motion.div>
                 </main>
             </div>
         </div>

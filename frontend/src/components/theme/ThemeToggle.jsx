@@ -9,32 +9,66 @@ import {
 } from "motion/react";
 
 import {
-    RiMoonLine,
+    RiMoonClearLine,
     RiSunLine,
 } from "react-icons/ri";
 
 function getInitialTheme() {
-    if (typeof document === "undefined") {
+    if (
+        typeof document ===
+        "undefined"
+    ) {
         return false;
     }
 
-    return document.documentElement.classList.contains(
-        "dark"
-    );
+    try {
+        const storedTheme =
+            localStorage.getItem(
+                "theme"
+            );
+
+        if (
+            storedTheme === "dark"
+        ) {
+            return true;
+        }
+
+        if (
+            storedTheme === "light"
+        ) {
+            return false;
+        }
+    } catch {
+        // Continua usando o tema presente no documento.
+    }
+
+    return document
+        .documentElement
+        .classList
+        .contains("dark");
 }
 
 function ThemeToggle() {
-    const [darkTheme, setDarkTheme] =
-        useState(getInitialTheme);
+    const [
+        darkTheme,
+        setDarkTheme,
+    ] = useState(
+        getInitialTheme
+    );
 
     useEffect(() => {
         const selectedTheme =
-            darkTheme ? "dark" : "light";
-
-        document.documentElement.classList.toggle(
-            "dark",
             darkTheme
-        );
+                ? "dark"
+                : "light";
+
+        document
+            .documentElement
+            .classList
+            .toggle(
+                "dark",
+                darkTheme
+            );
 
         try {
             localStorage.setItem(
@@ -46,7 +80,9 @@ function ThemeToggle() {
         }
 
         document
-            .querySelector("#theme-color")
+            .querySelector(
+                "#theme-color"
+            )
             ?.setAttribute(
                 "content",
                 darkTheme
@@ -57,7 +93,8 @@ function ThemeToggle() {
 
     function toggleTheme() {
         setDarkTheme(
-            (currentTheme) => !currentTheme
+            (currentTheme) =>
+                !currentTheme
         );
     }
 
@@ -79,14 +116,18 @@ function ThemeToggle() {
                     : "Tema escuro"
             }
             className="
-                inline-flex size-9
+                inline-flex size-10
                 shrink-0
-                items-center justify-center
-                rounded-lg
+                items-center
+                justify-center
+                rounded-xl
                 text-muted-foreground
-                transition-colors
+                outline-none
+                transition
                 hover:bg-surface-hover
                 hover:text-foreground
+                focus-visible:ring-2
+                focus-visible:ring-ring/20
             "
         >
             <AnimatePresence
@@ -101,8 +142,8 @@ function ThemeToggle() {
                     }
                     initial={{
                         opacity: 0,
-                        rotate: -20,
-                        scale: 0.8,
+                        rotate: -30,
+                        scale: 0.75,
                     }}
                     animate={{
                         opacity: 1,
@@ -111,17 +152,36 @@ function ThemeToggle() {
                     }}
                     exit={{
                         opacity: 0,
-                        rotate: 20,
-                        scale: 0.8,
+                        rotate: 30,
+                        scale: 0.75,
                     }}
                     transition={{
-                        duration: 0.15,
+                        duration: 0.17,
+                        ease: [
+                            0.22,
+                            1,
+                            0.36,
+                            1,
+                        ],
                     }}
+                    className="
+                        flex items-center
+                        justify-center
+                    "
                 >
                     {darkTheme ? (
-                        <RiSunLine size={18} />
+                        <RiSunLine
+                            size={20}
+                            aria-hidden="true"
+                            className="
+                                text-amber-500
+                            "
+                        />
                     ) : (
-                        <RiMoonLine size={18} />
+                        <RiMoonClearLine
+                            size={20}
+                            aria-hidden="true"
+                        />
                     )}
                 </motion.span>
             </AnimatePresence>

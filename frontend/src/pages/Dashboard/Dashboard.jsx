@@ -31,79 +31,138 @@ import {
 
 const STATUS_STYLES = {
     success: {
+        heroGradient:
+            "from-emerald-500 via-emerald-600 to-teal-700",
+
+        softGradient:
+            "from-emerald-500/16 via-emerald-500/6 to-transparent",
+
         iconContainer:
-            "bg-success-muted text-success",
+            "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20",
+
+        softIconContainer:
+            "bg-emerald-500/12 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
 
         value:
-            "text-success",
+            "text-emerald-600 dark:text-emerald-400",
 
         badge:
-            "bg-success-muted text-success",
+            "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
 
         dot:
-            "bg-success",
+            "bg-emerald-400",
+
+        glow:
+            "bg-emerald-300/25",
     },
 
     danger: {
+        heroGradient:
+            "from-rose-500 via-rose-600 to-red-700",
+
+        softGradient:
+            "from-rose-500/16 via-rose-500/6 to-transparent",
+
         iconContainer:
-            "bg-danger-muted text-danger",
+            "bg-rose-500 text-white shadow-lg shadow-rose-500/20",
+
+        softIconContainer:
+            "bg-rose-500/12 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
 
         value:
-            "text-danger",
+            "text-rose-600 dark:text-rose-400",
 
         badge:
-            "bg-danger-muted text-danger",
+            "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
 
         dot:
-            "bg-danger",
+            "bg-rose-400",
+
+        glow:
+            "bg-rose-300/25",
     },
 
     info: {
+        heroGradient:
+            "from-sky-500 via-blue-600 to-indigo-700",
+
+        softGradient:
+            "from-sky-500/16 via-sky-500/6 to-transparent",
+
         iconContainer:
-            "bg-info-muted text-info",
+            "bg-sky-500 text-white shadow-lg shadow-sky-500/20",
+
+        softIconContainer:
+            "bg-sky-500/12 text-sky-600 ring-1 ring-inset ring-sky-500/15 dark:text-sky-400",
 
         value:
-            "text-info",
+            "text-sky-600 dark:text-sky-400",
 
         badge:
-            "bg-info-muted text-info",
+            "bg-sky-500/10 text-sky-700 ring-1 ring-inset ring-sky-500/20 dark:text-sky-300",
 
         dot:
-            "bg-info",
+            "bg-sky-400",
+
+        glow:
+            "bg-sky-300/25",
     },
 
     warning: {
+        heroGradient:
+            "from-amber-400 via-orange-500 to-orange-600",
+
+        softGradient:
+            "from-amber-500/16 via-amber-500/6 to-transparent",
+
         iconContainer:
-            "bg-warning-muted text-warning",
+            "bg-amber-500 text-white shadow-lg shadow-amber-500/20",
+
+        softIconContainer:
+            "bg-amber-500/12 text-amber-600 ring-1 ring-inset ring-amber-500/15 dark:text-amber-400",
 
         value:
-            "text-warning",
+            "text-amber-600 dark:text-amber-400",
 
         badge:
-            "bg-warning-muted text-warning",
+            "bg-amber-500/10 text-amber-700 ring-1 ring-inset ring-amber-500/20 dark:text-amber-300",
 
         dot:
-            "bg-warning",
+            "bg-amber-400",
+
+        glow:
+            "bg-amber-300/25",
     },
 
     neutral: {
+        heroGradient:
+            "from-slate-600 via-slate-700 to-slate-900",
+
+        softGradient:
+            "from-slate-500/14 via-slate-500/5 to-transparent",
+
         iconContainer:
-            "bg-surface-muted text-muted-foreground",
+            "bg-slate-600 text-white shadow-lg shadow-slate-500/20",
+
+        softIconContainer:
+            "bg-slate-500/12 text-slate-600 ring-1 ring-inset ring-slate-500/15 dark:text-slate-300",
 
         value:
             "text-foreground",
 
         badge:
-            "bg-surface-muted text-muted-foreground",
+            "bg-slate-500/10 text-slate-600 ring-1 ring-inset ring-slate-500/20 dark:text-slate-300",
 
         dot:
-            "bg-muted-foreground",
+            "bg-slate-400",
+
+        glow:
+            "bg-slate-300/20",
     },
 };
 
 function normalizeCents(value) {
-    const numberValue =
-        Number(value);
+    const numberValue = Number(value);
 
     return Number.isFinite(numberValue)
         ? numberValue
@@ -144,7 +203,7 @@ function getIncomeStatus(value) {
     if (normalizedValue > 0) {
         return {
             tone: "success",
-            label: "Receita positiva",
+            label: "Receitas recebidas",
             icon: FiArrowUpRight,
         };
     }
@@ -171,7 +230,7 @@ function getExpenseStatus(value) {
     if (normalizedValue > 0) {
         return {
             tone: "danger",
-            label: "Saídas registradas",
+            label: "Despesas registradas",
             icon: FiArrowDownRight,
         };
     }
@@ -204,13 +263,16 @@ function getTransactionPresentation(
             icon: FiTrendingUp,
 
             iconClassName:
-                "bg-success-muted text-success",
+                "bg-emerald-500/12 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
 
             badgeClassName:
-                "bg-success-muted text-success",
+                "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
 
             valueClassName:
-                "text-success",
+                "text-emerald-600 dark:text-emerald-400",
+
+            hoverClassName:
+                "hover:bg-emerald-500/[0.035]",
         }
         : {
             label: "Despesa",
@@ -218,13 +280,16 @@ function getTransactionPresentation(
             icon: FiTrendingDown,
 
             iconClassName:
-                "bg-danger-muted text-danger",
+                "bg-rose-500/12 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
 
             badgeClassName:
-                "bg-danger-muted text-danger",
+                "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
 
             valueClassName:
-                "text-danger",
+                "text-rose-600 dark:text-rose-400",
+
+            hoverClassName:
+                "hover:bg-rose-500/[0.035]",
         };
 }
 
@@ -236,12 +301,11 @@ function formatTransactionValue(
             transaction
         );
 
-    const amountCents =
-        Math.abs(
-            normalizeCents(
-                transaction.amountCents
-            )
-        );
+    const amountCents = Math.abs(
+        normalizeCents(
+            transaction.amountCents
+        )
+    );
 
     return `${presentation.sign} ${formatCurrency(
         amountCents
@@ -267,23 +331,32 @@ function DashboardLoading() {
                         gap-4
                     "
                 >
-                    <div className="space-y-2">
+                    <div className="flex items-center gap-3">
                         <div
                             className="
-                                h-7 w-52
-                                rounded-lg
+                                size-12 rounded-2xl
                                 bg-surface-muted
                             "
                         />
 
-                        <div
-                            className="
-                                h-4 w-72
-                                max-w-full
-                                rounded-lg
-                                bg-surface-muted
-                            "
-                        />
+                        <div className="space-y-2">
+                            <div
+                                className="
+                                    h-7 w-52
+                                    rounded-lg
+                                    bg-surface-muted
+                                "
+                            />
+
+                            <div
+                                className="
+                                    h-4 w-72
+                                    max-w-full
+                                    rounded-lg
+                                    bg-surface-muted
+                                "
+                            />
+                        </div>
                     </div>
 
                     <div
@@ -298,56 +371,53 @@ function DashboardLoading() {
                 <div
                     className="
                         grid gap-4
-                        md:grid-cols-3
+                        lg:grid-cols-12
                     "
                 >
-                    {[1, 2, 3].map(
-                        (item) => (
-                            <div
-                                key={item}
-                                className="
-                                    h-40
-                                    rounded-2xl
-                                    border
-                                    border-border
-                                    bg-surface
-                                    p-5
-                                "
-                            >
-                                <div
-                                    className="
-                                        h-10 w-10
-                                        rounded-xl
-                                        bg-surface-muted
-                                    "
-                                />
+                    <div
+                        className="
+                            h-56 rounded-3xl
+                            bg-surface-muted
+                            lg:col-span-6
+                        "
+                    />
 
-                                <div
-                                    className="
-                                        mt-6 h-4 w-28
-                                        rounded
-                                        bg-surface-muted
-                                    "
-                                />
+                    {[1, 2].map((item) => (
+                        <div
+                            key={item}
+                            className="
+                                h-56 rounded-3xl
+                                border border-border
+                                bg-surface
+                                lg:col-span-3
+                            "
+                        />
+                    ))}
+                </div>
 
-                                <div
-                                    className="
-                                        mt-3 h-8 w-40
-                                        rounded
-                                        bg-surface-muted
-                                    "
-                                />
-                            </div>
-                        )
-                    )}
+                <div
+                    className="
+                        mt-4 grid gap-4
+                        sm:grid-cols-3
+                    "
+                >
+                    {[1, 2, 3].map((item) => (
+                        <div
+                            key={item}
+                            className="
+                                h-24 rounded-2xl
+                                border border-border
+                                bg-surface
+                            "
+                        />
+                    ))}
                 </div>
 
                 <div
                     className="
                         mt-6 h-80
-                        rounded-2xl
-                        border
-                        border-border
+                        rounded-3xl
+                        border border-border
                         bg-surface
                     "
                 />
@@ -372,38 +442,51 @@ function DashboardError({
             <div
                 role="alert"
                 className="
-                    flex min-h-64
+                    relative flex min-h-72
+                    overflow-hidden
                     flex-col
                     items-center
                     justify-center
-                    rounded-2xl
-                    border border-border
+                    rounded-3xl
+                    border border-rose-500/15
                     bg-surface
                     p-6
                     text-center
+                    shadow-card
                 "
             >
+                <div
+                    aria-hidden="true"
+                    className="
+                        absolute -right-16 -top-16
+                        size-48 rounded-full
+                        bg-rose-500/10 blur-3xl
+                    "
+                />
+
                 <span
                     className="
-                        flex size-12
+                        relative flex size-14
                         items-center
                         justify-center
-                        rounded-xl
-                        bg-danger-muted
-                        text-danger
+                        rounded-2xl
+                        bg-rose-500/12
+                        text-rose-600
+                        ring-1 ring-inset
+                        ring-rose-500/15
+                        dark:text-rose-400
                     "
                 >
                     <FiAlertCircle
-                        size={22}
+                        size={24}
                         aria-hidden="true"
                     />
                 </span>
 
                 <h2
                     className="
-                        mt-4
-                        text-base
-                        font-semibold
+                        relative mt-4
+                        text-lg font-semibold
                         text-foreground
                     "
                 >
@@ -413,9 +496,10 @@ function DashboardError({
 
                 <p
                     className="
-                        mt-1
+                        relative mt-1
                         max-w-md
                         text-sm
+                        leading-6
                         text-muted-foreground
                     "
                 >
@@ -426,9 +510,8 @@ function DashboardError({
                     type="button"
                     onClick={onRetry}
                     className="
-                        mt-5
-                        inline-flex
-                        min-h-10
+                        relative mt-5
+                        inline-flex min-h-10
                         items-center
                         justify-center
                         gap-2
@@ -438,8 +521,11 @@ function DashboardError({
                         text-sm
                         font-medium
                         text-primary-foreground
-                        transition-colors
+                        shadow-sm
+                        transition-all
+                        hover:-translate-y-0.5
                         hover:bg-primary-hover
+                        hover:shadow-md
                     "
                 >
                     <FiRefreshCw
@@ -454,26 +540,439 @@ function DashboardError({
     );
 }
 
+function MainBalanceCard({
+    value,
+    status,
+}) {
+    const StatusIcon = status.icon;
+    const styles =
+        STATUS_STYLES[status.tone];
+
+    return (
+        <article
+            className={`
+                group relative
+                min-h-56 min-w-0
+                overflow-hidden
+                rounded-3xl
+                bg-gradient-to-br
+                ${styles.heroGradient}
+                p-5 text-white
+                shadow-xl
+                shadow-slate-900/10
+                transition-all
+                duration-300
+                hover:-translate-y-1
+                hover:shadow-2xl
+                sm:p-6
+                lg:col-span-6
+            `}
+        >
+            <div
+                aria-hidden="true"
+                className="
+                    absolute -right-16 -top-20
+                    size-56 rounded-full
+                    bg-white/15 blur-2xl
+                    transition-transform
+                    duration-500
+                    group-hover:scale-110
+                "
+            />
+
+            <div
+                aria-hidden="true"
+                className="
+                    absolute -bottom-24 -left-16
+                    size-56 rounded-full
+                    bg-black/10 blur-2xl
+                "
+            />
+
+            <div
+                aria-hidden="true"
+                className="
+                    absolute inset-0
+                    bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_38%)]
+                "
+            />
+
+            <div
+                className="
+                    relative flex h-full
+                    flex-col justify-between
+                    gap-8
+                "
+            >
+                <div
+                    className="
+                        flex items-start
+                        justify-between
+                        gap-4
+                    "
+                >
+                    <div>
+                        <p
+                            className="
+                                text-sm font-medium
+                                text-white/75
+                            "
+                        >
+                            Saldo atual
+                        </p>
+
+                        <p
+                            className="
+                                mt-1 text-xs
+                                text-white/60
+                            "
+                        >
+                            Resultado das suas movimentações
+                        </p>
+                    </div>
+
+                    <span
+                        className="
+                            flex size-11
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-2xl
+                            bg-white/15
+                            text-white
+                            ring-1 ring-inset
+                            ring-white/20
+                            backdrop-blur-sm
+                        "
+                    >
+                        <FiDollarSign
+                            size={21}
+                            aria-hidden="true"
+                        />
+                    </span>
+                </div>
+
+                <div>
+                    <p
+                        className="
+                            truncate
+                            text-3xl
+                            font-semibold
+                            tracking-tight
+                            sm:text-4xl
+                        "
+                        title={value}
+                    >
+                        {value}
+                    </p>
+
+                    <div
+                        className="
+                            mt-4 flex
+                            flex-wrap
+                            items-center
+                            justify-between
+                            gap-3
+                        "
+                    >
+                        <span
+                            className="
+                                inline-flex
+                                items-center
+                                gap-1.5
+                                rounded-full
+                                bg-white/15
+                                px-3 py-1.5
+                                text-xs
+                                font-medium
+                                text-white
+                                ring-1 ring-inset
+                                ring-white/20
+                                backdrop-blur-sm
+                            "
+                        >
+                            <StatusIcon
+                                size={14}
+                                aria-hidden="true"
+                            />
+
+                            {status.label}
+                        </span>
+
+                        <span
+                            className="
+                                text-xs
+                                font-medium
+                                text-white/65
+                            "
+                        >
+                            Visão geral
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </article>
+    );
+}
+
+function ValueCard({
+    title,
+    description,
+    value,
+    icon: Icon,
+    status,
+}) {
+    const StatusIcon = status.icon;
+    const styles =
+        STATUS_STYLES[status.tone];
+
+    return (
+        <article
+            className="
+                group relative
+                min-h-56 min-w-0
+                overflow-hidden
+                rounded-3xl
+                border border-border
+                bg-surface
+                p-5
+                shadow-card
+                transition-all
+                duration-300
+                hover:-translate-y-1
+                hover:shadow-lg
+                lg:col-span-3
+            "
+        >
+            <div
+                aria-hidden="true"
+                className={`
+                    absolute inset-x-0 top-0
+                    h-28
+                    bg-gradient-to-b
+                    ${styles.softGradient}
+                `}
+            />
+
+            <div
+                aria-hidden="true"
+                className={`
+                    absolute -right-12 -top-12
+                    size-32 rounded-full
+                    ${styles.glow}
+                    blur-3xl
+                    transition-transform
+                    duration-500
+                    group-hover:scale-125
+                `}
+            />
+
+            <div
+                className="
+                    relative flex h-full
+                    flex-col justify-between
+                    gap-7
+                "
+            >
+                <div
+                    className="
+                        flex items-start
+                        justify-between
+                        gap-3
+                    "
+                >
+                    <div className="min-w-0">
+                        <p
+                            className="
+                                truncate
+                                text-sm
+                                font-semibold
+                                text-foreground
+                            "
+                        >
+                            {title}
+                        </p>
+
+                        <p
+                            className="
+                                mt-1 text-xs
+                                leading-5
+                                text-muted-foreground
+                            "
+                        >
+                            {description}
+                        </p>
+                    </div>
+
+                    <span
+                        className={`
+                            flex size-11
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-2xl
+                            ${styles.iconContainer}
+                            transition-transform
+                            duration-300
+                            group-hover:scale-105
+                        `}
+                    >
+                        <Icon
+                            size={20}
+                            aria-hidden="true"
+                        />
+                    </span>
+                </div>
+
+                <div>
+                    <p
+                        className={`
+                            truncate
+                            text-2xl
+                            font-semibold
+                            tracking-tight
+                            ${styles.value}
+                        `}
+                        title={value}
+                    >
+                        {value}
+                    </p>
+
+                    <span
+                        className={`
+                            mt-4 inline-flex
+                            max-w-full
+                            items-center
+                            gap-1.5
+                            rounded-full
+                            px-2.5 py-1
+                            text-xs
+                            font-medium
+                            ${styles.badge}
+                        `}
+                    >
+                        <StatusIcon
+                            size={13}
+                            className="shrink-0"
+                            aria-hidden="true"
+                        />
+
+                        <span className="truncate">
+                            {status.label}
+                        </span>
+                    </span>
+                </div>
+            </div>
+        </article>
+    );
+}
+
+function CountCard({
+    title,
+    value,
+    icon: Icon,
+    tone,
+}) {
+    const styles = STATUS_STYLES[tone];
+
+    return (
+        <article
+            className="
+                group relative
+                min-w-0 overflow-hidden
+                rounded-2xl
+                border border-border
+                bg-surface
+                p-4
+                shadow-card
+                transition-all
+                duration-300
+                hover:-translate-y-0.5
+                hover:shadow-md
+            "
+        >
+            <div
+                aria-hidden="true"
+                className={`
+                    absolute inset-y-0 left-0
+                    w-1 ${styles.dot}
+                `}
+            />
+
+            <div
+                aria-hidden="true"
+                className={`
+                    absolute -right-10 -top-10
+                    size-24 rounded-full
+                    ${styles.glow}
+                    blur-2xl
+                `}
+            />
+
+            <div
+                className="
+                    relative flex
+                    items-center gap-3
+                "
+            >
+                <span
+                    className={`
+                        flex size-11
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-2xl
+                        ${styles.softIconContainer}
+                        transition-transform
+                        duration-300
+                        group-hover:scale-105
+                    `}
+                >
+                    <Icon
+                        size={19}
+                        aria-hidden="true"
+                    />
+                </span>
+
+                <div className="min-w-0">
+                    <p
+                        className="
+                            truncate text-xs
+                            font-medium
+                            text-muted-foreground
+                        "
+                    >
+                        {title}
+                    </p>
+
+                    <p
+                        className="
+                            mt-0.5 text-2xl
+                            font-semibold
+                            tracking-tight
+                            text-foreground
+                        "
+                    >
+                        {value}
+                    </p>
+                </div>
+            </div>
+        </article>
+    );
+}
+
 function Dashboard() {
-    const [
-        summary,
-        setSummary,
-    ] = useState(null);
+    const [summary, setSummary] =
+        useState(null);
 
-    const [
-        loading,
-        setLoading,
-    ] = useState(true);
+    const [loading, setLoading] =
+        useState(true);
 
-    const [
-        refreshing,
-        setRefreshing,
-    ] = useState(false);
+    const [refreshing, setRefreshing] =
+        useState(false);
 
-    const [
-        errorMessage,
-        setErrorMessage,
-    ] = useState("");
+    const [errorMessage, setErrorMessage] =
+        useState("");
 
     const loadDashboard = useCallback(
         async ({
@@ -563,38 +1062,9 @@ function Dashboard() {
             totalExpenseCents
         );
 
-    const cards = [
-        {
-            title: "Saldo atual",
-            value: formatCurrency(
-                balanceCents
-            ),
-            icon: FiDollarSign,
-            status: balanceStatus,
-        },
-
-        {
-            title: "Total de receitas",
-            value: formatCurrency(
-                totalIncomeCents
-            ),
-            icon: FiTrendingUp,
-            status: incomeStatus,
-        },
-
-        {
-            title: "Total de despesas",
-            value: formatCurrency(
-                totalExpenseCents
-            ),
-            icon: FiTrendingDown,
-            status: expenseStatus,
-        },
-    ];
-
     const countCards = [
         {
-            title: "Transações",
+            title: "Total de transações",
             value:
                 summary?.transactionCount ??
                 0,
@@ -652,29 +1122,82 @@ function Dashboard() {
                         sm:justify-between
                     "
                 >
-                    <div className="min-w-0">
-                        <h1
+                    <div
+                        className="
+                            flex min-w-0
+                            items-center gap-3
+                        "
+                    >
+                        <span
                             className="
-                                truncate
-                                text-2xl
-                                font-semibold
-                                tracking-tight
-                                text-foreground
+                                hidden size-12
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-2xl
+                                bg-gradient-to-br
+                                from-sky-500
+                                via-blue-600
+                                to-indigo-600
+                                text-white
+                                shadow-lg
+                                shadow-blue-500/20
+                                sm:flex
                             "
                         >
-                            Resumo financeiro
-                        </h1>
+                            <FiActivity
+                                size={21}
+                                aria-hidden="true"
+                            />
+                        </span>
 
-                        <p
-                            className="
-                                mt-1
-                                text-sm
-                                text-muted-foreground
-                            "
-                        >
-                            Acompanhe suas receitas,
-                            despesas e o saldo atual.
-                        </p>
+                        <div className="min-w-0">
+                            <div
+                                className="
+                                    flex flex-wrap
+                                    items-center gap-2
+                                "
+                            >
+                                <h1
+                                    className="
+                                        truncate
+                                        text-2xl
+                                        font-semibold
+                                        tracking-tight
+                                        text-foreground
+                                    "
+                                >
+                                    Resumo financeiro
+                                </h1>
+
+                                <span
+                                    className="
+                                        rounded-full
+                                        bg-sky-500/10
+                                        px-2.5 py-1
+                                        text-[11px]
+                                        font-semibold
+                                        uppercase
+                                        tracking-wide
+                                        text-sky-700
+                                        ring-1 ring-inset
+                                        ring-sky-500/15
+                                        dark:text-sky-300
+                                    "
+                                >
+                                    Visão geral
+                                </span>
+                            </div>
+
+                            <p
+                                className="
+                                    mt-1 text-sm
+                                    text-muted-foreground
+                                "
+                            >
+                                Visualize o desempenho das suas finanças de forma rápida.
+                            </p>
+                        </div>
                     </div>
 
                     <button
@@ -685,8 +1208,7 @@ function Dashboard() {
                         disabled={refreshing}
                         className="
                             inline-flex
-                            min-h-10
-                            w-full
+                            min-h-10 w-full
                             items-center
                             justify-center
                             gap-2
@@ -697,8 +1219,12 @@ function Dashboard() {
                             text-sm
                             font-medium
                             text-foreground
-                            transition-colors
+                            shadow-sm
+                            transition-all
+                            hover:-translate-y-0.5
+                            hover:border-primary
                             hover:bg-surface-hover
+                            hover:shadow-md
                             disabled:pointer-events-none
                             disabled:opacity-50
                             sm:w-auto
@@ -709,14 +1235,14 @@ function Dashboard() {
                             aria-hidden="true"
                             className={
                                 refreshing
-                                    ? "animate-spin"
-                                    : ""
+                                    ? "animate-spin text-primary"
+                                    : "text-primary"
                             }
                         />
 
                         {refreshing
                             ? "Atualizando..."
-                            : "Atualizar"}
+                            : "Atualizar dados"}
                     </button>
                 </header>
 
@@ -726,19 +1252,31 @@ function Dashboard() {
                         className="
                             flex items-center
                             gap-3
-                            rounded-xl
-                            border border-border
-                            bg-danger-muted
+                            rounded-2xl
+                            border
+                            border-rose-500/15
+                            bg-rose-500/[0.06]
                             px-4 py-3
                             text-sm
-                            text-danger
+                            text-rose-700
+                            dark:text-rose-300
                         "
                     >
-                        <FiAlertCircle
-                            size={18}
-                            className="shrink-0"
-                            aria-hidden="true"
-                        />
+                        <span
+                            className="
+                                flex size-9
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-xl
+                                bg-rose-500/10
+                            "
+                        >
+                            <FiAlertCircle
+                                size={17}
+                                aria-hidden="true"
+                            />
+                        </span>
 
                         <p className="min-w-0 flex-1">
                             {errorMessage}
@@ -750,141 +1288,35 @@ function Dashboard() {
                     aria-label="Resumo de valores"
                     className="
                         grid gap-4
-                        md:grid-cols-3
+                        lg:grid-cols-12
                     "
                 >
-                    {cards.map((card) => {
-                        const CardIcon =
-                            card.icon;
+                    <MainBalanceCard
+                        value={formatCurrency(
+                            balanceCents
+                        )}
+                        status={balanceStatus}
+                    />
 
-                        const StatusIcon =
-                            card.status.icon;
+                    <ValueCard
+                        title="Total de receitas"
+                        description="Valores que entraram na sua conta."
+                        value={formatCurrency(
+                            totalIncomeCents
+                        )}
+                        icon={FiTrendingUp}
+                        status={incomeStatus}
+                    />
 
-                        const styles =
-                            STATUS_STYLES[
-                            card.status.tone
-                            ];
-
-                        return (
-                            <article
-                                key={card.title}
-                                className="
-                                    relative
-                                    min-w-0
-                                    overflow-hidden
-                                    rounded-2xl
-                                    border border-border
-                                    bg-surface
-                                    p-5
-                                    shadow-card
-                                "
-                            >
-                                <div
-                                    aria-hidden="true"
-                                    className={`
-                                        absolute
-                                        inset-x-0 top-0
-                                        h-0.5
-                                        ${styles.dot}
-                                    `}
-                                />
-
-                                <div
-                                    className="
-                                        flex items-start
-                                        justify-between
-                                        gap-3
-                                    "
-                                >
-                                    <div
-                                        className="
-                                            min-w-0
-                                        "
-                                    >
-                                        <p
-                                            className="
-                                                truncate
-                                                text-sm
-                                                font-medium
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {card.title}
-                                        </p>
-
-                                        <p
-                                            className={`
-                                                mt-3
-                                                truncate
-                                                text-2xl
-                                                font-semibold
-                                                tracking-tight
-                                                ${styles.value}
-                                            `}
-                                            title={
-                                                card.value
-                                            }
-                                        >
-                                            {card.value}
-                                        </p>
-                                    </div>
-
-                                    <span
-                                        className={`
-                                            flex size-10
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            ${styles.iconContainer}
-                                        `}
-                                    >
-                                        <CardIcon
-                                            size={19}
-                                            aria-hidden="true"
-                                        />
-                                    </span>
-                                </div>
-
-                                <div
-                                    className="
-                                        mt-5
-                                        flex items-center
-                                        justify-between
-                                        gap-3
-                                    "
-                                >
-                                    <span
-                                        className={`
-                                            inline-flex
-                                            min-w-0
-                                            items-center
-                                            gap-1.5
-                                            rounded-full
-                                            px-2.5 py-1
-                                            text-xs
-                                            font-medium
-                                            ${styles.badge}
-                                        `}
-                                    >
-                                        <StatusIcon
-                                            size={14}
-                                            className="shrink-0"
-                                            aria-hidden="true"
-                                        />
-
-                                        <span className="truncate">
-                                            {
-                                                card
-                                                    .status
-                                                    .label
-                                            }
-                                        </span>
-                                    </span>
-                                </div>
-                            </article>
-                        );
-                    })}
+                    <ValueCard
+                        title="Total de despesas"
+                        description="Valores utilizados nas suas despesas."
+                        value={formatCurrency(
+                            totalExpenseCents
+                        )}
+                        icon={FiTrendingDown}
+                        status={expenseStatus}
+                    />
                 </section>
 
                 <section
@@ -894,196 +1326,194 @@ function Dashboard() {
                         sm:grid-cols-3
                     "
                 >
-                    {countCards.map(
-                        (card) => {
-                            const Icon =
-                                card.icon;
-
-                            const styles =
-                                STATUS_STYLES[
-                                card.tone
-                                ];
-
-                            return (
-                                <article
-                                    key={
-                                        card.title
-                                    }
-                                    className="
-                                        flex
-                                        min-w-0
-                                        items-center
-                                        gap-3
-                                        rounded-2xl
-                                        border
-                                        border-border
-                                        bg-surface
-                                        p-4
-                                        shadow-card
-                                    "
-                                >
-                                    <span
-                                        className={`
-                                            flex size-10
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            ${styles.iconContainer}
-                                        `}
-                                    >
-                                        <Icon
-                                            size={
-                                                18
-                                            }
-                                            aria-hidden="true"
-                                        />
-                                    </span>
-
-                                    <div className="min-w-0">
-                                        <p
-                                            className="
-                                                truncate
-                                                text-xs
-                                                font-medium
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {
-                                                card.title
-                                            }
-                                        </p>
-
-                                        <p
-                                            className="
-                                                mt-0.5
-                                                text-xl
-                                                font-semibold
-                                                text-foreground
-                                            "
-                                        >
-                                            {
-                                                card.value
-                                            }
-                                        </p>
-                                    </div>
-                                </article>
-                            );
-                        }
-                    )}
+                    {countCards.map((card) => (
+                        <CountCard
+                            key={card.title}
+                            {...card}
+                        />
+                    ))}
                 </section>
 
                 <section
                     className="
-                        min-w-0
+                        relative min-w-0
                         overflow-hidden
-                        rounded-2xl
+                        rounded-3xl
                         border border-border
                         bg-surface
                         shadow-card
                     "
                 >
+                    <div
+                        aria-hidden="true"
+                        className="
+                            absolute inset-x-0 top-0
+                            h-1
+                            bg-gradient-to-r
+                            from-sky-500
+                            via-indigo-500
+                            to-violet-500
+                        "
+                    />
+
                     <header
                         className="
-                            flex items-center
+                            flex flex-col
                             gap-3
                             border-b
                             border-border
-                            px-4 py-4
+                            px-4 pb-4 pt-5
+                            sm:flex-row
+                            sm:items-center
+                            sm:justify-between
                             sm:px-5
                         "
                     >
-                        <span
+                        <div
                             className="
-                                flex size-9
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-xl
-                                bg-info-muted
-                                text-info
+                                flex min-w-0
+                                items-center gap-3
                             "
                         >
-                            <FiActivity
-                                size={17}
-                                aria-hidden="true"
-                            />
-                        </span>
-
-                        <div className="min-w-0">
-                            <h2
+                            <span
                                 className="
-                                    truncate
-                                    text-base
-                                    font-semibold
-                                    text-foreground
+                                    flex size-10
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-2xl
+                                    bg-gradient-to-br
+                                    from-sky-500
+                                    to-indigo-600
+                                    text-white
+                                    shadow-lg
+                                    shadow-blue-500/20
                                 "
                             >
-                                Transações recentes
-                            </h2>
+                                <FiActivity
+                                    size={18}
+                                    aria-hidden="true"
+                                />
+                            </span>
 
-                            <p
-                                className="
-                                    mt-0.5
-                                    text-xs
-                                    text-muted-foreground
-                                "
-                            >
-                                Últimas movimentações
-                                cadastradas.
-                            </p>
+                            <div className="min-w-0">
+                                <h2
+                                    className="
+                                        truncate
+                                        text-base
+                                        font-semibold
+                                        text-foreground
+                                    "
+                                >
+                                    Transações recentes
+                                </h2>
+
+                                <p
+                                    className="
+                                        mt-0.5 text-xs
+                                        text-muted-foreground
+                                    "
+                                >
+                                    Acompanhe as últimas movimentações cadastradas.
+                                </p>
+                            </div>
                         </div>
+
+                        <span
+                            className="
+                                inline-flex w-fit
+                                items-center gap-2
+                                rounded-full
+                                bg-surface-muted
+                                px-3 py-1.5
+                                text-xs
+                                font-medium
+                                text-muted-foreground
+                                ring-1 ring-inset
+                                ring-border
+                            "
+                        >
+                            <span
+                                className="
+                                    size-2 rounded-full
+                                    bg-sky-500
+                                "
+                            />
+
+                            {recentTransactions.length}
+                            {recentTransactions.length === 1
+                                ? " movimentação"
+                                : " movimentações"}
+                        </span>
                     </header>
 
                     {recentTransactions.length ===
                         0 ? (
                         <div
                             className="
-                                flex min-h-48
+                                relative flex
+                                min-h-56
                                 flex-col
                                 items-center
                                 justify-center
+                                overflow-hidden
                                 p-6
                                 text-center
                             "
                         >
+                            <div
+                                aria-hidden="true"
+                                className="
+                                    absolute left-1/2 top-1/2
+                                    size-48
+                                    -translate-x-1/2
+                                    -translate-y-1/2
+                                    rounded-full
+                                    bg-sky-500/[0.07]
+                                    blur-3xl
+                                "
+                            />
+
                             <span
                                 className="
-                                    flex size-11
+                                    relative flex size-12
                                     items-center
                                     justify-center
-                                    rounded-xl
-                                    bg-surface-muted
-                                    text-muted-foreground
+                                    rounded-2xl
+                                    bg-sky-500/10
+                                    text-sky-600
+                                    ring-1 ring-inset
+                                    ring-sky-500/15
+                                    dark:text-sky-400
                                 "
                             >
                                 <FiList
-                                    size={20}
+                                    size={21}
                                     aria-hidden="true"
                                 />
                             </span>
 
                             <p
                                 className="
-                                    mt-3
+                                    relative mt-3
                                     text-sm
-                                    font-medium
+                                    font-semibold
                                     text-foreground
                                 "
                             >
-                                Nenhuma transação
-                                cadastrada
+                                Nenhuma transação cadastrada
                             </p>
 
                             <p
                                 className="
-                                    mt-1
+                                    relative mt-1
+                                    max-w-xs
                                     text-xs
+                                    leading-5
                                     text-muted-foreground
                                 "
                             >
-                                As movimentações recentes
-                                aparecerão aqui.
+                                Assim que você adicionar uma receita ou despesa, ela aparecerá aqui.
                             </p>
                         </div>
                     ) : (
@@ -1100,16 +1530,18 @@ function Dashboard() {
                                     <thead
                                         className="
                                             bg-surface-muted
-                                            text-xs
-                                            font-medium
+                                            text-[11px]
+                                            font-semibold
+                                            uppercase
+                                            tracking-wide
                                             text-muted-foreground
                                         "
                                     >
                                         <tr>
                                             <th
                                                 className="
-                                                    w-[30%]
-                                                    px-5 py-3
+                                                    w-[31%]
+                                                    px-5 py-3.5
                                                 "
                                             >
                                                 Descrição
@@ -1118,7 +1550,7 @@ function Dashboard() {
                                             <th
                                                 className="
                                                     w-[20%]
-                                                    px-4 py-3
+                                                    px-4 py-3.5
                                                 "
                                             >
                                                 Categoria
@@ -1127,7 +1559,7 @@ function Dashboard() {
                                             <th
                                                 className="
                                                     w-[16%]
-                                                    px-4 py-3
+                                                    px-4 py-3.5
                                                 "
                                             >
                                                 Data
@@ -1135,8 +1567,8 @@ function Dashboard() {
 
                                             <th
                                                 className="
-                                                    w-[16%]
-                                                    px-4 py-3
+                                                    w-[15%]
+                                                    px-4 py-3.5
                                                 "
                                             >
                                                 Tipo
@@ -1145,7 +1577,7 @@ function Dashboard() {
                                             <th
                                                 className="
                                                     w-[18%]
-                                                    px-5 py-3
+                                                    px-5 py-3.5
                                                     text-right
                                                 "
                                             >
@@ -1156,9 +1588,7 @@ function Dashboard() {
 
                                     <tbody>
                                         {recentTransactions.map(
-                                            (
-                                                transaction
-                                            ) => {
+                                            (transaction) => {
                                                 const presentation =
                                                     getTransactionPresentation(
                                                         transaction
@@ -1172,79 +1602,101 @@ function Dashboard() {
                                                         key={
                                                             transaction.id
                                                         }
-                                                        className="
+                                                        className={`
                                                             border-t
                                                             border-border
                                                             transition-colors
-                                                            hover:bg-surface-hover
-                                                        "
+                                                            ${presentation.hoverClassName}
+                                                        `}
                                                     >
                                                         <td
                                                             className="
-                                                                px-5 py-3.5
+                                                                px-5 py-4
                                                             "
                                                         >
                                                             <div
                                                                 className="
-                                                                    flex
-                                                                    min-w-0
+                                                                    flex min-w-0
                                                                     items-center
                                                                     gap-3
                                                                 "
                                                             >
                                                                 <span
                                                                     className={`
-                                                                        flex size-8
+                                                                        flex size-9
                                                                         shrink-0
                                                                         items-center
                                                                         justify-center
-                                                                        rounded-lg
+                                                                        rounded-xl
                                                                         ${presentation.iconClassName}
                                                                     `}
                                                                 >
                                                                     <TransactionIcon
-                                                                        size={
-                                                                            15
-                                                                        }
+                                                                        size={16}
                                                                         aria-hidden="true"
                                                                     />
                                                                 </span>
 
-                                                                <span
-                                                                    className="
-                                                                        truncate
-                                                                        font-medium
-                                                                        text-foreground
-                                                                    "
-                                                                    title={
-                                                                        transaction.description
-                                                                    }
-                                                                >
-                                                                    {
-                                                                        transaction.description
-                                                                    }
-                                                                </span>
+                                                                <div className="min-w-0">
+                                                                    <p
+                                                                        className="
+                                                                            truncate
+                                                                            font-semibold
+                                                                            text-foreground
+                                                                        "
+                                                                        title={
+                                                                            transaction.description
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            transaction.description
+                                                                        }
+                                                                    </p>
+
+                                                                    <p
+                                                                        className="
+                                                                            mt-0.5
+                                                                            text-xs
+                                                                            text-muted-foreground
+                                                                        "
+                                                                    >
+                                                                        Movimentação financeira
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </td>
 
                                                         <td
                                                             className="
-                                                                truncate
-                                                                px-4 py-3.5
-                                                                text-muted-foreground
+                                                                px-4 py-4
                                                             "
-                                                            title={
-                                                                transaction.category
-                                                            }
                                                         >
-                                                            {
-                                                                transaction.category
-                                                            }
+                                                            <span
+                                                                className="
+                                                                    inline-flex
+                                                                    max-w-full
+                                                                    rounded-lg
+                                                                    bg-surface-muted
+                                                                    px-2.5 py-1
+                                                                    text-xs
+                                                                    font-medium
+                                                                    text-muted-foreground
+                                                                "
+                                                                title={
+                                                                    transaction.category
+                                                                }
+                                                            >
+                                                                <span className="truncate">
+                                                                    {
+                                                                        transaction.category
+                                                                    }
+                                                                </span>
+                                                            </span>
                                                         </td>
 
                                                         <td
                                                             className="
-                                                                px-4 py-3.5
+                                                                px-4 py-4
                                                                 text-muted-foreground
                                                             "
                                                         >
@@ -1255,12 +1707,14 @@ function Dashboard() {
 
                                                         <td
                                                             className="
-                                                                px-4 py-3.5
+                                                                px-4 py-4
                                                             "
                                                         >
                                                             <span
                                                                 className={`
                                                                     inline-flex
+                                                                    items-center
+                                                                    gap-1.5
                                                                     rounded-full
                                                                     px-2.5 py-1
                                                                     text-xs
@@ -1268,6 +1722,18 @@ function Dashboard() {
                                                                     ${presentation.badgeClassName}
                                                                 `}
                                                             >
+                                                                <span
+                                                                    className={`
+                                                                        size-1.5
+                                                                        rounded-full
+                                                                        ${transaction.type ===
+                                                                            "INCOME"
+                                                                            ? "bg-emerald-500"
+                                                                            : "bg-rose-500"
+                                                                        }
+                                                                    `}
+                                                                />
+
                                                                 {
                                                                     presentation.label
                                                                 }
@@ -1277,7 +1743,7 @@ function Dashboard() {
                                                         <td
                                                             className={`
                                                                 truncate
-                                                                px-5 py-3.5
+                                                                px-5 py-4
                                                                 text-right
                                                                 font-semibold
                                                                 ${presentation.valueClassName}
@@ -1297,15 +1763,12 @@ function Dashboard() {
 
                             <div
                                 className="
-                                    divide-y
-                                    divide-border
+                                    space-y-3 p-3
                                     md:hidden
                                 "
                             >
                                 {recentTransactions.map(
-                                    (
-                                        transaction
-                                    ) => {
+                                    (transaction) => {
                                         const presentation =
                                             getTransactionPresentation(
                                                 transaction
@@ -1320,33 +1783,35 @@ function Dashboard() {
                                                     transaction.id
                                                 }
                                                 className="
+                                                    rounded-2xl
+                                                    border border-border
+                                                    bg-surface
                                                     p-4
-                                                    transition-colors
-                                                    hover:bg-surface-hover
+                                                    shadow-sm
+                                                    transition-all
+                                                    hover:-translate-y-0.5
+                                                    hover:shadow-md
                                                 "
                                             >
                                                 <div
                                                     className="
-                                                        flex
-                                                        min-w-0
+                                                        flex min-w-0
                                                         items-start
                                                         gap-3
                                                     "
                                                 >
                                                     <span
                                                         className={`
-                                                            flex size-9
+                                                            flex size-10
                                                             shrink-0
                                                             items-center
                                                             justify-center
-                                                            rounded-xl
+                                                            rounded-2xl
                                                             ${presentation.iconClassName}
                                                         `}
                                                     >
                                                         <TransactionIcon
-                                                            size={
-                                                                16
-                                                            }
+                                                            size={17}
                                                             aria-hidden="true"
                                                         />
                                                     </span>
@@ -1370,7 +1835,7 @@ function Dashboard() {
                                                                     className="
                                                                         truncate
                                                                         text-sm
-                                                                        font-medium
+                                                                        font-semibold
                                                                         text-foreground
                                                                     "
                                                                 >
@@ -1381,7 +1846,7 @@ function Dashboard() {
 
                                                                 <p
                                                                     className="
-                                                                        mt-0.5
+                                                                        mt-1
                                                                         truncate
                                                                         text-xs
                                                                         text-muted-foreground
@@ -1413,15 +1878,28 @@ function Dashboard() {
 
                                                         <span
                                                             className={`
-                                                                mt-2
-                                                                inline-flex
+                                                                mt-3 inline-flex
+                                                                items-center
+                                                                gap-1.5
                                                                 rounded-full
-                                                                px-2 py-0.5
+                                                                px-2.5 py-1
                                                                 text-xs
                                                                 font-medium
                                                                 ${presentation.badgeClassName}
                                                             `}
                                                         >
+                                                            <span
+                                                                className={`
+                                                                    size-1.5
+                                                                    rounded-full
+                                                                    ${transaction.type ===
+                                                                        "INCOME"
+                                                                        ? "bg-emerald-500"
+                                                                        : "bg-rose-500"
+                                                                    }
+                                                                `}
+                                                            />
+
                                                             {
                                                                 presentation.label
                                                             }

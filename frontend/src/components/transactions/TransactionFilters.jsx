@@ -15,6 +15,8 @@ import {
 
 import {
     RiArrowDownSLine,
+    RiArrowLeftSLine,
+    RiArrowRightSLine,
     RiCalendarLine,
     RiCheckLine,
     RiCloseLine,
@@ -29,9 +31,32 @@ import {
 
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2100;
+const YEARS_PER_PAGE = 12;
+
+const FILTER_OPTIONS = [
+    {
+        value: "MONTH",
+        label: "Por mês",
+        description:
+            "Visualize apenas um mês específico.",
+    },
+    {
+        value: "YEAR",
+        label: "Ano inteiro",
+        description:
+            "Veja todas as movimentações do ano.",
+    },
+    {
+        value: "ALL",
+        label: "Todo histórico",
+        description:
+            "Consulte todos os registros cadastrados.",
+    },
+];
 
 function normalizeTotalItems(value) {
-    const numberValue = Number(value);
+    const numberValue =
+        Number(value);
 
     if (
         !Number.isFinite(numberValue) ||
@@ -41,6 +66,51 @@ function normalizeTotalItems(value) {
     }
 
     return Math.trunc(numberValue);
+}
+
+function normalizeYear(
+    value,
+    fallback = new Date().getFullYear()
+) {
+    const numberValue =
+        Number(value);
+
+    if (
+        !Number.isInteger(numberValue)
+    ) {
+        return fallback;
+    }
+
+    return Math.min(
+        Math.max(
+            numberValue,
+            MIN_YEAR
+        ),
+        MAX_YEAR
+    );
+}
+
+function getYearPageStart(year) {
+    const normalizedYear =
+        normalizeYear(year);
+
+    const pageIndex =
+        Math.floor(
+            (
+                normalizedYear -
+                MIN_YEAR
+            ) /
+            YEARS_PER_PAGE
+        );
+
+    return Math.min(
+        MIN_YEAR +
+        pageIndex *
+        YEARS_PER_PAGE,
+        MAX_YEAR -
+        YEARS_PER_PAGE +
+        1
+    );
 }
 
 function getPeriodLabel(
@@ -74,10 +144,10 @@ function SelectField({
             <label
                 htmlFor={id}
                 className="
-                    mb-1.5
+                    mb-2
                     block
                     text-sm
-                    font-medium
+                    font-semibold
                     text-foreground
                 "
             >
@@ -91,22 +161,23 @@ function SelectField({
                     onChange={onChange}
                     disabled={disabled}
                     className="
-                        h-11 w-full
+                        h-12 w-full
                         min-w-0
                         appearance-none
-                        rounded-xl
+                        rounded-2xl
                         border border-border
                         bg-background
                         py-2
-                        pl-3.5 pr-10
+                        pl-4 pr-11
                         text-sm
+                        font-medium
                         text-foreground
                         outline-none
                         transition
-                        hover:border-border-strong
-                        focus:border-foreground/40
-                        focus:ring-2
-                        focus:ring-ring/15
+                        hover:border-blue-500/35
+                        focus:border-blue-500/60
+                        focus:ring-4
+                        focus:ring-blue-500/10
                         disabled:cursor-not-allowed
                         disabled:opacity-60
                     "
@@ -115,18 +186,461 @@ function SelectField({
                 </select>
 
                 <RiArrowDownSLine
-                    size={18}
+                    size={19}
                     aria-hidden="true"
                     className="
                         pointer-events-none
                         absolute
-                        right-3 top-1/2
+                        right-3.5 top-1/2
                         -translate-y-1/2
                         text-muted-foreground
                     "
                 />
             </div>
         </div>
+    );
+}
+
+function YearPickerTrigger({
+    id,
+    value,
+    open,
+    disabled,
+    onToggle,
+}) {
+    return (
+        <div className="min-w-0">
+            <label
+                id={`${id}-label`}
+                className="
+                    mb-2
+                    block
+                    text-sm
+                    font-semibold
+                    text-foreground
+                "
+            >
+                Ano
+            </label>
+
+            <button
+                id={id}
+                type="button"
+                onClick={onToggle}
+                disabled={disabled}
+                aria-labelledby={`${id}-label ${id}`}
+                aria-haspopup="dialog"
+                aria-expanded={open}
+                className={`
+                    inline-flex
+                    h-12 w-full
+                    min-w-0
+                    items-center
+                    justify-between
+                    gap-3
+                    rounded-2xl
+                    border
+                    bg-background
+                    px-4
+                    text-sm
+                    font-semibold
+                    text-foreground
+                    outline-none
+                    transition
+                    hover:border-blue-500/35
+                    focus:ring-4
+                    focus:ring-blue-500/10
+                    disabled:cursor-not-allowed
+                    disabled:opacity-60
+
+                    ${open
+                        ? `
+                                border-blue-500/60
+                                ring-4
+                                ring-blue-500/10
+                            `
+                        : `
+                                border-border
+                            `
+                    }
+                `}
+            >
+                <span
+                    className="
+                        flex min-w-0
+                        items-center gap-2.5
+                    "
+                >
+                    <span
+                        className="
+                            flex size-8
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-blue-500/10
+                            text-blue-600
+                            dark:text-blue-400
+                        "
+                    >
+                        <RiCalendarLine
+                            size={17}
+                            aria-hidden="true"
+                        />
+                    </span>
+
+                    <span className="truncate">
+                        {value}
+                    </span>
+                </span>
+
+                <RiArrowDownSLine
+                    size={19}
+                    aria-hidden="true"
+                    className={`
+                        shrink-0
+                        text-muted-foreground
+                        transition-transform
+                        duration-200
+
+                        ${open
+                            ? "rotate-180"
+                            : ""
+                        }
+                    `}
+                />
+            </button>
+        </div>
+    );
+}
+
+function YearPickerPanel({
+    open,
+    currentYear,
+    selectedYear,
+    visibleStartYear,
+    panelReference,
+    onSelectYear,
+    onPreviousYears,
+    onNextYears,
+}) {
+    const visibleYears =
+        Array.from(
+            {
+                length:
+                    YEARS_PER_PAGE,
+            },
+            (_, index) =>
+                visibleStartYear +
+                index
+        ).filter(
+            (year) =>
+                year >= MIN_YEAR &&
+                year <= MAX_YEAR
+        );
+
+    const previousDisabled =
+        visibleStartYear <=
+        MIN_YEAR;
+
+    const nextDisabled =
+        visibleStartYear +
+        YEARS_PER_PAGE -
+        1 >=
+        MAX_YEAR;
+
+    return (
+        <AnimatePresence
+            initial={false}
+        >
+            {open && (
+                <motion.div
+                    ref={panelReference}
+                    role="dialog"
+                    aria-label="Selecionar ano"
+                    initial={{
+                        opacity: 0,
+                        height: 0,
+                        y: -8,
+                    }}
+                    animate={{
+                        opacity: 1,
+                        height: "auto",
+                        y: 0,
+                    }}
+                    exit={{
+                        opacity: 0,
+                        height: 0,
+                        y: -8,
+                    }}
+                    transition={{
+                        duration: 0.22,
+                        ease: [
+                            0.22,
+                            1,
+                            0.36,
+                            1,
+                        ],
+                    }}
+                    className="
+                        overflow-hidden
+                    "
+                >
+                    <div
+                        className="
+                            mt-4
+                            rounded-3xl
+                            border
+                            border-blue-500/15
+                            bg-gradient-to-b
+                            from-blue-500/[0.07]
+                            to-transparent
+                            p-3
+                            sm:p-4
+                        "
+                    >
+                        <div
+                            className="
+                                flex
+                                items-center
+                                justify-between
+                                gap-3
+                            "
+                        >
+                            <button
+                                type="button"
+                                onClick={
+                                    onPreviousYears
+                                }
+                                disabled={
+                                    previousDisabled
+                                }
+                                aria-label="Mostrar anos anteriores"
+                                className="
+                                    inline-flex size-10
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    border border-border
+                                    bg-surface
+                                    text-muted-foreground
+                                    transition
+                                    hover:border-blue-500/25
+                                    hover:bg-blue-500/5
+                                    hover:text-blue-600
+                                    focus-visible:outline-none
+                                    focus-visible:ring-4
+                                    focus-visible:ring-blue-500/10
+                                    disabled:pointer-events-none
+                                    disabled:opacity-30
+                                    dark:hover:text-blue-400
+                                "
+                            >
+                                <RiArrowLeftSLine
+                                    size={20}
+                                    aria-hidden="true"
+                                />
+                            </button>
+
+                            <div className="text-center">
+                                <p
+                                    className="
+                                        text-[10px]
+                                        font-bold
+                                        uppercase
+                                        tracking-[0.12em]
+                                        text-muted-foreground
+                                    "
+                                >
+                                    Período disponível
+                                </p>
+
+                                <p
+                                    className="
+                                        mt-0.5
+                                        text-sm
+                                        font-semibold
+                                        text-foreground
+                                    "
+                                >
+                                    {visibleYears[0]}
+                                    {" — "}
+                                    {
+                                        visibleYears[
+                                        visibleYears.length -
+                                        1
+                                        ]
+                                    }
+                                </p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={
+                                    onNextYears
+                                }
+                                disabled={
+                                    nextDisabled
+                                }
+                                aria-label="Mostrar próximos anos"
+                                className="
+                                    inline-flex size-10
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    border border-border
+                                    bg-surface
+                                    text-muted-foreground
+                                    transition
+                                    hover:border-blue-500/25
+                                    hover:bg-blue-500/5
+                                    hover:text-blue-600
+                                    focus-visible:outline-none
+                                    focus-visible:ring-4
+                                    focus-visible:ring-blue-500/10
+                                    disabled:pointer-events-none
+                                    disabled:opacity-30
+                                    dark:hover:text-blue-400
+                                "
+                            >
+                                <RiArrowRightSLine
+                                    size={20}
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        </div>
+
+                        <div
+                            className="
+                                mt-4
+                                grid
+                                grid-cols-3
+                                gap-2
+                                sm:grid-cols-4
+                            "
+                        >
+                            {visibleYears.map(
+                                (year) => {
+                                    const isSelected =
+                                        year ===
+                                        selectedYear;
+
+                                    const isCurrent =
+                                        year ===
+                                        currentYear;
+
+                                    return (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            onClick={() =>
+                                                onSelectYear(
+                                                    year
+                                                )
+                                            }
+                                            aria-pressed={
+                                                isSelected
+                                            }
+                                            className={`
+                                                relative
+                                                min-h-11
+                                                rounded-xl
+                                                border
+                                                px-2
+                                                text-sm
+                                                font-semibold
+                                                tabular-nums
+                                                transition
+                                                focus-visible:outline-none
+                                                focus-visible:ring-4
+                                                focus-visible:ring-blue-500/10
+
+                                                ${isSelected
+                                                    ? `
+                                                            border-blue-600
+                                                            bg-gradient-to-br
+                                                            from-blue-600
+                                                            to-indigo-600
+                                                            text-white
+                                                            shadow-lg
+                                                            shadow-blue-500/20
+                                                        `
+                                                    : `
+                                                            border-border
+                                                            bg-surface
+                                                            text-foreground
+                                                            hover:-translate-y-0.5
+                                                            hover:border-blue-500/25
+                                                            hover:bg-blue-500/5
+                                                            hover:text-blue-600
+                                                            dark:hover:text-blue-400
+                                                        `
+                                                }
+                                            `}
+                                        >
+                                            {year}
+
+                                            {isCurrent &&
+                                                !isSelected && (
+                                                    <span
+                                                        aria-label="Ano atual"
+                                                        className="
+                                                            absolute
+                                                            bottom-1.5
+                                                            left-1/2
+                                                            size-1
+                                                            -translate-x-1/2
+                                                            rounded-full
+                                                            bg-blue-500
+                                                        "
+                                                    />
+                                                )}
+                                        </button>
+                                    );
+                                }
+                            )}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                onSelectYear(
+                                    currentYear
+                                )
+                            }
+                            className="
+                                mt-3
+                                inline-flex
+                                min-h-10 w-full
+                                items-center
+                                justify-center
+                                gap-2
+                                rounded-xl
+                                border border-blue-500/15
+                                bg-blue-500/5
+                                px-4
+                                text-sm
+                                font-semibold
+                                text-blue-600
+                                transition
+                                hover:bg-blue-500/10
+                                focus-visible:outline-none
+                                focus-visible:ring-4
+                                focus-visible:ring-blue-500/10
+                                dark:text-blue-400
+                            "
+                        >
+                            <RiCalendarLine
+                                size={16}
+                                aria-hidden="true"
+                            />
+
+                            Selecionar o ano atual
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
 
@@ -145,7 +659,8 @@ function TransactionFilters({
     onSearchChange,
     onApplyFilters,
 }) {
-    const currentDate = new Date();
+    const currentDate =
+        new Date();
 
     const currentMonth =
         currentDate.getMonth() + 1;
@@ -159,6 +674,12 @@ function TransactionFilters({
     const firstFieldReference =
         useRef(null);
 
+    const yearPickerPanelReference =
+        useRef(null);
+
+    const yearPickerOpenStateReference =
+        useRef(false);
+
     const previousActiveElementReference =
         useRef(null);
 
@@ -166,6 +687,21 @@ function TransactionFilters({
         modalOpen,
         setModalOpen,
     ] = useState(false);
+
+    const [
+        yearPickerOpen,
+        setYearPickerOpen,
+    ] = useState(false);
+
+    const [
+        visibleStartYear,
+        setVisibleStartYear,
+    ] = useState(() =>
+        getYearPageStart(
+            selectedYear ||
+            currentYear
+        )
+    );
 
     const [
         draftFilterMode,
@@ -184,8 +720,8 @@ function TransactionFilters({
         draftYear,
         setDraftYear,
     ] = useState(
-        String(
-            selectedYear ||
+        normalizeYear(
+            selectedYear,
             currentYear
         )
     );
@@ -212,6 +748,13 @@ function TransactionFilters({
             selectedYear
         );
 
+    const draftPeriodLabel =
+        getPeriodLabel(
+            draftFilterMode,
+            draftMonth,
+            draftYear
+        );
+
     const hasPeriodFilter =
         filterMode !== "ALL";
 
@@ -227,6 +770,12 @@ function TransactionFilters({
             return;
         }
 
+        const nextYear =
+            normalizeYear(
+                selectedYear,
+                currentYear
+            );
+
         setDraftFilterMode(
             filterMode
         );
@@ -237,12 +786,16 @@ function TransactionFilters({
         );
 
         setDraftYear(
-            String(
-                selectedYear ||
-                currentYear
+            nextYear
+        );
+
+        setVisibleStartYear(
+            getYearPageStart(
+                nextYear
             )
         );
 
+        setYearPickerOpen(false);
         setValidationMessage("");
     }, [
         modalOpen,
@@ -251,6 +804,41 @@ function TransactionFilters({
         selectedYear,
         currentMonth,
         currentYear,
+    ]);
+
+    useEffect(() => {
+        yearPickerOpenStateReference.current =
+            yearPickerOpen;
+    }, [yearPickerOpen]);
+
+    useEffect(() => {
+        if (
+            !modalOpen ||
+            !yearPickerOpen
+        ) {
+            return undefined;
+        }
+
+        const scrollFrame =
+            window.requestAnimationFrame(
+                () => {
+                    yearPickerPanelReference
+                        .current
+                        ?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "nearest",
+                        });
+                }
+            );
+
+        return () => {
+            window.cancelAnimationFrame(
+                scrollFrame
+            );
+        };
+    }, [
+        modalOpen,
+        yearPickerOpen,
     ]);
 
     useEffect(() => {
@@ -278,6 +866,15 @@ function TransactionFilters({
 
         function handleKeyDown(event) {
             if (event.key === "Escape") {
+                event.preventDefault();
+
+                if (
+                    yearPickerOpenStateReference.current
+                ) {
+                    setYearPickerOpen(false);
+                    return;
+                }
+
                 setModalOpen(false);
                 return;
             }
@@ -375,6 +972,7 @@ function TransactionFilters({
 
     function closeModal() {
         setModalOpen(false);
+        setYearPickerOpen(false);
         setValidationMessage("");
     }
 
@@ -401,13 +999,82 @@ function TransactionFilters({
         onSearchChange?.("");
     }
 
+    function handleModeChange(
+        nextMode
+    ) {
+        setDraftFilterMode(
+            nextMode
+        );
+
+        setYearPickerOpen(false);
+        setValidationMessage("");
+    }
+
+    function toggleYearPicker() {
+        if (
+            disabled ||
+            !showYear
+        ) {
+            return;
+        }
+
+        setVisibleStartYear(
+            getYearPageStart(
+                draftYear
+            )
+        );
+
+        setYearPickerOpen(
+            (currentValue) =>
+                !currentValue
+        );
+    }
+
+    function handleSelectYear(year) {
+        setDraftYear(year);
+        setVisibleStartYear(
+            getYearPageStart(year)
+        );
+        setYearPickerOpen(false);
+        setValidationMessage("");
+    }
+
+    function handlePreviousYears() {
+        setVisibleStartYear(
+            (currentStartYear) =>
+                Math.max(
+                    currentStartYear -
+                    YEARS_PER_PAGE,
+                    MIN_YEAR
+                )
+        );
+    }
+
+    function handleNextYears() {
+        setVisibleStartYear(
+            (currentStartYear) =>
+                Math.min(
+                    currentStartYear +
+                    YEARS_PER_PAGE,
+                    MAX_YEAR -
+                    YEARS_PER_PAGE +
+                    1
+                )
+        );
+    }
+
     function handleResetDraft() {
         setDraftFilterMode("ALL");
         setDraftMonth(currentMonth);
-        setDraftYear(
-            String(currentYear)
+        setDraftYear(currentYear);
+
+        setVisibleStartYear(
+            getYearPageStart(
+                currentYear
+            )
         );
 
+        setYearPickerOpen(false);
         setValidationMessage("");
     }
 
@@ -432,7 +1099,7 @@ function TransactionFilters({
             )
         ) {
             setValidationMessage(
-                `Informe um ano entre ${MIN_YEAR} e ${MAX_YEAR}.`
+                `Selecione um ano entre ${MIN_YEAR} e ${MAX_YEAR}.`
             );
 
             return;
@@ -464,16 +1131,32 @@ function TransactionFilters({
             <section
                 aria-label="Pesquisa e filtros"
                 className="
+                    relative
                     w-full min-w-0
-                    rounded-2xl
+                    overflow-hidden
+                    rounded-[26px]
                     border border-border
                     bg-surface
                     p-4
                     shadow-card
+                    sm:p-5
                 "
             >
                 <div
+                    aria-hidden="true"
                     className="
+                        absolute
+                        -right-20 -top-24
+                        size-48
+                        rounded-full
+                        bg-blue-500/[0.06]
+                        blur-3xl
+                    "
+                />
+
+                <div
+                    className="
+                        relative
                         flex min-w-0
                         flex-col gap-3
                         md:flex-row
@@ -486,17 +1169,26 @@ function TransactionFilters({
                             min-w-0 flex-1
                         "
                     >
-                        <RiSearchLine
-                            size={18}
-                            aria-hidden="true"
+                        <span
                             className="
                                 pointer-events-none
                                 absolute
-                                left-3.5 top-1/2
+                                left-2 top-1/2
+                                flex size-9
                                 -translate-y-1/2
-                                text-muted-foreground
+                                items-center
+                                justify-center
+                                rounded-xl
+                                bg-blue-500/10
+                                text-blue-600
+                                dark:text-blue-400
                             "
-                        />
+                        >
+                            <RiSearchLine
+                                size={18}
+                                aria-hidden="true"
+                            />
+                        </span>
 
                         <input
                             id={`${idPrefix}-search`}
@@ -507,25 +1199,27 @@ function TransactionFilters({
                             }
                             disabled={disabled}
                             autoComplete="off"
-                            placeholder="Pesquisar pela descrição"
+                            placeholder="Pesquisar pela descrição..."
                             aria-label="Pesquisar pela descrição"
                             className="
-                                h-11 w-full
+                                h-12 w-full
                                 min-w-0
-                                rounded-xl
+                                rounded-2xl
                                 border border-border
                                 bg-background
                                 py-2
-                                pl-10 pr-11
+                                pl-12 pr-12
                                 text-sm
+                                font-medium
                                 text-foreground
                                 outline-none
                                 transition
-                                placeholder:text-muted-foreground/70
-                                hover:border-border-strong
-                                focus:border-foreground/40
-                                focus:ring-2
-                                focus:ring-ring/15
+                                placeholder:font-normal
+                                placeholder:text-muted-foreground/65
+                                hover:border-blue-500/25
+                                focus:border-blue-500/55
+                                focus:ring-4
+                                focus:ring-blue-500/10
                                 disabled:cursor-not-allowed
                                 disabled:opacity-60
                             "
@@ -544,22 +1238,25 @@ function TransactionFilters({
                                 title="Limpar pesquisa"
                                 className="
                                     absolute
-                                    right-1.5 top-1/2
-                                    inline-flex size-8
+                                    right-2 top-1/2
+                                    inline-flex size-9
                                     -translate-y-1/2
                                     items-center
                                     justify-center
-                                    rounded-lg
+                                    rounded-xl
                                     text-muted-foreground
-                                    transition-colors
+                                    transition
                                     hover:bg-surface-hover
                                     hover:text-foreground
+                                    focus-visible:outline-none
+                                    focus-visible:ring-4
+                                    focus-visible:ring-blue-500/10
                                     disabled:pointer-events-none
                                     disabled:opacity-40
                                 "
                             >
                                 <RiCloseLine
-                                    size={17}
+                                    size={18}
                                     aria-hidden="true"
                                 />
                             </button>
@@ -574,44 +1271,55 @@ function TransactionFilters({
                         aria-expanded={
                             modalOpen
                         }
-                        className={`
+                        className="
                             relative
                             inline-flex
-                            min-h-11
-                            w-full
+                            h-12 w-full
                             shrink-0
                             items-center
                             justify-center
                             gap-2.5
-                            rounded-xl
+                            overflow-hidden
+                            rounded-2xl
                             border
-                            px-4
+                            border-blue-500/20
+                            bg-gradient-to-r
+                            from-blue-600
+                            via-indigo-600
+                            to-violet-600
+                            px-5
                             text-sm
-                            font-medium
+                            font-semibold
+                            text-white
+                            shadow-lg
+                            shadow-blue-500/20
                             transition
+                            hover:-translate-y-0.5
+                            hover:shadow-xl
+                            hover:shadow-blue-500/25
+                            focus-visible:outline-none
+                            focus-visible:ring-4
+                            focus-visible:ring-blue-500/20
                             disabled:pointer-events-none
                             disabled:opacity-50
                             md:w-auto
-
-                            ${modalOpen
-                                ? `
-                                        border-primary
-                                        bg-primary
-                                        text-primary-foreground
-                                    `
-                                : `
-                                        border-border
-                                        bg-background
-                                        text-foreground
-                                        hover:border-border-strong
-                                        hover:bg-surface-hover
-                                    `
-                            }
-                        `}
+                        "
                     >
+                        <span
+                            aria-hidden="true"
+                            className="
+                                absolute
+                                -right-4 -top-7
+                                size-16
+                                rounded-full
+                                bg-white/15
+                                blur-xl
+                            "
+                        />
+
                         <span className="relative">
                             <RiFilter3Line
-                                size={18}
+                                size={19}
                                 aria-hidden="true"
                             />
 
@@ -620,75 +1328,111 @@ function TransactionFilters({
                                     aria-hidden="true"
                                     className="
                                         absolute
-                                        -right-1 -top-1
-                                        size-2
+                                        -right-1.5 -top-1
+                                        size-2.5
                                         rounded-full
                                         border-2
-                                        border-background
-                                        bg-primary
+                                        border-indigo-600
+                                        bg-white
                                     "
                                 />
                             )}
                         </span>
 
-                        <span>
+                        <span className="relative">
                             Filtros
-                        </span>
-
-                        <span
-                            aria-label={`${formattedTotalItems} itens encontrados`}
-                            className={`
-                                inline-flex
-                                min-w-7
-                                items-center
-                                justify-center
-                                rounded-full
-                                px-2 py-0.5
-                                text-xs
-                                font-semibold
-
-                                ${modalOpen
-                                    ? `
-                                            bg-white/15
-                                            text-primary-foreground
-                                        `
-                                    : `
-                                            bg-surface-muted
-                                            text-muted-foreground
-                                        `
-                                }
-                            `}
-                        >
-                            {formattedTotalItems}
                         </span>
                     </button>
                 </div>
 
                 <div
                     className="
+                        relative
                         mt-3
                         flex min-w-0
-                        items-center gap-2
-                        text-xs
-                        text-muted-foreground
+                        flex-col gap-2
+                        rounded-2xl
+                        border border-blue-500/10
+                        bg-blue-500/[0.045]
+                        px-3.5 py-3
+                        sm:flex-row
+                        sm:items-center
+                        sm:justify-between
                     "
                 >
-                    <RiCalendarLine
-                        size={14}
-                        aria-hidden="true"
-                        className="shrink-0"
-                    />
-
-                    <span className="truncate">
-                        Período:{" "}
-                        <strong
+                    <div
+                        className="
+                            flex min-w-0
+                            items-center gap-2.5
+                        "
+                    >
+                        <span
                             className="
-                                font-medium
-                                text-foreground
+                                flex size-8
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-xl
+                                bg-blue-500/10
+                                text-blue-600
+                                dark:text-blue-400
                             "
                         >
-                            {periodLabel}
-                        </strong>
+                            <RiCalendarLine
+                                size={16}
+                                aria-hidden="true"
+                            />
+                        </span>
+
+                        <div className="min-w-0">
+                            <p
+                                className="
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    tracking-[0.1em]
+                                    text-muted-foreground
+                                "
+                            >
+                                Período selecionado
+                            </p>
+
+                            <p
+                                className="
+                                    mt-0.5
+                                    truncate
+                                    text-sm
+                                    font-semibold
+                                    text-foreground
+                                "
+                            >
+                                {periodLabel}
+                            </p>
+                        </div>
+                    </div>
+
+                    <span
+                        className="
+                            shrink-0
+                            self-start
+                            rounded-full
+                            bg-surface
+                            px-3 py-1.5
+                            text-xs
+                            font-semibold
+                            tabular-nums
+                            text-muted-foreground
+                            ring-1
+                            ring-inset
+                            ring-border
+                            sm:self-auto
+                        "
+                    >
+                        {formattedTotalItems}{" "}
+                        {normalizedTotalItems === 1
+                            ? "resultado"
+                            : "resultados"
+                        }
                     </span>
                 </div>
             </section>
@@ -712,15 +1456,15 @@ function TransactionFilters({
                                 opacity: 0,
                             }}
                             transition={{
-                                duration: 0.18,
+                                duration: 0.2,
                             }}
                             className="
                                 fixed inset-0
                                 z-[200]
                                 flex items-end
                                 justify-center
-                                bg-black/45
-                                backdrop-blur-[2px]
+                                bg-slate-950/55
+                                backdrop-blur-sm
                                 sm:items-center
                                 sm:p-5
                             "
@@ -734,8 +1478,8 @@ function TransactionFilters({
                                 aria-labelledby={`${idPrefix}-filter-title`}
                                 initial={{
                                     opacity: 0,
-                                    y: 24,
-                                    scale: 0.985,
+                                    y: 30,
+                                    scale: 0.975,
                                 }}
                                 animate={{
                                     opacity: 1,
@@ -744,11 +1488,11 @@ function TransactionFilters({
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    y: 18,
-                                    scale: 0.985,
+                                    y: 22,
+                                    scale: 0.98,
                                 }}
                                 transition={{
-                                    duration: 0.22,
+                                    duration: 0.26,
                                     ease: [
                                         0.22,
                                         1,
@@ -758,17 +1502,17 @@ function TransactionFilters({
                                 }}
                                 className="
                                     flex
-                                    max-h-[92dvh]
+                                    max-h-[94dvh]
                                     w-full
-                                    max-w-lg
+                                    max-w-xl
                                     flex-col
                                     overflow-hidden
-                                    rounded-t-2xl
+                                    rounded-t-[30px]
                                     border border-border
                                     bg-surface
                                     text-foreground
-                                    shadow-dialog
-                                    sm:rounded-2xl
+                                    shadow-2xl
+                                    sm:rounded-[30px]
                                 "
                             >
                                 <form
@@ -783,87 +1527,135 @@ function TransactionFilters({
                                 >
                                     <header
                                         className="
-                                            flex min-w-0
-                                            items-center
-                                            gap-3
-                                            border-b
-                                            border-border
-                                            px-4 py-4
-                                            sm:px-5
+                                            relative
+                                            isolate
+                                            overflow-hidden
+                                            bg-gradient-to-br
+                                            from-blue-600
+                                            via-indigo-600
+                                            to-violet-700
+                                            px-5 py-5
+                                            text-white
+                                            sm:px-6
+                                            sm:py-6
                                         "
                                     >
-                                        <span
+                                        <div
+                                            aria-hidden="true"
                                             className="
-                                                flex size-9
-                                                shrink-0
-                                                items-center
-                                                justify-center
-                                                rounded-xl
-                                                bg-info-muted
-                                                text-info
+                                                absolute
+                                                -right-12 -top-14
+                                                size-36
+                                                rounded-full
+                                                bg-white/15
+                                                blur-2xl
                                             "
-                                        >
-                                            <RiFilter3Line
-                                                size={18}
-                                                aria-hidden="true"
-                                            />
-                                        </span>
+                                        />
+
+                                        <div
+                                            aria-hidden="true"
+                                            className="
+                                                absolute
+                                                -bottom-20 left-1/3
+                                                size-40
+                                                rounded-full
+                                                bg-black/10
+                                                blur-3xl
+                                            "
+                                        />
 
                                         <div
                                             className="
-                                                min-w-0
-                                                flex-1
-                                            "
-                                        >
-                                            <h2
-                                                id={`${idPrefix}-filter-title`}
-                                                className="
-                                                    truncate
-                                                    text-base
-                                                    font-semibold
-                                                    text-foreground
-                                                "
-                                            >
-                                                Filtrar período
-                                            </h2>
-
-                                            <p
-                                                className="
-                                                    mt-0.5
-                                                    truncate
-                                                    text-xs
-                                                    text-muted-foreground
-                                                "
-                                            >
-                                                Escolha quais registros deseja visualizar.
-                                            </p>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={
-                                                closeModal
-                                            }
-                                            aria-label="Fechar filtros"
-                                            title="Fechar"
-                                            className="
-                                                inline-flex
-                                                size-9
-                                                shrink-0
+                                                relative
+                                                z-10
+                                                flex min-w-0
                                                 items-center
-                                                justify-center
-                                                rounded-lg
-                                                text-muted-foreground
-                                                transition-colors
-                                                hover:bg-surface-hover
-                                                hover:text-foreground
+                                                gap-3
                                             "
                                         >
-                                            <RiCloseLine
-                                                size={20}
-                                                aria-hidden="true"
-                                            />
-                                        </button>
+                                            <span
+                                                className="
+                                                    flex size-11
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-2xl
+                                                    bg-white/15
+                                                    ring-1
+                                                    ring-inset
+                                                    ring-white/20
+                                                    backdrop-blur-sm
+                                                "
+                                            >
+                                                <RiFilter3Line
+                                                    size={21}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+
+                                            <div
+                                                className="
+                                                    min-w-0
+                                                    flex-1
+                                                "
+                                            >
+                                                <h2
+                                                    id={`${idPrefix}-filter-title`}
+                                                    className="
+                                                        truncate
+                                                        text-lg
+                                                        font-semibold
+                                                        tracking-tight
+                                                        sm:text-xl
+                                                    "
+                                                >
+                                                    Filtrar movimentações
+                                                </h2>
+
+                                                <p
+                                                    className="
+                                                        mt-1
+                                                        text-sm
+                                                        text-white/75
+                                                    "
+                                                >
+                                                    Escolha o período que deseja analisar.
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={
+                                                    closeModal
+                                                }
+                                                aria-label="Fechar filtros"
+                                                title="Fechar"
+                                                className="
+                                                    inline-flex
+                                                    size-10
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-xl
+                                                    bg-white/10
+                                                    text-white/80
+                                                    ring-1
+                                                    ring-inset
+                                                    ring-white/15
+                                                    transition
+                                                    hover:bg-white/20
+                                                    hover:text-white
+                                                    focus-visible:outline-none
+                                                    focus-visible:ring-4
+                                                    focus-visible:ring-white/15
+                                                "
+                                            >
+                                                <RiCloseLine
+                                                    size={21}
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                        </div>
                                     </header>
 
                                     <div
@@ -873,47 +1665,31 @@ function TransactionFilters({
                                             overflow-y-auto
                                             px-4 py-5
                                             scrollbar-subtle
-                                            sm:px-5
+                                            sm:px-6
+                                            sm:py-6
                                         "
                                     >
                                         <fieldset>
                                             <legend
                                                 className="
-                                                    mb-2
-                                                    text-sm
-                                                    font-medium
-                                                    text-foreground
+                                                    text-xs
+                                                    font-bold
+                                                    uppercase
+                                                    tracking-[0.11em]
+                                                    text-muted-foreground
                                                 "
                                             >
-                                                Visualização
+                                                Forma de visualização
                                             </legend>
 
                                             <div
                                                 className="
-                                                    grid gap-2
+                                                    mt-3
+                                                    grid gap-2.5
                                                     sm:grid-cols-3
                                                 "
                                             >
-                                                {[
-                                                    {
-                                                        value:
-                                                            "MONTH",
-                                                        label:
-                                                            "Por mês",
-                                                    },
-                                                    {
-                                                        value:
-                                                            "YEAR",
-                                                        label:
-                                                            "Ano inteiro",
-                                                    },
-                                                    {
-                                                        value:
-                                                            "ALL",
-                                                        label:
-                                                            "Todo histórico",
-                                                    },
-                                                ].map(
+                                                {FILTER_OPTIONS.map(
                                                     (
                                                         option,
                                                         index
@@ -928,67 +1704,147 @@ function TransactionFilters({
                                                                     option.value
                                                                 }
                                                                 ref={
-                                                                    index ===
-                                                                        0
+                                                                    index === 0
                                                                         ? firstFieldReference
                                                                         : undefined
                                                                 }
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    setDraftFilterMode(
+                                                                onClick={() =>
+                                                                    handleModeChange(
                                                                         option.value
-                                                                    );
-
-                                                                    setValidationMessage(
-                                                                        ""
-                                                                    );
-                                                                }}
+                                                                    )
+                                                                }
                                                                 aria-pressed={
                                                                     selected
                                                                 }
                                                                 className={`
-                                                                    flex
-                                                                    min-h-11
-                                                                    items-center
-                                                                    justify-between
-                                                                    gap-2
-                                                                    rounded-xl
+                                                                    group
+                                                                    relative
+                                                                    min-h-24
+                                                                    overflow-hidden
+                                                                    rounded-2xl
                                                                     border
-                                                                    px-3
-                                                                    text-sm
-                                                                    font-medium
-                                                                    transition-colors
+                                                                    p-3.5
+                                                                    text-left
+                                                                    transition
+                                                                    focus-visible:outline-none
+                                                                    focus-visible:ring-4
+                                                                    focus-visible:ring-blue-500/10
 
                                                                     ${selected
                                                                         ? `
-                                                                                border-primary
-                                                                                bg-primary
-                                                                                text-primary-foreground
+                                                                                border-blue-600
+                                                                                bg-gradient-to-br
+                                                                                from-blue-600
+                                                                                to-indigo-600
+                                                                                text-white
+                                                                                shadow-lg
+                                                                                shadow-blue-500/20
                                                                             `
                                                                         : `
                                                                                 border-border
                                                                                 bg-background
                                                                                 text-foreground
-                                                                                hover:bg-surface-hover
+                                                                                hover:-translate-y-0.5
+                                                                                hover:border-blue-500/25
+                                                                                hover:bg-blue-500/[0.035]
                                                                             `
                                                                     }
                                                                 `}
                                                             >
-                                                                <span className="truncate">
-                                                                    {
-                                                                        option.label
-                                                                    }
-                                                                </span>
+                                                                <span
+                                                                    aria-hidden="true"
+                                                                    className={`
+                                                                        absolute
+                                                                        -right-4 -top-5
+                                                                        size-14
+                                                                        rounded-full
+                                                                        blur-xl
 
-                                                                {selected && (
-                                                                    <RiCheckLine
-                                                                        size={
-                                                                            17
+                                                                        ${selected
+                                                                            ? "bg-white/20"
+                                                                            : "bg-blue-500/10"
                                                                         }
-                                                                        aria-hidden="true"
-                                                                        className="shrink-0"
-                                                                    />
-                                                                )}
+                                                                    `}
+                                                                />
+
+                                                                <div
+                                                                    className="
+                                                                        relative
+                                                                        flex
+                                                                        items-start
+                                                                        justify-between
+                                                                        gap-2
+                                                                    "
+                                                                >
+                                                                    <span
+                                                                        className={`
+                                                                            flex size-8
+                                                                            shrink-0
+                                                                            items-center
+                                                                            justify-center
+                                                                            rounded-xl
+
+                                                                            ${selected
+                                                                                ? "bg-white/15 text-white"
+                                                                                : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                                                            }
+                                                                        `}
+                                                                    >
+                                                                        <RiCalendarLine
+                                                                            size={16}
+                                                                            aria-hidden="true"
+                                                                        />
+                                                                    </span>
+
+                                                                    {selected && (
+                                                                        <span
+                                                                            className="
+                                                                                flex size-6
+                                                                                shrink-0
+                                                                                items-center
+                                                                                justify-center
+                                                                                rounded-full
+                                                                                bg-white/15
+                                                                            "
+                                                                        >
+                                                                            <RiCheckLine
+                                                                                size={15}
+                                                                                aria-hidden="true"
+                                                                            />
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                <p
+                                                                    className="
+                                                                        relative
+                                                                        mt-3
+                                                                        text-sm
+                                                                        font-semibold
+                                                                    "
+                                                                >
+                                                                    {option.label}
+                                                                </p>
+
+                                                                <p
+                                                                    className={`
+                                                                        relative
+                                                                        mt-1
+                                                                        line-clamp-2
+                                                                        text-[11px]
+                                                                        leading-4
+
+                                                                        ${selected
+                                                                            ? "text-white/70"
+                                                                            : "text-muted-foreground"
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    {
+                                                                        option.description
+                                                                    }
+                                                                </p>
                                                             </button>
                                                         );
                                                     }
@@ -1002,11 +1858,11 @@ function TransactionFilters({
                                         >
                                             {(showMonth ||
                                                 showYear) && (
-                                                    <motion.div
+                                                    <motion.section
                                                         key="period-fields"
                                                         initial={{
                                                             opacity: 0,
-                                                            y: -6,
+                                                            y: -8,
                                                         }}
                                                         animate={{
                                                             opacity: 1,
@@ -1014,231 +1870,338 @@ function TransactionFilters({
                                                         }}
                                                         exit={{
                                                             opacity: 0,
-                                                            y: -6,
+                                                            y: -8,
                                                         }}
                                                         transition={{
-                                                            duration: 0.18,
+                                                            duration: 0.2,
                                                         }}
                                                         className="
-                                                        mt-5
-                                                        grid gap-4
-                                                        sm:grid-cols-2
-                                                    "
+                                                            mt-6
+                                                            rounded-3xl
+                                                            border
+                                                            border-border
+                                                            bg-surface-muted/30
+                                                            p-4
+                                                            sm:p-5
+                                                        "
                                                     >
-                                                        {showMonth && (
-                                                            <SelectField
-                                                                id={`${idPrefix}-draft-month`}
-                                                                label="Mês"
-                                                                value={
-                                                                    draftMonth
-                                                                }
-                                                                onChange={(
-                                                                    event
-                                                                ) =>
-                                                                    setDraftMonth(
-                                                                        Number(
-                                                                            event
-                                                                                .target
-                                                                                .value
-                                                                        )
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    disabled
-                                                                }
-                                                            >
-                                                                {months.map(
-                                                                    (
-                                                                        month
-                                                                    ) => (
-                                                                        <option
-                                                                            key={
-                                                                                month.value
-                                                                            }
-                                                                            value={
-                                                                                month.value
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                month.label
-                                                                            }
-                                                                        </option>
-                                                                    )
-                                                                )}
-                                                            </SelectField>
-                                                        )}
-
-                                                        {showYear && (
-                                                            <div
-                                                                className={
-                                                                    showMonth
-                                                                        ? ""
-                                                                        : "sm:col-span-2"
-                                                                }
-                                                            >
-                                                                <label
-                                                                    htmlFor={`${idPrefix}-draft-year`}
-                                                                    className="
-                                                                    mb-1.5
-                                                                    block
-                                                                    text-sm
-                                                                    font-medium
-                                                                    text-foreground
+                                                        <div
+                                                            className="
+                                                                flex
+                                                                items-center
+                                                                gap-3
+                                                            "
+                                                        >
+                                                            <span
+                                                                className="
+                                                                    flex size-9
+                                                                    shrink-0
+                                                                    items-center
+                                                                    justify-center
+                                                                    rounded-xl
+                                                                    bg-blue-500/10
+                                                                    text-blue-600
+                                                                    dark:text-blue-400
                                                                 "
-                                                                >
-                                                                    Ano
-                                                                </label>
+                                                            >
+                                                                <RiCalendarLine
+                                                                    size={18}
+                                                                    aria-hidden="true"
+                                                                />
+                                                            </span>
 
-                                                                <input
-                                                                    id={`${idPrefix}-draft-year`}
-                                                                    type="number"
-                                                                    inputMode="numeric"
-                                                                    min={
-                                                                        MIN_YEAR
-                                                                    }
-                                                                    max={
-                                                                        MAX_YEAR
-                                                                    }
-                                                                    step="1"
+                                                            <div>
+                                                                <h3
+                                                                    className="
+                                                                        text-sm
+                                                                        font-semibold
+                                                                        text-foreground
+                                                                    "
+                                                                >
+                                                                    Definir período
+                                                                </h3>
+
+                                                                <p
+                                                                    className="
+                                                                        mt-0.5
+                                                                        text-xs
+                                                                        text-muted-foreground
+                                                                    "
+                                                                >
+                                                                    Selecione o mês e o ano desejados.
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            className={`
+                                                                mt-4
+                                                                grid gap-4
+
+                                                                ${showMonth
+                                                                    ? "sm:grid-cols-2"
+                                                                    : "grid-cols-1"
+                                                                }
+                                                            `}
+                                                        >
+                                                            {showMonth && (
+                                                                <SelectField
+                                                                    id={`${idPrefix}-draft-month`}
+                                                                    label="Mês"
                                                                     value={
-                                                                        draftYear
+                                                                        draftMonth
                                                                     }
                                                                     onChange={(
                                                                         event
-                                                                    ) => {
-                                                                        setDraftYear(
-                                                                            event
-                                                                                .target
-                                                                                .value
-                                                                        );
-
-                                                                        setValidationMessage(
-                                                                            ""
-                                                                        );
-                                                                    }}
+                                                                    ) =>
+                                                                        setDraftMonth(
+                                                                            Number(
+                                                                                event
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        )
+                                                                    }
                                                                     disabled={
                                                                         disabled
                                                                     }
-                                                                    placeholder="Digite o ano"
-                                                                    className="
-                                                                    h-11
-                                                                    w-full
-                                                                    rounded-xl
-                                                                    border
-                                                                    border-border
-                                                                    bg-background
-                                                                    px-3.5
-                                                                    text-sm
-                                                                    text-foreground
-                                                                    outline-none
-                                                                    transition
-                                                                    hover:border-border-strong
-                                                                    focus:border-foreground/40
-                                                                    focus:ring-2
-                                                                    focus:ring-ring/15
-                                                                    disabled:cursor-not-allowed
-                                                                    disabled:opacity-60
-                                                                "
+                                                                >
+                                                                    {months.map(
+                                                                        (
+                                                                            month
+                                                                        ) => (
+                                                                            <option
+                                                                                key={
+                                                                                    month.value
+                                                                                }
+                                                                                value={
+                                                                                    month.value
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    month.label
+                                                                                }
+                                                                            </option>
+                                                                        )
+                                                                    )}
+                                                                </SelectField>
+                                                            )}
+
+                                                            {showYear && (
+                                                                <YearPickerTrigger
+                                                                    id={`${idPrefix}-draft-year`}
+                                                                    value={
+                                                                        draftYear
+                                                                    }
+                                                                    open={
+                                                                        yearPickerOpen
+                                                                    }
+                                                                    disabled={
+                                                                        disabled
+                                                                    }
+                                                                    onToggle={
+                                                                        toggleYearPicker
+                                                                    }
                                                                 />
-                                                            </div>
-                                                        )}
-                                                    </motion.div>
+                                                            )}
+                                                        </div>
+
+                                                        <YearPickerPanel
+                                                            open={
+                                                                yearPickerOpen &&
+                                                                showYear
+                                                            }
+                                                            currentYear={
+                                                                currentYear
+                                                            }
+                                                            selectedYear={
+                                                                draftYear
+                                                            }
+                                                            visibleStartYear={
+                                                                visibleStartYear
+                                                            }
+                                                            panelReference={
+                                                                yearPickerPanelReference
+                                                            }
+                                                            onSelectYear={
+                                                                handleSelectYear
+                                                            }
+                                                            onPreviousYears={
+                                                                handlePreviousYears
+                                                            }
+                                                            onNextYears={
+                                                                handleNextYears
+                                                            }
+                                                        />
+                                                    </motion.section>
                                                 )}
                                         </AnimatePresence>
 
                                         {validationMessage && (
-                                            <p
+                                            <motion.p
                                                 role="alert"
+                                                initial={{
+                                                    opacity: 0,
+                                                    y: -4,
+                                                }}
+                                                animate={{
+                                                    opacity: 1,
+                                                    y: 0,
+                                                }}
                                                 className="
                                                     mt-3
+                                                    rounded-xl
+                                                    border
+                                                    border-rose-500/15
+                                                    bg-rose-500/[0.06]
+                                                    px-3.5 py-3
                                                     text-xs
-                                                    font-medium
-                                                    text-danger
+                                                    font-semibold
+                                                    text-rose-600
+                                                    dark:text-rose-400
                                                 "
                                             >
                                                 {
                                                     validationMessage
                                                 }
-                                            </p>
+                                            </motion.p>
                                         )}
 
-                                        <div
+                                        <section
                                             className="
-                                                mt-5
-                                                rounded-xl
-                                                border border-border
-                                                bg-background
+                                                relative
+                                                mt-6
+                                                overflow-hidden
+                                                rounded-3xl
+                                                border
+                                                border-blue-500/15
+                                                bg-gradient-to-br
+                                                from-blue-600
+                                                via-indigo-600
+                                                to-violet-600
                                                 p-4
+                                                text-white
+                                                shadow-lg
+                                                shadow-blue-500/15
+                                                sm:p-5
                                             "
                                         >
-                                            <p
+                                            <div
+                                                aria-hidden="true"
                                                 className="
-                                                    text-xs
-                                                    text-muted-foreground
+                                                    absolute
+                                                    -right-8 -top-10
+                                                    size-28
+                                                    rounded-full
+                                                    bg-white/15
+                                                    blur-2xl
                                                 "
-                                            >
-                                                Resultado atual
-                                            </p>
+                                            />
 
                                             <div
                                                 className="
-                                                    mt-1.5
+                                                    relative
                                                     flex
+                                                    min-w-0
                                                     items-center
                                                     justify-between
-                                                    gap-3
+                                                    gap-4
                                                 "
                                             >
-                                                <p
+                                                <div
                                                     className="
-                                                        min-w-0
-                                                        truncate
-                                                        text-sm
-                                                        font-medium
-                                                        text-foreground
+                                                        flex min-w-0
+                                                        items-center
+                                                        gap-3
                                                     "
                                                 >
-                                                    {getPeriodLabel(
-                                                        draftFilterMode,
-                                                        draftMonth,
-                                                        draftYear
-                                                    )}
-                                                </p>
+                                                    <span
+                                                        className="
+                                                            flex size-10
+                                                            shrink-0
+                                                            items-center
+                                                            justify-center
+                                                            rounded-2xl
+                                                            bg-white/15
+                                                            ring-1
+                                                            ring-inset
+                                                            ring-white/15
+                                                        "
+                                                    >
+                                                        <RiCalendarLine
+                                                            size={19}
+                                                            aria-hidden="true"
+                                                        />
+                                                    </span>
+
+                                                    <div className="min-w-0">
+                                                        <p
+                                                            className="
+                                                                text-[10px]
+                                                                font-bold
+                                                                uppercase
+                                                                tracking-[0.12em]
+                                                                text-white/65
+                                                            "
+                                                        >
+                                                            Período escolhido
+                                                        </p>
+
+                                                        <p
+                                                            className="
+                                                                mt-0.5
+                                                                truncate
+                                                                text-base
+                                                                font-semibold
+                                                            "
+                                                        >
+                                                            {
+                                                                draftPeriodLabel
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                </div>
 
                                                 <span
                                                     className="
                                                         shrink-0
                                                         rounded-full
-                                                        bg-surface-muted
-                                                        px-2.5 py-1
+                                                        bg-white/15
+                                                        px-3 py-1.5
                                                         text-xs
                                                         font-semibold
-                                                        text-muted-foreground
+                                                        tabular-nums
+                                                        text-white
+                                                        ring-1
+                                                        ring-inset
+                                                        ring-white/15
                                                     "
                                                 >
                                                     {
                                                         formattedTotalItems
                                                     }{" "}
-                                                    {normalizedTotalItems ===
-                                                        1
+                                                    {normalizedTotalItems === 1
                                                         ? "item"
-                                                        : "itens"}
+                                                        : "itens"
+                                                    }
                                                 </span>
                                             </div>
-                                        </div>
+                                        </section>
                                     </div>
 
                                     <footer
                                         className="
                                             flex
                                             flex-col-reverse
-                                            gap-2
+                                            gap-2.5
                                             border-t
                                             border-border
+                                            bg-surface
                                             px-4 py-4
                                             sm:flex-row
+                                            sm:items-center
                                             sm:justify-between
-                                            sm:px-5
+                                            sm:px-6
                                         "
                                     >
                                         <button
@@ -1260,10 +2223,15 @@ function TransactionFilters({
                                                 bg-surface
                                                 px-4
                                                 text-sm
-                                                font-medium
-                                                text-foreground
-                                                transition-colors
-                                                hover:bg-surface-hover
+                                                font-semibold
+                                                text-muted-foreground
+                                                transition
+                                                hover:border-blue-500/20
+                                                hover:bg-blue-500/[0.035]
+                                                hover:text-foreground
+                                                focus-visible:outline-none
+                                                focus-visible:ring-4
+                                                focus-visible:ring-blue-500/10
                                                 disabled:pointer-events-none
                                                 disabled:opacity-50
                                                 sm:w-auto
@@ -1276,7 +2244,7 @@ function TransactionFilters({
                                             className="
                                                 flex
                                                 flex-col-reverse
-                                                gap-2
+                                                gap-2.5
                                                 sm:flex-row
                                             "
                                         >
@@ -1296,10 +2264,13 @@ function TransactionFilters({
                                                     bg-surface
                                                     px-4
                                                     text-sm
-                                                    font-medium
+                                                    font-semibold
                                                     text-foreground
-                                                    transition-colors
+                                                    transition
                                                     hover:bg-surface-hover
+                                                    focus-visible:outline-none
+                                                    focus-visible:ring-4
+                                                    focus-visible:ring-blue-500/10
                                                     sm:w-auto
                                                 "
                                             >
@@ -1319,13 +2290,25 @@ function TransactionFilters({
                                                     justify-center
                                                     gap-2
                                                     rounded-xl
-                                                    bg-primary
+                                                    border
+                                                    border-blue-500/20
+                                                    bg-gradient-to-r
+                                                    from-blue-600
+                                                    via-indigo-600
+                                                    to-violet-600
                                                     px-5
                                                     text-sm
-                                                    font-medium
-                                                    text-primary-foreground
-                                                    transition-colors
-                                                    hover:bg-primary-hover
+                                                    font-semibold
+                                                    text-white
+                                                    shadow-lg
+                                                    shadow-blue-500/20
+                                                    transition
+                                                    hover:-translate-y-0.5
+                                                    hover:shadow-xl
+                                                    hover:shadow-blue-500/25
+                                                    focus-visible:outline-none
+                                                    focus-visible:ring-4
+                                                    focus-visible:ring-blue-500/20
                                                     disabled:pointer-events-none
                                                     disabled:opacity-60
                                                     sm:w-auto

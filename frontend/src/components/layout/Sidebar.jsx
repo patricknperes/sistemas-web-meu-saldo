@@ -19,7 +19,9 @@ import {
     useNavigate,
 } from "react-router";
 
-import { useAuth } from "../../hooks/useAuth.js";
+import {
+    useAuth,
+} from "../../hooks/useAuth.js";
 
 import UserAvatar from "../ui/UserAvatar.jsx";
 import SidebarItem from "./SidebarItem.jsx";
@@ -58,19 +60,15 @@ const menuItems = [
     },
 ];
 
-function getUserInformation(user) {
-    const fullName =
-        user?.name?.trim() || "Usuário";
-
-    const roleLabel =
-        user?.role === "ADMIN"
-            ? "Administrador"
-            : "Usuário";
-
-    return {
-        fullName,
-        roleLabel,
-    };
+function getShortName(name) {
+    return (
+        name?.trim() ||
+        "Usuário"
+    )
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ");
 }
 
 function Sidebar({
@@ -78,36 +76,50 @@ function Sidebar({
     collapsed = false,
     onClose,
 }) {
-    const navigate = useNavigate();
+    const navigate =
+        useNavigate();
 
     const {
         user,
         logout,
     } = useAuth();
 
-    const mobile = mode === "mobile";
+    const mobile =
+        mode === "mobile";
 
     const labelsVisible =
         mobile || !collapsed;
 
-    const {
-        fullName,
-        roleLabel,
-    } = getUserInformation(user);
+    const fullName =
+        user?.name?.trim() ||
+        "Usuário";
 
-    const visibleMenuItems = menuItems.filter(
-        (item) =>
-            !item.adminOnly ||
-            user?.role === "ADMIN"
-    );
+    const shortName =
+        getShortName(fullName);
+
+    const roleLabel =
+        user?.role === "ADMIN"
+            ? "Administrador"
+            : "Usuário";
+
+    const visibleMenuItems =
+        menuItems.filter(
+            (item) =>
+                !item.adminOnly ||
+                user?.role ===
+                "ADMIN"
+        );
 
     function handleLogout() {
         logout();
         onClose?.();
 
-        navigate("/login", {
-            replace: true,
-        });
+        navigate(
+            "/login",
+            {
+                replace: true,
+            }
+        );
     }
 
     function handleNavigation() {
@@ -120,9 +132,9 @@ function Sidebar({
         <aside
             aria-label="Menu principal"
             className={`
+                relative z-30
                 flex h-full shrink-0
-                flex-col
-                overflow-hidden
+                flex-col overflow-hidden
                 border-r border-border
                 bg-surface
                 transition-[width]
@@ -136,7 +148,7 @@ function Sidebar({
                             lg:flex
 
                             ${collapsed
-                        ? "w-[72px]"
+                        ? "w-[76px]"
                         : "w-[272px]"
                     }
                         `
@@ -169,19 +181,29 @@ function Sidebar({
                         flex min-w-0
                         items-center gap-3
                         overflow-hidden
+                        rounded-xl
+                        outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-blue-500/20
                     "
                 >
                     <span
                         className="
-                            flex size-10
-                            shrink-0
+                            flex size-10 shrink-0
                             items-center justify-center
                             rounded-xl
-                            bg-primary
-                            text-primary-foreground
+                            bg-gradient-to-br
+                            from-blue-600
+                            to-indigo-600
+                            text-white
+                            shadow-md
+                            shadow-blue-500/20
                         "
                     >
-                        <RiWallet3Line size={21} />
+                        <RiWallet3Line
+                            size={20}
+                            aria-hidden="true"
+                        />
                     </span>
 
                     {labelsVisible && (
@@ -198,8 +220,8 @@ function Sidebar({
 
                             <span
                                 className="
-                                    block truncate
-                                    text-xs
+                                    mt-0.5 block
+                                    truncate text-[11px]
                                     text-muted-foreground
                                 "
                             >
@@ -215,17 +237,25 @@ function Sidebar({
                         onClick={onClose}
                         aria-label="Fechar menu lateral"
                         className="
-                            inline-flex size-9
+                            inline-flex size-10
                             shrink-0
                             items-center justify-center
-                            rounded-lg
+                            rounded-xl
+                            border border-border
+                            bg-background/70
                             text-muted-foreground
-                            transition-colors
+                            outline-none
+                            transition
                             hover:bg-surface-hover
                             hover:text-foreground
+                            focus-visible:ring-2
+                            focus-visible:ring-ring/20
                         "
                     >
-                        <RiCloseLine size={20} />
+                        <RiCloseLine
+                            size={20}
+                            aria-hidden="true"
+                        />
                     </button>
                 )}
             </header>
@@ -236,29 +266,45 @@ function Sidebar({
                 <nav
                     className="
                         flex min-h-0 flex-1
-                        flex-col gap-1
+                        flex-col
                         overflow-x-hidden
                         overflow-y-auto
                         p-3
                         scrollbar-subtle
                     "
                 >
-                    {visibleMenuItems.map(
-                        (item) => (
-                            <SidebarItem
-                                key={item.path}
-                                item={item}
-                                collapsed={
-                                    !mobile &&
-                                    collapsed
-                                }
-                                onNavigate={
-                                    handleNavigation
-                                }
-                                layoutId={`sidebar-active-${mode}`}
-                            />
-                        )
+                    {labelsVisible && (
+                        <p
+                            className="
+                                mb-2 px-3
+                                text-[10px]
+                                font-bold uppercase
+                                tracking-[0.12em]
+                                text-muted-foreground
+                            "
+                        >
+                            Navegação
+                        </p>
                     )}
+
+                    <div className="space-y-1">
+                        {visibleMenuItems.map(
+                            (item) => (
+                                <SidebarItem
+                                    key={item.path}
+                                    item={item}
+                                    collapsed={
+                                        !mobile &&
+                                        collapsed
+                                    }
+                                    onNavigate={
+                                        handleNavigation
+                                    }
+                                    layoutId={`sidebar-active-${mode}`}
+                                />
+                            )
+                        )}
+                    </div>
                 </nav>
             </LayoutGroup>
 
@@ -274,6 +320,10 @@ function Sidebar({
                         className="
                             flex min-w-0
                             items-center gap-2
+                            rounded-2xl
+                            border border-border
+                            bg-background/60
+                            p-2
                         "
                     >
                         <Link
@@ -285,10 +335,12 @@ function Sidebar({
                                 flex min-w-0 flex-1
                                 items-center gap-3
                                 overflow-hidden
-                                rounded-xl
-                                p-1
-                                transition-colors
+                                rounded-xl p-1
+                                outline-none
+                                transition
                                 hover:bg-surface-hover
+                                focus-visible:ring-2
+                                focus-visible:ring-ring/20
                             "
                         >
                             <UserAvatar
@@ -299,20 +351,19 @@ function Sidebar({
 
                             <span className="min-w-0 flex-1">
                                 <strong
-                                    title={fullName}
                                     className="
                                         block truncate
                                         text-sm font-medium
                                         text-foreground
                                     "
                                 >
-                                    {fullName}
+                                    {shortName}
                                 </strong>
 
                                 <span
                                     className="
-                                        block truncate
-                                        text-xs
+                                        mt-0.5 block
+                                        truncate text-[11px]
                                         text-muted-foreground
                                     "
                                 >
@@ -330,15 +381,19 @@ function Sidebar({
                                 inline-flex size-9
                                 shrink-0
                                 items-center justify-center
-                                rounded-lg
+                                rounded-xl
                                 text-muted-foreground
-                                transition-colors
+                                outline-none
+                                transition
                                 hover:bg-danger-muted
                                 hover:text-danger
+                                focus-visible:ring-2
+                                focus-visible:ring-danger/20
                             "
                         >
                             <RiLogoutBoxRLine
-                                size={19}
+                                size={18}
+                                aria-hidden="true"
                             />
                         </button>
                     </div>
@@ -354,13 +409,17 @@ function Sidebar({
                             items-center justify-center
                             rounded-xl
                             text-muted-foreground
-                            transition-colors
+                            outline-none
+                            transition
                             hover:bg-danger-muted
                             hover:text-danger
+                            focus-visible:ring-2
+                            focus-visible:ring-danger/20
                         "
                     >
                         <RiLogoutBoxRLine
                             size={19}
+                            aria-hidden="true"
                         />
                     </button>
                 )}

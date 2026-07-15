@@ -12,33 +12,32 @@ function AuthInput({
     label,
     icon: Icon,
     type = "text",
+    helperText = "",
     ...inputProperties
 }) {
-    const isPassword = type === "password";
+    const isPassword =
+        type === "password";
 
-    const [passwordVisible, setPasswordVisible] =
-        useState(false);
+    const [
+        passwordVisible,
+        setPasswordVisible,
+    ] = useState(false);
 
     const resolvedType =
-        isPassword && passwordVisible
+        isPassword &&
+            passwordVisible
             ? "text"
             : type;
-
-    function togglePasswordVisibility() {
-        setPasswordVisible(
-            (currentVisibility) =>
-                !currentVisibility
-        );
-    }
 
     return (
         <div className="min-w-0">
             <label
                 htmlFor={id}
                 className="
-                    mb-1.5 block
-                    truncate
-                    text-sm font-medium
+                    mb-2
+                    block
+                    text-sm
+                    font-semibold
                     text-foreground
                 "
             >
@@ -47,17 +46,24 @@ function AuthInput({
 
             <div className="relative min-w-0">
                 {Icon && (
-                    <Icon
-                        size={19}
+                    <span
                         aria-hidden="true"
                         className="
                             pointer-events-none
-                            absolute left-3.5 top-1/2
+                            absolute
+                            left-2 top-1/2
                             z-10
+                            flex size-8
                             -translate-y-1/2
-                            text-muted-foreground
+                            items-center
+                            justify-center
+                            rounded-xl
+                            bg-primary-muted
+                            text-primary
                         "
-                    />
+                    >
+                        <Icon size={16} />
+                    </span>
                 )}
 
                 <input
@@ -65,26 +71,35 @@ function AuthInput({
                     id={id}
                     type={resolvedType}
                     className={`
-                        h-12 w-full min-w-0
-                        rounded-control
+                        h-12 w-full
+                        min-w-0
+                        rounded-2xl
                         border border-border
                         bg-background
                         py-2.5
                         text-sm
+                        font-medium
                         text-foreground
                         outline-none
-                        transition
-                        placeholder:text-muted-foreground
+                        transition-all
+                        duration-200
+                        placeholder:font-normal
+                        placeholder:text-muted-foreground/60
                         hover:border-border-strong
-                        focus:border-border-strong
-                        focus:ring-2
-                        focus:ring-ring/20
+                        focus:border-primary/50
+                        focus:ring-4
+                        focus:ring-primary/10
                         disabled:cursor-not-allowed
                         disabled:opacity-60
-                        ${Icon ? "pl-11" : "pl-3.5"}
+
+                        ${Icon
+                            ? "pl-12"
+                            : "pl-4"
+                        }
+
                         ${isPassword
                             ? "pr-12"
-                            : "pr-3.5"
+                            : "pr-4"
                         }
                     `}
                 />
@@ -92,8 +107,14 @@ function AuthInput({
                 {isPassword && (
                     <button
                         type="button"
-                        onClick={
-                            togglePasswordVisibility
+                        onClick={() =>
+                            setPasswordVisible(
+                                (currentValue) =>
+                                    !currentValue
+                            )
+                        }
+                        disabled={
+                            inputProperties.disabled
                         }
                         aria-label={
                             passwordVisible
@@ -106,25 +127,51 @@ function AuthInput({
                                 : "Mostrar senha"
                         }
                         className="
-                            clickable-area
-                            absolute right-0.5 top-1/2
-                            inline-flex
+                            absolute
+                            right-2 top-1/2
+                            inline-flex size-8
                             -translate-y-1/2
-                            items-center justify-center
-                            rounded-lg
+                            items-center
+                            justify-center
+                            rounded-xl
                             text-muted-foreground
-                            transition-colors
+                            outline-none
+                            transition
+                            hover:bg-surface-hover
                             hover:text-foreground
+                            focus-visible:ring-2
+                            focus-visible:ring-ring/20
+                            disabled:pointer-events-none
+                            disabled:opacity-40
                         "
                     >
                         {passwordVisible ? (
-                            <RiEyeOffLine size={19} />
+                            <RiEyeOffLine
+                                size={18}
+                                aria-hidden="true"
+                            />
                         ) : (
-                            <RiEyeLine size={19} />
+                            <RiEyeLine
+                                size={18}
+                                aria-hidden="true"
+                            />
                         )}
                     </button>
                 )}
             </div>
+
+            {helperText && (
+                <p
+                    className="
+                        mt-2
+                        text-xs
+                        leading-5
+                        text-muted-foreground
+                    "
+                >
+                    {helperText}
+                </p>
+            )}
         </div>
     );
 }

@@ -4,7 +4,9 @@ import {
     useRef,
 } from "react";
 
-import { createPortal } from "react-dom";
+import {
+    createPortal,
+} from "react-dom";
 
 import {
     AnimatePresence,
@@ -14,9 +16,82 @@ import {
 import {
     RiArrowDownLine,
     RiArrowUpLine,
+    RiCalendarLine,
+    RiCheckLine,
     RiCloseLine,
+    RiFileTextLine,
+    RiInformationLine,
     RiLoader4Line,
+    RiMoneyDollarCircleLine,
+    RiPriceTag3Line,
+    RiStickyNoteLine,
 } from "react-icons/ri";
+
+const TYPE_STYLES = {
+    INCOME: {
+        label: "Receita",
+        icon: RiArrowUpLine,
+
+        headerGradient:
+            "from-emerald-500 via-emerald-600 to-teal-700",
+
+        headerShadow:
+            "shadow-emerald-500/20",
+
+        softBackground:
+            "bg-emerald-500/[0.055]",
+
+        softBorder:
+            "border-emerald-500/15",
+
+        iconContainer:
+            "bg-emerald-500/10 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
+
+        fieldFocus:
+            "focus:border-emerald-500/55 focus:ring-emerald-500/10",
+
+        amount:
+            "text-emerald-600 dark:text-emerald-400",
+
+        badge:
+            "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
+
+        submitButton:
+            "from-emerald-500 via-emerald-600 to-teal-700 shadow-emerald-500/25 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/25",
+    },
+
+    EXPENSE: {
+        label: "Despesa",
+        icon: RiArrowDownLine,
+
+        headerGradient:
+            "from-rose-500 via-rose-600 to-red-700",
+
+        headerShadow:
+            "shadow-rose-500/20",
+
+        softBackground:
+            "bg-rose-500/[0.055]",
+
+        softBorder:
+            "border-rose-500/15",
+
+        iconContainer:
+            "bg-rose-500/10 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
+
+        fieldFocus:
+            "focus:border-rose-500/55 focus:ring-rose-500/10",
+
+        amount:
+            "text-rose-600 dark:text-rose-400",
+
+        badge:
+            "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
+
+        submitButton:
+            "from-rose-500 via-rose-600 to-red-700 shadow-rose-500/25 hover:shadow-rose-500/30 focus-visible:ring-rose-500/25",
+    },
+};
 
 /*
  * O valor é armazenado no estado somente como
@@ -28,11 +103,9 @@ import {
  * "123456" -> R$ 1.234,56
  */
 function normalizeAmountDigits(value) {
-    const digits = String(value ?? "")
+    return String(value ?? "")
         .replace(/\D/g, "")
         .replace(/^0+(?=\d)/, "");
-
-    return digits;
 }
 
 function formatAmountInput(value) {
@@ -46,9 +119,13 @@ function formatAmountInput(value) {
     const paddedValue =
         digits.padStart(3, "0");
 
-    const integerPart = paddedValue
-        .slice(0, -2)
-        .replace(/^0+(?=\d)/, "");
+    const integerPart =
+        paddedValue
+            .slice(0, -2)
+            .replace(
+                /^0+(?=\d)/,
+                ""
+            );
 
     const decimalPart =
         paddedValue.slice(-2);
@@ -62,6 +139,74 @@ function formatAmountInput(value) {
     return `${formattedInteger},${decimalPart}`;
 }
 
+function FieldLabel({
+    htmlFor,
+    children,
+    optional = false,
+}) {
+    return (
+        <div
+            className="
+                mb-2
+                flex min-w-0
+                items-center
+                justify-between
+                gap-3
+            "
+        >
+            <label
+                htmlFor={htmlFor}
+                className="
+                    truncate
+                    text-sm
+                    font-semibold
+                    text-foreground
+                "
+            >
+                {children}
+            </label>
+
+            {optional && (
+                <span
+                    className="
+                        shrink-0
+                        text-[11px]
+                        font-medium
+                        text-muted-foreground
+                    "
+                >
+                    Opcional
+                </span>
+            )}
+        </div>
+    );
+}
+
+function InputIcon({
+    icon: Icon,
+    styles,
+}) {
+    return (
+        <span
+            aria-hidden="true"
+            className={`
+                pointer-events-none
+                absolute
+                left-2 top-1/2
+                flex size-8
+                -translate-y-1/2
+                items-center
+                justify-center
+                rounded-xl
+
+                ${styles.iconContainer}
+            `}
+        >
+            <Icon size={16} />
+        </span>
+    );
+}
+
 function TransactionFormModal({
     open,
     type = "INCOME",
@@ -72,10 +217,14 @@ function TransactionFormModal({
     onSubmit,
     onClose,
 }) {
-    const generatedId = useId();
+    const generatedId =
+        useId();
 
-    const dialogReference = useRef(null);
-    const firstInputReference = useRef(null);
+    const dialogReference =
+        useRef(null);
+
+    const firstInputReference =
+        useRef(null);
 
     const previousActiveElementReference =
         useRef(null);
@@ -96,29 +245,40 @@ function TransactionFormModal({
             submitting;
     }, [submitting]);
 
+    const normalizedType =
+        type === "EXPENSE"
+            ? "EXPENSE"
+            : "INCOME";
+
+    const styles =
+        TYPE_STYLES[normalizedType];
+
     const isIncome =
-        type === "INCOME";
+        normalizedType === "INCOME";
 
     const transactionName =
         isIncome
             ? "receita"
             : "despesa";
 
-    const title = editing
-        ? `Editar ${transactionName}`
-        : `Nova ${transactionName}`;
+    const title =
+        editing
+            ? `Editar ${transactionName}`
+            : `Nova ${transactionName}`;
 
-    const subtitle = editing
-        ? `Atualize as informações da ${transactionName}.`
-        : `Preencha os campos para cadastrar uma ${transactionName}.`;
+    const subtitle =
+        editing
+            ? `Revise e atualize os dados desta ${transactionName}.`
+            : `Registre uma nova ${transactionName} para manter seu saldo atualizado.`;
 
-    const submitLabel = editing
-        ? "Salvar alterações"
-        : `Cadastrar ${transactionName}`;
+    const submitLabel =
+        editing
+            ? "Salvar alterações"
+            : `Cadastrar ${transactionName}`;
 
     const descriptionPlaceholder =
         isIncome
-            ? "Ex.: Salário"
+            ? "Ex.: Salário mensal"
             : "Ex.: Conta de energia";
 
     const categoryPlaceholder =
@@ -127,16 +287,25 @@ function TransactionFormModal({
             : "Ex.: Moradia";
 
     const fieldPrefix =
-        `${generatedId}-${type.toLowerCase()}`;
+        `${generatedId}-${normalizedType.toLowerCase()}`;
 
-    const Icon = isIncome
-        ? RiArrowUpLine
-        : RiArrowDownLine;
+    const HeaderIcon =
+        styles.icon;
 
     const formattedAmount =
         formatAmountInput(
             formData.amount
         );
+
+    const amountPreview =
+        formattedAmount
+            ? `R$ ${formattedAmount}`
+            : "R$ 0,00";
+
+    const notesLength =
+        String(
+            formData.notes ?? ""
+        ).length;
 
     useEffect(() => {
         if (!open) {
@@ -162,7 +331,10 @@ function TransactionFormModal({
             );
 
         function handleKeyDown(event) {
-            if (event.key === "Escape") {
+            if (
+                event.key ===
+                "Escape"
+            ) {
                 if (
                     !submittingReference.current
                 ) {
@@ -174,7 +346,10 @@ function TransactionFormModal({
                 return;
             }
 
-            if (event.key !== "Tab") {
+            if (
+                event.key !==
+                "Tab"
+            ) {
                 return;
             }
 
@@ -200,7 +375,8 @@ function TransactionFormModal({
                 );
 
             if (
-                focusableElements.length === 0
+                focusableElements.length ===
+                0
             ) {
                 event.preventDefault();
                 return;
@@ -211,7 +387,8 @@ function TransactionFormModal({
 
             const lastElement =
                 focusableElements[
-                focusableElements.length - 1
+                focusableElements.length -
+                1
                 ];
 
             if (
@@ -293,34 +470,30 @@ function TransactionFormModal({
         const insertedValue =
             event.data;
 
-        /*
-         * Exclusões e comandos de navegação
-         * normalmente possuem data nula.
-         */
-        if (insertedValue === null) {
+        if (
+            insertedValue ===
+            null
+        ) {
             return;
         }
 
-        /*
-         * Bloqueia letras, sinais, espaços,
-         * pontos e vírgulas digitados manualmente.
-         * A própria máscara adiciona a formatação.
-         */
-        if (/\D/.test(insertedValue)) {
+        if (
+            /\D/.test(
+                insertedValue
+            )
+        ) {
             event.preventDefault();
         }
     }
 
-    function handleAmountChange(event) {
+    function handleAmountChange(
+        event
+    ) {
         const amountDigits =
             normalizeAmountDigits(
                 event.target.value
             );
 
-        /*
-         * Mantém compatibilidade com o handleChange
-         * genérico existente nas páginas.
-         */
         onChange?.({
             target: {
                 name: "amount",
@@ -330,7 +503,8 @@ function TransactionFormModal({
     }
 
     if (
-        typeof document === "undefined"
+        typeof document ===
+        "undefined"
     ) {
         return null;
     }
@@ -354,29 +528,32 @@ function TransactionFormModal({
                         opacity: 0,
                     }}
                     transition={{
-                        duration: 0.18,
+                        duration: 0.2,
                     }}
                     className="
-                        fixed inset-0 z-[190]
-                        flex items-end justify-center
+                        fixed inset-0
+                        z-[190]
+                        flex items-end
+                        justify-center
                         overflow-hidden
-                        bg-black/45
-                        p-0
-                        backdrop-blur-[2px]
+                        bg-slate-950/55
+                        backdrop-blur-sm
                         sm:items-center
                         sm:p-5
                     "
                 >
                     <motion.div
-                        ref={dialogReference}
+                        ref={
+                            dialogReference
+                        }
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby={`${fieldPrefix}-title`}
                         aria-describedby={`${fieldPrefix}-subtitle`}
                         initial={{
                             opacity: 0,
-                            y: 28,
-                            scale: 0.985,
+                            y: 34,
+                            scale: 0.975,
                         }}
                         animate={{
                             opacity: 1,
@@ -385,11 +562,11 @@ function TransactionFormModal({
                         }}
                         exit={{
                             opacity: 0,
-                            y: 20,
-                            scale: 0.985,
+                            y: 24,
+                            scale: 0.98,
                         }}
                         transition={{
-                            duration: 0.22,
+                            duration: 0.27,
                             ease: [
                                 0.22,
                                 1,
@@ -398,16 +575,19 @@ function TransactionFormModal({
                             ],
                         }}
                         className="
-                            flex max-h-[92dvh]
-                            w-full max-w-2xl
-                            flex-col overflow-hidden
-                            rounded-t-2xl
+                            flex
+                            max-h-[94dvh]
+                            w-full
+                            max-w-2xl
+                            flex-col
+                            overflow-hidden
+                            rounded-t-[30px]
                             border border-border
                             bg-surface
                             text-foreground
-                            shadow-dialog
+                            shadow-2xl
                             sm:max-h-[calc(100dvh-2.5rem)]
-                            sm:rounded-2xl
+                            sm:rounded-[30px]
                         "
                     >
                         <form
@@ -420,462 +600,800 @@ function TransactionFormModal({
                             "
                         >
                             <header
-                                className="
-                                    flex min-w-0
+                                className={`
+                                    relative
+                                    isolate
                                     shrink-0
-                                    items-center gap-3
-                                    border-b border-border
-                                    px-4 py-4
+                                    overflow-hidden
+                                    bg-gradient-to-br
+                                    px-5 py-5
+                                    text-white
+                                    shadow-xl
                                     sm:px-6
-                                "
-                            >
-                                <span
-                                    className={`
-                                        flex size-9
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        rounded-lg
+                                    sm:py-6
 
-                                        ${isIncome
-                                            ? "bg-success-muted text-success"
-                                            : "bg-danger-muted text-danger"
-                                        }
-                                    `}
-                                >
-                                    <Icon
-                                        size={18}
-                                        aria-hidden="true"
-                                    />
-                                </span>
-
-                                <div className="min-w-0 flex-1">
-                                    <h2
-                                        id={`${fieldPrefix}-title`}
-                                        className="
-                                            truncate
-                                            text-base
-                                            font-semibold
-                                            tracking-tight
-                                            text-foreground
-                                        "
-                                    >
-                                        {title}
-                                    </h2>
-
-                                    <p
-                                        id={`${fieldPrefix}-subtitle`}
-                                        className="
-                                            mt-0.5
-                                            truncate
-                                            text-xs
-                                            text-muted-foreground
-                                            sm:text-sm
-                                        "
-                                    >
-                                        {subtitle}
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={
-                                        handleClose
-                                    }
-                                    disabled={
-                                        submitting
-                                    }
-                                    aria-label="Fechar formulário"
-                                    title="Fechar"
-                                    className="
-                                        inline-flex size-9
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        rounded-lg
-                                        text-muted-foreground
-                                        transition-colors
-                                        hover:bg-surface-hover
-                                        hover:text-foreground
-                                        disabled:pointer-events-none
-                                        disabled:opacity-40
-                                    "
-                                >
-                                    <RiCloseLine
-                                        size={20}
-                                    />
-                                </button>
-                            </header>
-
-                            <div
-                                className="
-                                    min-h-0 flex-1
-                                    overflow-y-auto
-                                    px-4 py-5
-                                    scrollbar-subtle
-                                    sm:px-6
-                                "
+                                    ${styles.headerGradient}
+                                    ${styles.headerShadow}
+                                `}
                             >
                                 <div
+                                    aria-hidden="true"
                                     className="
-                                        grid min-w-0
-                                        gap-x-4 gap-y-5
-                                        md:grid-cols-2
+                                        absolute
+                                        -right-12 -top-16
+                                        size-40
+                                        rounded-full
+                                        bg-white/15
+                                        blur-2xl
+                                    "
+                                />
+
+                                <div
+                                    aria-hidden="true"
+                                    className="
+                                        absolute
+                                        -bottom-20 left-1/3
+                                        size-44
+                                        rounded-full
+                                        bg-black/10
+                                        blur-3xl
+                                    "
+                                />
+
+                                <div
+                                    aria-hidden="true"
+                                    className="
+                                        absolute
+                                        right-16 top-5
+                                        hidden size-24
+                                        rounded-full
+                                        border
+                                        border-white/10
+                                        sm:block
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        relative
+                                        z-10
+                                        flex min-w-0
+                                        items-center
+                                        gap-3.5
                                     "
                                 >
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor={`${fieldPrefix}-description`}
-                                            className="
-                                                mb-1.5
-                                                block truncate
-                                                text-sm
-                                                font-medium
-                                                text-foreground
-                                            "
-                                        >
-                                            Descrição
-                                        </label>
-
-                                        <input
-                                            ref={
-                                                firstInputReference
-                                            }
-                                            id={`${fieldPrefix}-description`}
-                                            name="description"
-                                            type="text"
-                                            value={
-                                                formData.description ??
-                                                ""
-                                            }
-                                            onChange={
-                                                onChange
-                                            }
-                                            required
-                                            minLength={
-                                                2
-                                            }
-                                            maxLength={
-                                                150
-                                            }
-                                            disabled={
-                                                submitting
-                                            }
-                                            autoComplete="off"
-                                            placeholder={
-                                                descriptionPlaceholder
-                                            }
-                                            className="
-                                                h-11 w-full
-                                                min-w-0
-                                                rounded-xl
-                                                border
-                                                border-border
-                                                bg-background
-                                                px-3.5
-                                                text-sm
-                                                text-foreground
-                                                outline-none
-                                                transition
-                                                placeholder:text-muted-foreground/70
-                                                hover:border-border-strong
-                                                focus:border-foreground/40
-                                                focus:ring-2
-                                                focus:ring-ring/15
-                                                disabled:cursor-not-allowed
-                                                disabled:opacity-60
-                                            "
+                                    <span
+                                        className="
+                                            flex size-12
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-2xl
+                                            bg-white/15
+                                            text-white
+                                            ring-1
+                                            ring-inset
+                                            ring-white/20
+                                            backdrop-blur-sm
+                                        "
+                                    >
+                                        <HeaderIcon
+                                            size={23}
+                                            aria-hidden="true"
                                         />
-                                    </div>
-
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor={`${fieldPrefix}-amount`}
-                                            className="
-                                                mb-1.5
-                                                block truncate
-                                                text-sm
-                                                font-medium
-                                                text-foreground
-                                            "
-                                        >
-                                            Valor
-                                        </label>
-
-                                        <div className="relative min-w-0">
-                                            <span
-                                                aria-hidden="true"
-                                                className="
-                                                    pointer-events-none
-                                                    absolute
-                                                    left-3.5 top-1/2
-                                                    -translate-y-1/2
-                                                    text-sm
-                                                    font-medium
-                                                    text-muted-foreground
-                                                "
-                                            >
-                                                R$
-                                            </span>
-
-                                            <input
-                                                id={`${fieldPrefix}-amount`}
-                                                name="amount"
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={
-                                                    formattedAmount
-                                                }
-                                                onBeforeInput={
-                                                    handleAmountBeforeInput
-                                                }
-                                                onChange={
-                                                    handleAmountChange
-                                                }
-                                                required
-                                                disabled={
-                                                    submitting
-                                                }
-                                                autoComplete="off"
-                                                placeholder="0,00"
-                                                aria-label={`Valor da ${transactionName}`}
-                                                className="
-                                                    h-11 w-full
-                                                    min-w-0
-                                                    rounded-xl
-                                                    border
-                                                    border-border
-                                                    bg-background
-                                                    py-2
-                                                    pl-10 pr-3.5
-                                                    text-sm
-                                                    text-foreground
-                                                    outline-none
-                                                    transition
-                                                    placeholder:text-muted-foreground/70
-                                                    hover:border-border-strong
-                                                    focus:border-foreground/40
-                                                    focus:ring-2
-                                                    focus:ring-ring/15
-                                                    disabled:cursor-not-allowed
-                                                    disabled:opacity-60
-                                                "
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor={`${fieldPrefix}-category`}
-                                            className="
-                                                mb-1.5
-                                                block truncate
-                                                text-sm
-                                                font-medium
-                                                text-foreground
-                                            "
-                                        >
-                                            Categoria
-                                        </label>
-
-                                        <input
-                                            id={`${fieldPrefix}-category`}
-                                            name="category"
-                                            type="text"
-                                            value={
-                                                formData.category ??
-                                                ""
-                                            }
-                                            onChange={
-                                                onChange
-                                            }
-                                            required
-                                            minLength={
-                                                2
-                                            }
-                                            maxLength={
-                                                80
-                                            }
-                                            disabled={
-                                                submitting
-                                            }
-                                            autoComplete="off"
-                                            placeholder={
-                                                categoryPlaceholder
-                                            }
-                                            className="
-                                                h-11 w-full
-                                                min-w-0
-                                                rounded-xl
-                                                border
-                                                border-border
-                                                bg-background
-                                                px-3.5
-                                                text-sm
-                                                text-foreground
-                                                outline-none
-                                                transition
-                                                placeholder:text-muted-foreground/70
-                                                hover:border-border-strong
-                                                focus:border-foreground/40
-                                                focus:ring-2
-                                                focus:ring-ring/15
-                                                disabled:cursor-not-allowed
-                                                disabled:opacity-60
-                                            "
-                                        />
-                                    </div>
-
-                                    <div className="min-w-0">
-                                        <label
-                                            htmlFor={`${fieldPrefix}-date`}
-                                            className="
-                                                mb-1.5
-                                                block truncate
-                                                text-sm
-                                                font-medium
-                                                text-foreground
-                                            "
-                                        >
-                                            Data
-                                        </label>
-
-                                        <input
-                                            id={`${fieldPrefix}-date`}
-                                            name="date"
-                                            type="date"
-                                            value={
-                                                formData.date ??
-                                                ""
-                                            }
-                                            onChange={
-                                                onChange
-                                            }
-                                            required
-                                            disabled={
-                                                submitting
-                                            }
-                                            className="
-                                                h-11 w-full
-                                                min-w-0
-                                                rounded-xl
-                                                border
-                                                border-border
-                                                bg-background
-                                                px-3.5
-                                                text-sm
-                                                text-foreground
-                                                outline-none
-                                                transition
-                                                hover:border-border-strong
-                                                focus:border-foreground/40
-                                                focus:ring-2
-                                                focus:ring-ring/15
-                                                disabled:cursor-not-allowed
-                                                disabled:opacity-60
-                                            "
-                                        />
-                                    </div>
+                                    </span>
 
                                     <div
                                         className="
                                             min-w-0
-                                            md:col-span-2
+                                            flex-1
+                                        "
+                                    >
+                                        <span
+                                            className="
+                                                inline-flex
+                                                items-center
+                                                rounded-full
+                                                bg-white/15
+                                                px-2.5 py-1
+                                                text-[10px]
+                                                font-bold
+                                                uppercase
+                                                tracking-[0.12em]
+                                                text-white/85
+                                                ring-1
+                                                ring-inset
+                                                ring-white/15
+                                            "
+                                        >
+                                            {editing
+                                                ? "Edição"
+                                                : "Novo lançamento"
+                                            }
+                                        </span>
+
+                                        <h2
+                                            id={`${fieldPrefix}-title`}
+                                            className="
+                                                mt-2
+                                                truncate
+                                                text-xl
+                                                font-semibold
+                                                tracking-tight
+                                                sm:text-2xl
+                                            "
+                                        >
+                                            {title}
+                                        </h2>
+
+                                        <p
+                                            id={`${fieldPrefix}-subtitle`}
+                                            className="
+                                                mt-1
+                                                line-clamp-2
+                                                max-w-lg
+                                                text-sm
+                                                leading-5
+                                                text-white/75
+                                            "
+                                        >
+                                            {subtitle}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            handleClose
+                                        }
+                                        disabled={
+                                            submitting
+                                        }
+                                        aria-label="Fechar formulário"
+                                        title="Fechar"
+                                        className="
+                                            inline-flex
+                                            size-10
+                                            shrink-0
+                                            items-center
+                                            justify-center
+                                            rounded-xl
+                                            bg-white/10
+                                            text-white/80
+                                            ring-1
+                                            ring-inset
+                                            ring-white/15
+                                            transition
+                                            hover:bg-white/20
+                                            hover:text-white
+                                            focus-visible:outline-none
+                                            focus-visible:ring-4
+                                            focus-visible:ring-white/15
+                                            disabled:pointer-events-none
+                                            disabled:opacity-40
+                                        "
+                                    >
+                                        <RiCloseLine
+                                            size={21}
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                </div>
+                            </header>
+
+                            <div
+                                className="
+                                    min-h-0
+                                    flex-1
+                                    overflow-y-auto
+                                    px-4 py-5
+                                    scrollbar-subtle
+                                    sm:px-6
+                                    sm:py-6
+                                "
+                            >
+                                <motion.section
+                                    initial={{
+                                        opacity: 0,
+                                        y: 8,
+                                    }}
+                                    animate={{
+                                        opacity: 1,
+                                        y: 0,
+                                    }}
+                                    transition={{
+                                        delay: 0.05,
+                                        duration: 0.22,
+                                    }}
+                                    className={`
+                                        relative
+                                        overflow-hidden
+                                        rounded-3xl
+                                        border
+                                        p-4
+                                        sm:p-5
+
+                                        ${styles.softBackground}
+                                        ${styles.softBorder}
+                                    `}
+                                >
+                                    <div
+                                        aria-hidden="true"
+                                        className="
+                                            absolute
+                                            -right-8 -top-10
+                                            size-28
+                                            rounded-full
+                                            bg-current
+                                            opacity-[0.035]
+                                            blur-2xl
+                                        "
+                                    />
+
+                                    <div
+                                        className="
+                                            relative
+                                            flex
+                                            min-w-0
+                                            flex-col gap-4
+                                            sm:flex-row
+                                            sm:items-center
+                                            sm:justify-between
                                         "
                                     >
                                         <div
                                             className="
-                                                mb-1.5
                                                 flex min-w-0
                                                 items-center
-                                                justify-between
                                                 gap-3
                                             "
                                         >
-                                            <label
-                                                htmlFor={`${fieldPrefix}-notes`}
+                                            <span
+                                                className={`
+                                                    flex size-11
+                                                    shrink-0
+                                                    items-center
+                                                    justify-center
+                                                    rounded-2xl
+
+                                                    ${styles.iconContainer}
+                                                `}
+                                            >
+                                                <RiMoneyDollarCircleLine
+                                                    size={21}
+                                                    aria-hidden="true"
+                                                />
+                                            </span>
+
+                                            <div className="min-w-0">
+                                                <p
+                                                    className="
+                                                        text-[10px]
+                                                        font-bold
+                                                        uppercase
+                                                        tracking-[0.11em]
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    Valor do lançamento
+                                                </p>
+
+                                                <p
+                                                    className={`
+                                                        mt-0.5
+                                                        truncate
+                                                        text-2xl
+                                                        font-semibold
+                                                        tracking-tight
+                                                        tabular-nums
+                                                        sm:text-3xl
+
+                                                        ${styles.amount}
+                                                    `}
+                                                    title={
+                                                        amountPreview
+                                                    }
+                                                >
+                                                    {
+                                                        amountPreview
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <span
+                                            className={`
+                                                inline-flex
+                                                shrink-0
+                                                self-start
+                                                items-center
+                                                gap-1.5
+                                                rounded-full
+                                                px-3 py-1.5
+                                                text-xs
+                                                font-semibold
+                                                sm:self-auto
+
+                                                ${styles.badge}
+                                            `}
+                                        >
+                                            <HeaderIcon
+                                                size={14}
+                                                aria-hidden="true"
+                                            />
+
+                                            {styles.label}
+                                        </span>
+                                    </div>
+                                </motion.section>
+
+                                <section
+                                    className="
+                                        mt-5
+                                        rounded-3xl
+                                        border
+                                        border-border
+                                        bg-surface
+                                        p-4
+                                        sm:p-5
+                                    "
+                                >
+                                    <div
+                                        className="
+                                            mb-5
+                                            flex
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+                                        <span
+                                            className={`
+                                                flex size-9
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+
+                                                ${styles.iconContainer}
+                                            `}
+                                        >
+                                            <RiInformationLine
+                                                size={17}
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+
+                                        <div>
+                                            <h3
                                                 className="
-                                                    min-w-0
-                                                    truncate
                                                     text-sm
-                                                    font-medium
+                                                    font-semibold
                                                     text-foreground
                                                 "
                                             >
-                                                Observações
-                                            </label>
+                                                Informações principais
+                                            </h3>
 
-                                            <span
+                                            <p
                                                 className="
-                                                    shrink-0
+                                                    mt-0.5
                                                     text-xs
                                                     text-muted-foreground
                                                 "
                                             >
-                                                {
-                                                    (
-                                                        formData.notes ??
+                                                Preencha os dados essenciais da movimentação.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        className="
+                                            grid min-w-0
+                                            gap-x-4 gap-y-5
+                                            md:grid-cols-2
+                                        "
+                                    >
+                                        <div className="min-w-0">
+                                            <FieldLabel
+                                                htmlFor={`${fieldPrefix}-description`}
+                                            >
+                                                Descrição
+                                            </FieldLabel>
+
+                                            <div className="relative min-w-0">
+                                                <InputIcon
+                                                    icon={
+                                                        RiFileTextLine
+                                                    }
+                                                    styles={
+                                                        styles
+                                                    }
+                                                />
+
+                                                <input
+                                                    ref={
+                                                        firstInputReference
+                                                    }
+                                                    id={`${fieldPrefix}-description`}
+                                                    name="description"
+                                                    type="text"
+                                                    value={
+                                                        formData.description ??
                                                         ""
-                                                    )
-                                                        .length
-                                                }
-                                                /500
-                                            </span>
+                                                    }
+                                                    onChange={
+                                                        onChange
+                                                    }
+                                                    required
+                                                    minLength={
+                                                        2
+                                                    }
+                                                    maxLength={
+                                                        150
+                                                    }
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    autoComplete="off"
+                                                    placeholder={
+                                                        descriptionPlaceholder
+                                                    }
+                                                    className={`
+                                                        h-12 w-full
+                                                        min-w-0
+                                                        rounded-2xl
+                                                        border
+                                                        border-border
+                                                        bg-background
+                                                        py-2
+                                                        pl-12 pr-4
+                                                        text-sm
+                                                        font-medium
+                                                        text-foreground
+                                                        outline-none
+                                                        transition
+                                                        placeholder:font-normal
+                                                        placeholder:text-muted-foreground/65
+                                                        hover:border-border-strong
+                                                        focus:ring-4
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-60
+
+                                                        ${styles.fieldFocus}
+                                                    `}
+                                                />
+                                            </div>
                                         </div>
 
-                                        <textarea
-                                            id={`${fieldPrefix}-notes`}
-                                            name="notes"
-                                            value={
-                                                formData.notes ??
-                                                ""
-                                            }
-                                            onChange={
-                                                onChange
-                                            }
-                                            maxLength={
-                                                500
-                                            }
-                                            rows={4}
-                                            disabled={
-                                                submitting
-                                            }
-                                            placeholder="Informações adicionais, se necessário"
-                                            className="
-                                                w-full min-w-0
-                                                resize-none
-                                                rounded-xl
-                                                border
-                                                border-border
-                                                bg-background
-                                                px-3.5 py-3
-                                                text-sm
-                                                leading-6
-                                                text-foreground
-                                                outline-none
-                                                transition
-                                                placeholder:text-muted-foreground/70
-                                                hover:border-border-strong
-                                                focus:border-foreground/40
-                                                focus:ring-2
-                                                focus:ring-ring/15
-                                                disabled:cursor-not-allowed
-                                                disabled:opacity-60
-                                            "
-                                        />
+                                        <div className="min-w-0">
+                                            <FieldLabel
+                                                htmlFor={`${fieldPrefix}-amount`}
+                                            >
+                                                Valor
+                                            </FieldLabel>
+
+                                            <div className="relative min-w-0">
+                                                <InputIcon
+                                                    icon={
+                                                        RiMoneyDollarCircleLine
+                                                    }
+                                                    styles={
+                                                        styles
+                                                    }
+                                                />
+
+                                                <input
+                                                    id={`${fieldPrefix}-amount`}
+                                                    name="amount"
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    value={
+                                                        formattedAmount
+                                                    }
+                                                    onBeforeInput={
+                                                        handleAmountBeforeInput
+                                                    }
+                                                    onChange={
+                                                        handleAmountChange
+                                                    }
+                                                    required
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    autoComplete="off"
+                                                    placeholder="0,00"
+                                                    aria-label={`Valor da ${transactionName}`}
+                                                    className={`
+                                                        h-12 w-full
+                                                        min-w-0
+                                                        rounded-2xl
+                                                        border
+                                                        border-border
+                                                        bg-background
+                                                        py-2
+                                                        pl-12 pr-4
+                                                        text-sm
+                                                        font-semibold
+                                                        tabular-nums
+                                                        text-foreground
+                                                        outline-none
+                                                        transition
+                                                        placeholder:font-normal
+                                                        placeholder:text-muted-foreground/65
+                                                        hover:border-border-strong
+                                                        focus:ring-4
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-60
+
+                                                        ${styles.fieldFocus}
+                                                    `}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="min-w-0">
+                                            <FieldLabel
+                                                htmlFor={`${fieldPrefix}-category`}
+                                            >
+                                                Categoria
+                                            </FieldLabel>
+
+                                            <div className="relative min-w-0">
+                                                <InputIcon
+                                                    icon={
+                                                        RiPriceTag3Line
+                                                    }
+                                                    styles={
+                                                        styles
+                                                    }
+                                                />
+
+                                                <input
+                                                    id={`${fieldPrefix}-category`}
+                                                    name="category"
+                                                    type="text"
+                                                    value={
+                                                        formData.category ??
+                                                        ""
+                                                    }
+                                                    onChange={
+                                                        onChange
+                                                    }
+                                                    required
+                                                    minLength={
+                                                        2
+                                                    }
+                                                    maxLength={
+                                                        80
+                                                    }
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    autoComplete="off"
+                                                    placeholder={
+                                                        categoryPlaceholder
+                                                    }
+                                                    className={`
+                                                        h-12 w-full
+                                                        min-w-0
+                                                        rounded-2xl
+                                                        border
+                                                        border-border
+                                                        bg-background
+                                                        py-2
+                                                        pl-12 pr-4
+                                                        text-sm
+                                                        font-medium
+                                                        text-foreground
+                                                        outline-none
+                                                        transition
+                                                        placeholder:font-normal
+                                                        placeholder:text-muted-foreground/65
+                                                        hover:border-border-strong
+                                                        focus:ring-4
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-60
+
+                                                        ${styles.fieldFocus}
+                                                    `}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="min-w-0">
+                                            <FieldLabel
+                                                htmlFor={`${fieldPrefix}-date`}
+                                            >
+                                                Data
+                                            </FieldLabel>
+
+                                            <div className="relative min-w-0">
+                                                <InputIcon
+                                                    icon={
+                                                        RiCalendarLine
+                                                    }
+                                                    styles={
+                                                        styles
+                                                    }
+                                                />
+
+                                                <input
+                                                    id={`${fieldPrefix}-date`}
+                                                    name="date"
+                                                    type="date"
+                                                    value={
+                                                        formData.date ??
+                                                        ""
+                                                    }
+                                                    onChange={
+                                                        onChange
+                                                    }
+                                                    required
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    className={`
+                                                        h-12 w-full
+                                                        min-w-0
+                                                        rounded-2xl
+                                                        border
+                                                        border-border
+                                                        bg-background
+                                                        py-2
+                                                        pl-12 pr-4
+                                                        text-sm
+                                                        font-medium
+                                                        text-foreground
+                                                        outline-none
+                                                        transition
+                                                        hover:border-border-strong
+                                                        focus:ring-4
+                                                        disabled:cursor-not-allowed
+                                                        disabled:opacity-60
+
+                                                        ${styles.fieldFocus}
+                                                    `}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </section>
+
+                                <section
+                                    className="
+                                        mt-5
+                                        rounded-3xl
+                                        border
+                                        border-border
+                                        bg-surface
+                                        p-4
+                                        sm:p-5
+                                    "
+                                >
+                                    <div
+                                        className="
+                                            mb-4
+                                            flex
+                                            min-w-0
+                                            items-center
+                                            gap-3
+                                        "
+                                    >
+                                        <span
+                                            className={`
+                                                flex size-9
+                                                shrink-0
+                                                items-center
+                                                justify-center
+                                                rounded-xl
+
+                                                ${styles.iconContainer}
+                                            `}
+                                        >
+                                            <RiStickyNoteLine
+                                                size={17}
+                                                aria-hidden="true"
+                                            />
+                                        </span>
+
+                                        <div className="min-w-0 flex-1">
+                                            <h3
+                                                className="
+                                                    text-sm
+                                                    font-semibold
+                                                    text-foreground
+                                                "
+                                            >
+                                                Observações
+                                            </h3>
+
+                                            <p
+                                                className="
+                                                    mt-0.5
+                                                    text-xs
+                                                    text-muted-foreground
+                                                "
+                                            >
+                                                Adicione detalhes que ajudem a identificar o lançamento.
+                                            </p>
+                                        </div>
+
+                                        <span
+                                            className="
+                                                shrink-0
+                                                rounded-full
+                                                bg-surface-muted
+                                                px-2.5 py-1
+                                                text-[11px]
+                                                font-semibold
+                                                tabular-nums
+                                                text-muted-foreground
+                                            "
+                                        >
+                                            {notesLength}/500
+                                        </span>
+                                    </div>
+
+                                    <label
+                                        htmlFor={`${fieldPrefix}-notes`}
+                                        className="sr-only"
+                                    >
+                                        Observações
+                                    </label>
+
+                                    <textarea
+                                        id={`${fieldPrefix}-notes`}
+                                        name="notes"
+                                        value={
+                                            formData.notes ??
+                                            ""
+                                        }
+                                        onChange={
+                                            onChange
+                                        }
+                                        maxLength={
+                                            500
+                                        }
+                                        rows={4}
+                                        disabled={
+                                            submitting
+                                        }
+                                        placeholder="Ex.: Pagamento referente ao mês atual..."
+                                        className={`
+                                            w-full min-w-0
+                                            resize-none
+                                            rounded-2xl
+                                            border
+                                            border-border
+                                            bg-background
+                                            px-4 py-3.5
+                                            text-sm
+                                            leading-6
+                                            text-foreground
+                                            outline-none
+                                            transition
+                                            placeholder:text-muted-foreground/65
+                                            hover:border-border-strong
+                                            focus:ring-4
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-60
+
+                                            ${styles.fieldFocus}
+                                        `}
+                                    />
+                                </section>
                             </div>
 
                             <footer
                                 className="
                                     flex shrink-0
                                     flex-col-reverse
-                                    gap-2
+                                    gap-2.5
                                     border-t border-border
                                     bg-surface
                                     px-4 py-4
                                     sm:flex-row
+                                    sm:items-center
                                     sm:justify-end
                                     sm:px-6
                                 "
@@ -898,12 +1416,15 @@ function TransactionFormModal({
                                         border
                                         border-border
                                         bg-surface
-                                        px-4
+                                        px-5
                                         text-sm
-                                        font-medium
+                                        font-semibold
                                         text-foreground
-                                        transition-colors
+                                        transition
                                         hover:bg-surface-hover
+                                        focus-visible:outline-none
+                                        focus-visible:ring-4
+                                        focus-visible:ring-ring/10
                                         disabled:pointer-events-none
                                         disabled:opacity-50
                                         sm:w-auto
@@ -920,7 +1441,7 @@ function TransactionFormModal({
                                     aria-busy={
                                         submitting
                                     }
-                                    className="
+                                    className={`
                                         inline-flex
                                         min-h-11
                                         w-full min-w-0
@@ -928,30 +1449,42 @@ function TransactionFormModal({
                                         justify-center
                                         gap-2
                                         rounded-xl
-                                        bg-primary
+                                        bg-gradient-to-r
                                         px-5
                                         text-sm
-                                        font-medium
-                                        text-primary-foreground
-                                        transition-colors
-                                        hover:bg-primary-hover
+                                        font-semibold
+                                        text-white
+                                        shadow-lg
+                                        transition
+                                        hover:-translate-y-0.5
+                                        hover:shadow-xl
+                                        focus-visible:outline-none
+                                        focus-visible:ring-4
                                         disabled:pointer-events-none
                                         disabled:opacity-60
                                         sm:w-auto
-                                    "
+
+                                        ${styles.submitButton}
+                                    `}
                                 >
-                                    {submitting && (
+                                    {submitting ? (
                                         <RiLoader4Line
                                             size={18}
                                             aria-hidden="true"
                                             className="animate-spin"
+                                        />
+                                    ) : (
+                                        <RiCheckLine
+                                            size={18}
+                                            aria-hidden="true"
                                         />
                                     )}
 
                                     <span className="truncate">
                                         {submitting
                                             ? "Salvando..."
-                                            : submitLabel}
+                                            : submitLabel
+                                        }
                                     </span>
                                 </button>
                             </footer>

@@ -7,6 +7,7 @@ import {
 
 import {
     RiAddLine,
+    RiArrowUpCircleLine,
     RiLoader4Line,
     RiRefreshLine,
 } from "react-icons/ri";
@@ -947,8 +948,7 @@ function Revenues() {
         >
             <div
                 className="
-                    flex w-full
-                    min-w-0
+                    flex w-full min-w-0
                     flex-col gap-5
                     sm:gap-6
                 "
@@ -962,29 +962,84 @@ function Revenues() {
                         sm:justify-between
                     "
                 >
-                    <div className="min-w-0">
-                        <h1
+                    <div
+                        className="
+                            flex min-w-0
+                            items-center gap-3
+                        "
+                    >
+                        <span
                             className="
-                                truncate
-                                text-2xl
-                                font-semibold
-                                tracking-tight
-                                text-foreground
+                                hidden size-12
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-2xl
+                                bg-gradient-to-br
+                                from-emerald-500
+                                via-emerald-600
+                                to-teal-700
+                                text-white
+                                shadow-lg
+                                shadow-emerald-500/20
+                                sm:flex
                             "
                         >
-                            Receitas
-                        </h1>
+                            <RiArrowUpCircleLine
+                                size={22}
+                                aria-hidden="true"
+                            />
+                        </span>
 
-                        <p
-                            className="
-                                mt-1
-                                text-sm
-                                text-muted-foreground
-                            "
-                        >
-                            Gerencie e acompanhe suas
-                            entradas financeiras.
-                        </p>
+                        <div className="min-w-0">
+                            <div
+                                className="
+                                    flex flex-wrap
+                                    items-center gap-2
+                                "
+                            >
+                                <h1
+                                    className="
+                                        truncate
+                                        text-2xl
+                                        font-semibold
+                                        tracking-tight
+                                        text-foreground
+                                    "
+                                >
+                                    Receitas
+                                </h1>
+
+                                <span
+                                    className="
+                                        rounded-full
+                                        bg-emerald-500/10
+                                        px-2.5 py-1
+                                        text-[11px]
+                                        font-semibold
+                                        uppercase
+                                        tracking-wide
+                                        text-emerald-700
+                                        ring-1
+                                        ring-inset
+                                        ring-emerald-500/15
+                                        dark:text-emerald-300
+                                    "
+                                >
+                                    Entradas
+                                </span>
+                            </div>
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-sm
+                                    text-muted-foreground
+                                "
+                            >
+                                Cadastre e acompanhe suas entradas financeiras.
+                            </p>
+                        </div>
                     </div>
 
                     <div
@@ -1013,15 +1068,21 @@ function Revenues() {
                                 rounded-xl
                                 border border-border
                                 bg-surface
-                                px-3
+                                px-4
                                 text-sm
                                 font-medium
                                 text-foreground
-                                transition-colors
+                                shadow-sm
+                                transition-all
+                                hover:-translate-y-0.5
+                                hover:border-emerald-500/35
                                 hover:bg-surface-hover
+                                hover:shadow-md
+                                focus-visible:outline-none
+                                focus-visible:ring-2
+                                focus-visible:ring-emerald-500/20
                                 disabled:pointer-events-none
                                 disabled:opacity-50
-                                sm:px-4
                             "
                         >
                             {loading ? (
@@ -1031,18 +1092,27 @@ function Revenues() {
                                     className="
                                         shrink-0
                                         animate-spin
+                                        text-emerald-600
+                                        dark:text-emerald-400
                                     "
                                 />
                             ) : (
                                 <RiRefreshLine
                                     size={18}
                                     aria-hidden="true"
-                                    className="shrink-0"
+                                    className="
+                                        shrink-0
+                                        text-emerald-600
+                                        dark:text-emerald-400
+                                    "
                                 />
                             )}
 
                             <span className="truncate">
-                                Atualizar
+                                {loading
+                                    ? "Atualizando..."
+                                    : "Atualizar"
+                                }
                             </span>
                         </button>
 
@@ -1059,15 +1129,24 @@ function Revenues() {
                                 justify-center
                                 gap-2
                                 rounded-xl
-                                bg-primary
-                                px-3
+                                bg-gradient-to-r
+                                from-emerald-500
+                                via-emerald-600
+                                to-teal-700
+                                px-4
                                 text-sm
-                                font-medium
-                                text-primary-foreground
-                                transition-colors
-                                hover:bg-primary-hover
+                                font-semibold
+                                text-white
+                                shadow-md
+                                shadow-emerald-500/20
+                                transition-all
+                                hover:-translate-y-0.5
+                                hover:shadow-lg
+                                hover:shadow-emerald-500/25
+                                focus-visible:outline-none
+                                focus-visible:ring-2
+                                focus-visible:ring-emerald-500/25
                                 active:scale-[0.99]
-                                sm:px-4
                             "
                         >
                             <RiAddLine

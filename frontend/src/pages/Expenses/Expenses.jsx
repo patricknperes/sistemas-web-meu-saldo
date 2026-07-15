@@ -7,6 +7,7 @@ import {
 
 import {
     RiAddLine,
+    RiArrowDownCircleLine,
     RiLoader4Line,
     RiRefreshLine,
 } from "react-icons/ri";
@@ -946,8 +947,7 @@ function Expenses() {
         >
             <div
                 className="
-                    flex w-full
-                    min-w-0
+                    flex w-full min-w-0
                     flex-col gap-5
                     sm:gap-6
                 "
@@ -961,29 +961,84 @@ function Expenses() {
                         sm:justify-between
                     "
                 >
-                    <div className="min-w-0">
-                        <h1
+                    <div
+                        className="
+                            flex min-w-0
+                            items-center gap-3
+                        "
+                    >
+                        <span
                             className="
-                                truncate
-                                text-2xl
-                                font-semibold
-                                tracking-tight
-                                text-foreground
+                                hidden size-12
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-2xl
+                                bg-gradient-to-br
+                                from-rose-500
+                                via-rose-600
+                                to-red-700
+                                text-white
+                                shadow-lg
+                                shadow-rose-500/20
+                                sm:flex
                             "
                         >
-                            Despesas
-                        </h1>
+                            <RiArrowDownCircleLine
+                                size={22}
+                                aria-hidden="true"
+                            />
+                        </span>
 
-                        <p
-                            className="
-                                mt-1
-                                text-sm
-                                text-muted-foreground
-                            "
-                        >
-                            Gerencie e acompanhe suas
-                            saídas financeiras.
-                        </p>
+                        <div className="min-w-0">
+                            <div
+                                className="
+                                    flex flex-wrap
+                                    items-center gap-2
+                                "
+                            >
+                                <h1
+                                    className="
+                                        truncate
+                                        text-2xl
+                                        font-semibold
+                                        tracking-tight
+                                        text-foreground
+                                    "
+                                >
+                                    Despesas
+                                </h1>
+
+                                <span
+                                    className="
+                                        rounded-full
+                                        bg-rose-500/10
+                                        px-2.5 py-1
+                                        text-[11px]
+                                        font-semibold
+                                        uppercase
+                                        tracking-wide
+                                        text-rose-700
+                                        ring-1
+                                        ring-inset
+                                        ring-rose-500/15
+                                        dark:text-rose-300
+                                    "
+                                >
+                                    Saídas
+                                </span>
+                            </div>
+
+                            <p
+                                className="
+                                    mt-1
+                                    text-sm
+                                    text-muted-foreground
+                                "
+                            >
+                                Cadastre e acompanhe suas saídas financeiras.
+                            </p>
+                        </div>
                     </div>
 
                     <div
@@ -1012,15 +1067,21 @@ function Expenses() {
                                 rounded-xl
                                 border border-border
                                 bg-surface
-                                px-3
+                                px-4
                                 text-sm
                                 font-medium
                                 text-foreground
-                                transition-colors
+                                shadow-sm
+                                transition-all
+                                hover:-translate-y-0.5
+                                hover:border-rose-500/35
                                 hover:bg-surface-hover
+                                hover:shadow-md
+                                focus-visible:outline-none
+                                focus-visible:ring-2
+                                focus-visible:ring-rose-500/20
                                 disabled:pointer-events-none
                                 disabled:opacity-50
-                                sm:px-4
                             "
                         >
                             {loading ? (
@@ -1030,18 +1091,27 @@ function Expenses() {
                                     className="
                                         shrink-0
                                         animate-spin
+                                        text-rose-600
+                                        dark:text-rose-400
                                     "
                                 />
                             ) : (
                                 <RiRefreshLine
                                     size={18}
                                     aria-hidden="true"
-                                    className="shrink-0"
+                                    className="
+                                        shrink-0
+                                        text-rose-600
+                                        dark:text-rose-400
+                                    "
                                 />
                             )}
 
                             <span className="truncate">
-                                Atualizar
+                                {loading
+                                    ? "Atualizando..."
+                                    : "Atualizar"
+                                }
                             </span>
                         </button>
 
@@ -1058,15 +1128,24 @@ function Expenses() {
                                 justify-center
                                 gap-2
                                 rounded-xl
-                                bg-primary
-                                px-3
+                                bg-gradient-to-r
+                                from-rose-500
+                                via-rose-600
+                                to-red-700
+                                px-4
                                 text-sm
-                                font-medium
-                                text-primary-foreground
-                                transition-colors
-                                hover:bg-primary-hover
+                                font-semibold
+                                text-white
+                                shadow-md
+                                shadow-rose-500/20
+                                transition-all
+                                hover:-translate-y-0.5
+                                hover:shadow-lg
+                                hover:shadow-rose-500/25
+                                focus-visible:outline-none
+                                focus-visible:ring-2
+                                focus-visible:ring-rose-500/25
                                 active:scale-[0.99]
-                                sm:px-4
                             "
                         >
                             <RiAddLine
