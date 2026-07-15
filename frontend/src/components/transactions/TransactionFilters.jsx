@@ -650,6 +650,9 @@ function TransactionFilters({
     searchTerm = "",
     totalItems = 0,
 
+    showSearch = true,
+    showResultCount = true,
+
     filterMode = "MONTH",
     selectedMonth,
     selectedYear,
@@ -1129,7 +1132,11 @@ function TransactionFilters({
     return (
         <>
             <section
-                aria-label="Pesquisa e filtros"
+                aria-label={
+                    showSearch
+                        ? "Pesquisa e filtros"
+                        : "Filtros de período"
+                }
                 className="
                     relative
                     w-full min-w-0
@@ -1155,113 +1162,120 @@ function TransactionFilters({
                 />
 
                 <div
-                    className="
+                    className={`
                         relative
                         flex min-w-0
                         flex-col gap-3
                         md:flex-row
                         md:items-center
-                    "
+
+                        ${showSearch
+                            ? ""
+                            : "md:justify-end"
+                        }
+                    `}
                 >
-                    <div
-                        className="
-                            relative
-                            min-w-0 flex-1
-                        "
-                    >
-                        <span
+                    {showSearch && (
+                        <div
                             className="
-                                pointer-events-none
-                                absolute
-                                left-2 top-1/2
-                                flex size-9
-                                -translate-y-1/2
-                                items-center
-                                justify-center
-                                rounded-xl
-                                bg-blue-500/10
-                                text-blue-600
-                                dark:text-blue-400
+                                relative
+                                min-w-0 flex-1
                             "
                         >
-                            <RiSearchLine
-                                size={18}
-                                aria-hidden="true"
-                            />
-                        </span>
-
-                        <input
-                            id={`${idPrefix}-search`}
-                            type="search"
-                            value={searchTerm}
-                            onChange={
-                                handleSearchInput
-                            }
-                            disabled={disabled}
-                            autoComplete="off"
-                            placeholder="Pesquisar pela descrição..."
-                            aria-label="Pesquisar pela descrição"
-                            className="
-                                h-12 w-full
-                                min-w-0
-                                rounded-2xl
-                                border border-border
-                                bg-background
-                                py-2
-                                pl-12 pr-12
-                                text-sm
-                                font-medium
-                                text-foreground
-                                outline-none
-                                transition
-                                placeholder:font-normal
-                                placeholder:text-muted-foreground/65
-                                hover:border-blue-500/25
-                                focus:border-blue-500/55
-                                focus:ring-4
-                                focus:ring-blue-500/10
-                                disabled:cursor-not-allowed
-                                disabled:opacity-60
-                            "
-                        />
-
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                onClick={
-                                    clearSearch
-                                }
-                                disabled={
-                                    disabled
-                                }
-                                aria-label="Limpar pesquisa"
-                                title="Limpar pesquisa"
+                            <span
                                 className="
+                                    pointer-events-none
                                     absolute
-                                    right-2 top-1/2
-                                    inline-flex size-9
+                                    left-2 top-1/2
+                                    flex size-9
                                     -translate-y-1/2
                                     items-center
                                     justify-center
                                     rounded-xl
-                                    text-muted-foreground
-                                    transition
-                                    hover:bg-surface-hover
-                                    hover:text-foreground
-                                    focus-visible:outline-none
-                                    focus-visible:ring-4
-                                    focus-visible:ring-blue-500/10
-                                    disabled:pointer-events-none
-                                    disabled:opacity-40
+                                    bg-blue-500/10
+                                    text-blue-600
+                                    dark:text-blue-400
                                 "
                             >
-                                <RiCloseLine
+                                <RiSearchLine
                                     size={18}
                                     aria-hidden="true"
                                 />
-                            </button>
-                        )}
-                    </div>
+                            </span>
+
+                            <input
+                                id={`${idPrefix}-search`}
+                                type="search"
+                                value={searchTerm}
+                                onChange={
+                                    handleSearchInput
+                                }
+                                disabled={disabled}
+                                autoComplete="off"
+                                placeholder="Pesquisar pela descrição..."
+                                aria-label="Pesquisar pela descrição"
+                                className="
+                                    h-12 w-full
+                                    min-w-0
+                                    rounded-2xl
+                                    border border-border
+                                    bg-background
+                                    py-2
+                                    pl-12 pr-12
+                                    text-sm
+                                    font-medium
+                                    text-foreground
+                                    outline-none
+                                    transition
+                                    placeholder:font-normal
+                                    placeholder:text-muted-foreground/65
+                                    hover:border-blue-500/25
+                                    focus:border-blue-500/55
+                                    focus:ring-4
+                                    focus:ring-blue-500/10
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-60
+                                "
+                            />
+
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={
+                                        clearSearch
+                                    }
+                                    disabled={
+                                        disabled
+                                    }
+                                    aria-label="Limpar pesquisa"
+                                    title="Limpar pesquisa"
+                                    className="
+                                        absolute
+                                        right-2 top-1/2
+                                        inline-flex size-9
+                                        -translate-y-1/2
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        text-muted-foreground
+                                        transition
+                                        hover:bg-surface-hover
+                                        hover:text-foreground
+                                        focus-visible:outline-none
+                                        focus-visible:ring-4
+                                        focus-visible:ring-blue-500/10
+                                        disabled:pointer-events-none
+                                        disabled:opacity-40
+                                    "
+                                >
+                                    <RiCloseLine
+                                        size={18}
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="button"
@@ -1411,29 +1425,31 @@ function TransactionFilters({
                         </div>
                     </div>
 
-                    <span
-                        className="
-                            shrink-0
-                            self-start
-                            rounded-full
-                            bg-surface
-                            px-3 py-1.5
-                            text-xs
-                            font-semibold
-                            tabular-nums
-                            text-muted-foreground
-                            ring-1
-                            ring-inset
-                            ring-border
-                            sm:self-auto
-                        "
-                    >
-                        {formattedTotalItems}{" "}
-                        {normalizedTotalItems === 1
-                            ? "resultado"
-                            : "resultados"
-                        }
-                    </span>
+                    {showResultCount && (
+                        <span
+                            className="
+                                shrink-0
+                                self-start
+                                rounded-full
+                                bg-surface
+                                px-3 py-1.5
+                                text-xs
+                                font-semibold
+                                tabular-nums
+                                text-muted-foreground
+                                ring-1
+                                ring-inset
+                                ring-border
+                                sm:self-auto
+                            "
+                        >
+                            {formattedTotalItems}{" "}
+                            {normalizedTotalItems === 1
+                                ? "resultado"
+                                : "resultados"
+                            }
+                        </span>
+                    )}
                 </div>
             </section>
 
@@ -2162,29 +2178,31 @@ function TransactionFilters({
                                                     </div>
                                                 </div>
 
-                                                <span
-                                                    className="
-                                                        shrink-0
-                                                        rounded-full
-                                                        bg-white/15
-                                                        px-3 py-1.5
-                                                        text-xs
-                                                        font-semibold
-                                                        tabular-nums
-                                                        text-white
-                                                        ring-1
-                                                        ring-inset
-                                                        ring-white/15
-                                                    "
-                                                >
-                                                    {
-                                                        formattedTotalItems
-                                                    }{" "}
-                                                    {normalizedTotalItems === 1
-                                                        ? "item"
-                                                        : "itens"
-                                                    }
-                                                </span>
+                                                {showResultCount && (
+                                                    <span
+                                                        className="
+                                                            shrink-0
+                                                            rounded-full
+                                                            bg-white/15
+                                                            px-3 py-1.5
+                                                            text-xs
+                                                            font-semibold
+                                                            tabular-nums
+                                                            text-white
+                                                            ring-1
+                                                            ring-inset
+                                                            ring-white/15
+                                                        "
+                                                    >
+                                                        {
+                                                            formattedTotalItems
+                                                        }{" "}
+                                                        {normalizedTotalItems === 1
+                                                            ? "item"
+                                                            : "itens"
+                                                        }
+                                                    </span>
+                                                )}
                                             </div>
                                         </section>
                                     </div>

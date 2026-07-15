@@ -21,6 +21,12 @@ import {
     dashboardService,
 } from "../../services/dashboardService.js";
 
+import TransactionFilters from "../../components/transactions/TransactionFilters.jsx";
+
+import {
+    useAuth,
+} from "../../hooks/useAuth.js";
+
 import {
     formatCurrency,
 } from "../../utils/formatCurrency.js";
@@ -961,7 +967,181 @@ function CountCard({
     );
 }
 
+const DASHBOARD_FILTER_STORAGE_PREFIX =
+    "meu-saldo:dashboard-filter";
+
+const VALID_FILTER_MODES = new Set([
+    "ALL",
+    "YEAR",
+    "MONTH",
+]);
+
+function createDefaultDashboardFilter() {
+    const currentDate = new Date();
+
+    return {
+        filterMode: "ALL",
+        selectedMonth:
+            currentDate.getMonth() + 1,
+        selectedYear:
+            currentDate.getFullYear(),
+    };
+}
+
+function normalizeDashboardFilter(
+    value,
+) {
+    const fallback =
+        createDefaultDashboardFilter();
+
+    const filterMode =
+        VALID_FILTER_MODES.has(
+            value?.filterMode,
+        )
+            ? value.filterMode
+            : fallback.filterMode;
+
+    const month = Number(
+        value?.selectedMonth,
+    );
+
+    const year = Number(
+        value?.selectedYear,
+    );
+
+    return {
+        filterMode,
+
+        selectedMonth:
+            Number.isInteger(month) &&
+                month >= 1 &&
+                month <= 12
+                ? month
+                : fallback.selectedMonth,
+
+        selectedYear:
+            Number.isInteger(year) &&
+                year >= 1900 &&
+                year <= 2100
+                ? year
+                : fallback.selectedYear,
+    };
+}
+
+function getDashboardFilterStorageKey(
+    userId,
+) {
+    if (!userId) {
+        return null;
+    }
+
+    return `${DASHBOARD_FILTER_STORAGE_PREFIX}:${userId}`;
+}
+
+function readDashboardFilter(userId) {
+    const fallback =
+        createDefaultDashboardFilter();
+
+    const storageKey =
+        getDashboardFilterStorageKey(
+            userId,
+        );
+
+    if (
+        !storageKey ||
+        typeof window === "undefined"
+    ) {
+        return fallback;
+    }
+
+    try {
+        const savedValue =
+            window.localStorage.getItem(
+                storageKey,
+            );
+
+        if (!savedValue) {
+            return fallback;
+        }
+
+        return normalizeDashboardFilter(
+            JSON.parse(savedValue),
+        );
+    } catch {
+        return fallback;
+    }
+}
+
+function saveDashboardFilter(
+    userId,
+    filter,
+) {
+    const storageKey =
+        getDashboardFilterStorageKey(
+            userId,
+        );
+
+    if (
+        !storageKey ||
+        typeof window === "undefined"
+    ) {
+        return;
+    }
+
+    try {
+        window.localStorage.setItem(
+            storageKey,
+            JSON.stringify(filter),
+        );
+    } catch {
+        // A Dashboard continua funcionando mesmo
+        // quando o navegador bloqueia o localStorage.
+    }
+}
+
+function createSummaryFilters(filter) {
+    const normalizedFilter =
+        normalizeDashboardFilter(filter);
+
+    if (
+        normalizedFilter.filterMode ===
+        "MONTH"
+    ) {
+        return {
+            filterMode: "MONTH",
+            month:
+                normalizedFilter.selectedMonth,
+            year:
+                normalizedFilter.selectedYear,
+        };
+    }
+
+    if (
+        normalizedFilter.filterMode ===
+        "YEAR"
+    ) {
+        return {
+            filterMode: "YEAR",
+            year:
+                normalizedFilter.selectedYear,
+        };
+    }
+
+    return {
+        filterMode: "ALL",
+    };
+}
+
 function Dashboard() {
+    const { user } = useAuth();
+
+    const [dashboardFilter, setDashboardFilter] =
+        useState(() =>
+            readDashboardFilter(
+                user?.id,
+            )
+        );
+
     const [summary, setSummary] =
         useState(null);
 
@@ -977,7 +1157,13 @@ function Dashboard() {
     const loadDashboard = useCallback(
         async ({
             initial = false,
+            filter,
         } = {}) => {
+            const activeFilter =
+                normalizeDashboardFilter(
+                    filter,
+                );
+
             if (initial) {
                 setLoading(true);
             } else {
@@ -989,30 +1175,76 @@ function Dashboard() {
             try {
                 const response =
                     await dashboardService
-                        .getSummary();
+                        .getSummary(
+                            createSummaryFilters(
+                                activeFilter,
+                            ),
+                        );
 
                 setSummary(
-                    response.summary ?? null
+                    response.summary ?? null,
                 );
             } catch (error) {
                 setErrorMessage(
                     error.response?.data
                         ?.error ??
-                    "Não foi possível carregar os dados financeiros."
+                    error.response?.data
+                        ?.message ??
+                    "Não foi possível carregar os dados financeiros.",
                 );
             } finally {
                 setLoading(false);
                 setRefreshing(false);
             }
         },
-        []
+        [],
     );
 
     useEffect(() => {
+        const savedFilter =
+            readDashboardFilter(
+                user?.id,
+            );
+
+        setDashboardFilter(
+            savedFilter,
+        );
+
         loadDashboard({
             initial: true,
+            filter: savedFilter,
         });
-    }, [loadDashboard]);
+    }, [
+        loadDashboard,
+        user?.id,
+    ]);
+
+    const handleApplyFilters =
+        useCallback(
+            (nextFilterValue) => {
+                const nextFilter =
+                    normalizeDashboardFilter(
+                        nextFilterValue,
+                    );
+
+                setDashboardFilter(
+                    nextFilter,
+                );
+
+                saveDashboardFilter(
+                    user?.id,
+                    nextFilter,
+                );
+
+                loadDashboard({
+                    filter: nextFilter,
+                });
+            },
+            [
+                loadDashboard,
+                user?.id,
+            ],
+        );
 
     if (loading) {
         return <DashboardLoading />;
@@ -1028,6 +1260,8 @@ function Dashboard() {
                 onRetry={() =>
                     loadDashboard({
                         initial: true,
+                        filter:
+                            dashboardFilter,
                     })
                 }
             />
@@ -1203,7 +1437,10 @@ function Dashboard() {
                     <button
                         type="button"
                         onClick={() =>
-                            loadDashboard()
+                            loadDashboard({
+                                filter:
+                                    dashboardFilter,
+                            })
                         }
                         disabled={refreshing}
                         className="
@@ -1245,6 +1482,31 @@ function Dashboard() {
                             : "Atualizar dados"}
                     </button>
                 </header>
+
+                <TransactionFilters
+                    idPrefix="dashboard"
+                    showSearch={false}
+                    showResultCount
+                    totalItems={
+                        summary?.transactionCount ??
+                        0
+                    }
+                    filterMode={
+                        dashboardFilter.filterMode
+                    }
+                    selectedMonth={
+                        dashboardFilter.selectedMonth
+                    }
+                    selectedYear={
+                        dashboardFilter.selectedYear
+                    }
+                    disabled={
+                        loading || refreshing
+                    }
+                    onApplyFilters={
+                        handleApplyFilters
+                    }
+                />
 
                 {errorMessage && (
                     <div

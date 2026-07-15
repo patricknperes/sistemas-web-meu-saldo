@@ -35,15 +35,20 @@
     <script>
       (() => {
         try {
-          const savedTheme = localStorage.getItem("theme");
+          const savedTheme =
+            localStorage.getItem("theme");
 
-          const prefersDark = window.matchMedia(
-            "(prefers-color-scheme: dark)",
-          ).matches;
+          const prefersDark =
+            window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            ).matches;
 
           const shouldUseDarkTheme =
             savedTheme === "dark" ||
-            (savedTheme !== "light" && prefersDark);
+            (
+              savedTheme !== "light" &&
+              prefersDark
+            );
 
           document.documentElement.classList.toggle(
             "dark",
@@ -54,13 +59,23 @@
             .querySelector("#theme-color")
             ?.setAttribute(
               "content",
-              shouldUseDarkTheme ? "#09090b" : "#f8fafc",
+              shouldUseDarkTheme
+                ? "#09090b"
+                : "#f8fafc",
             );
         } catch {
-          document.documentElement.classList.remove("dark");
+          document.documentElement.classList.remove(
+            "dark",
+          );
         }
       })();
     </script>
+
+    <script
+      src="https://accounts.google.com/gsi/client"
+      async
+      defer
+    ></script>
   </head>
 
   <body>

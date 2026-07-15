@@ -22,6 +22,41 @@ import {
     useAuth,
 } from "../../hooks/useAuth.js";
 
+const EMAIL_PATTERN =
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function getErrorMessage(
+    error,
+    fallbackMessage,
+) {
+    const responseData =
+        error?.response?.data;
+
+    if (
+        typeof responseData?.error ===
+        "string"
+    ) {
+        return responseData.error;
+    }
+
+    if (
+        typeof responseData?.message ===
+        "string"
+    ) {
+        return responseData.message;
+    }
+
+    if (
+        typeof error?.message ===
+        "string" &&
+        error.message
+    ) {
+        return error.message;
+    }
+
+    return fallbackMessage;
+}
+
 function Login() {
     const navigate =
         useNavigate();
@@ -31,6 +66,7 @@ function Login() {
 
     const {
         login,
+        authenticateWithGoogle,
     } = useAuth();
 
     const [
@@ -54,9 +90,18 @@ function Login() {
         setSubmitting,
     ] = useState(false);
 
+    const [
+        googleSubmitting,
+        setGoogleSubmitting,
+    ] = useState(false);
+
+    const busy =
+        submitting ||
+        googleSubmitting;
+
     function showNotification(
         type,
-        message
+        message,
     ) {
         setNotification({
             type,
@@ -71,6 +116,14 @@ function Login() {
         });
     }
 
+    function getDestinationPage() {
+        return (
+            location.state?.from
+                ?.pathname ??
+            "/dashboard"
+        );
+    }
+
     function handleChange(event) {
         const {
             name,
@@ -81,19 +134,60 @@ function Login() {
             (currentData) => ({
                 ...currentData,
                 [name]: value,
-            })
+            }),
         );
     }
 
-    function handleGoogleLogin() {
+    async function handleGoogleLogin(
+        credential,
+    ) {
+        if (busy) {
+            return;
+        }
+
+        clearNotification();
+        setGoogleSubmitting(true);
+
+        try {
+            await authenticateWithGoogle(
+                credential,
+            );
+
+            navigate(
+                getDestinationPage(),
+                {
+                    replace: true,
+                },
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                getErrorMessage(
+                    error,
+                    "Não foi possível acessar sua conta com o Google.",
+                ),
+            );
+        } finally {
+            setGoogleSubmitting(false);
+        }
+    }
+
+    function handleGoogleError(error) {
         showNotification(
-            "info",
-            "O acesso com Google será disponibilizado em breve."
+            "error",
+            getErrorMessage(
+                error,
+                "Não foi possível carregar a autenticação do Google.",
+            ),
         );
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
+
+        if (busy) {
+            return;
+        }
 
         clearNotification();
 
@@ -102,22 +196,34 @@ function Login() {
                 .trim()
                 .toLowerCase();
 
-        if (!email) {
+        const password =
+            formData.password;
+
+        if (
+            !EMAIL_PATTERN.test(
+                email,
+            )
+        ) {
             showNotification(
                 "error",
-                "Informe seu endereço de e-mail."
+                "Informe um endereço de e-mail válido.",
             );
 
             return;
         }
 
-        if (
-            formData.password.length <
-            8
-        ) {
+        /*
+         * No login, não verificamos se a senha
+         * possui maiúscula, número ou caractere
+         * especial.
+         *
+         * Essas regras são aplicadas apenas no
+         * cadastro e na alteração de senha.
+         */
+        if (!password) {
             showNotification(
                 "error",
-                "A senha deve possuir pelo menos 8 caracteres."
+                "Informe sua senha de acesso.",
             );
 
             return;
@@ -128,27 +234,22 @@ function Login() {
         try {
             await login({
                 email,
-                password:
-                    formData.password,
+                password,
             });
 
-            const previousPage =
-                location.state?.from
-                    ?.pathname ??
-                "/dashboard";
-
             navigate(
-                previousPage,
+                getDestinationPage(),
                 {
                     replace: true,
-                }
+                },
             );
         } catch (error) {
             showNotification(
                 "error",
-                error.response?.data
-                    ?.error ??
-                "Não foi possível acessar sua conta."
+                getErrorMessage(
+                    error,
+                    "Não foi possível acessar sua conta.",
+                ),
             );
         } finally {
             setSubmitting(false);
@@ -207,18 +308,49 @@ function Login() {
                             text-muted-foreground
                         "
                     >
-                        Informe seus dados para continuar acompanhando suas finanças.
+                        Informe seus dados ou continue com o Google para acompanhar suas finanças.
                     </p>
                 </header>
 
-                <GoogleAuthButton
-                    onClick={
-                        handleGoogleLogin
+                <div
+                    aria-busy={
+                        googleSubmitting
                     }
-                    disabled={
-                        submitting
-                    }
-                />
+                >
+                    <GoogleAuthButton
+                        onCredential={
+                            handleGoogleLogin
+                        }
+                        onError={
+                            handleGoogleError
+                        }
+                        disabled={busy}
+                        text="signin_with"
+                    />
+                </div>
+
+                {googleSubmitting && (
+                    <p
+                        aria-live="polite"
+                        className="
+                            mt-2
+                            flex items-center
+                            justify-center
+                            gap-2
+                            text-xs
+                            font-medium
+                            text-muted-foreground
+                        "
+                    >
+                        <RiLoader4Line
+                            size={15}
+                            className="animate-spin"
+                            aria-hidden="true"
+                        />
+
+                        Autenticando com o Google...
+                    </p>
+                )}
 
                 <div
                     className="
@@ -263,6 +395,7 @@ function Login() {
                     onSubmit={
                         handleSubmit
                     }
+                    noValidate
                 >
                     <AuthInput
                         id="login-email"
@@ -280,9 +413,7 @@ function Login() {
                         autoComplete="email"
                         inputMode="email"
                         placeholder="nome@exemplo.com"
-                        disabled={
-                            submitting
-                        }
+                        disabled={busy}
                     />
 
                     <AuthInput
@@ -300,20 +431,14 @@ function Login() {
                             handleChange
                         }
                         required
-                        minLength={8}
                         autoComplete="current-password"
                         placeholder="Digite sua senha"
-                        helperText="Sua senha deve possuir pelo menos 8 caracteres."
-                        disabled={
-                            submitting
-                        }
+                        disabled={busy}
                     />
 
                     <button
                         type="submit"
-                        disabled={
-                            submitting
-                        }
+                        disabled={busy}
                         aria-busy={
                             submitting
                         }

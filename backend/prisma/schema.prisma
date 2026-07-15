@@ -17,10 +17,20 @@ enum TransactionType {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  name         String
-  email        String        @unique
-  passwordHash String
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+
+  // Usuários cadastrados somente pelo Google
+  // não precisam possuir uma senha local.
+  passwordHash String?
+
+  // Identificador único recebido da conta Google.
+  googleId String? @unique
+
+  // Endereço da foto de perfil recebida do Google.
+  avatarUrl String?
+
   role         UserRole      @default(USER)
   isActive     Boolean       @default(true)
   transactions Transaction[]

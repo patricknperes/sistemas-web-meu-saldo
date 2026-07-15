@@ -59,6 +59,76 @@ const MODAL_TYPES = {
     DELETE: "DELETE",
 };
 
+const EMAIL_PATTERN =
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function getErrorMessage(
+    error,
+    fallbackMessage
+) {
+    const responseData =
+        error?.response?.data;
+
+    if (
+        typeof responseData?.error ===
+        "string"
+    ) {
+        return responseData.error;
+    }
+
+    if (
+        typeof responseData?.message ===
+        "string"
+    ) {
+        return responseData.message;
+    }
+
+    if (
+        typeof error?.message ===
+        "string" &&
+        error.message
+    ) {
+        return error.message;
+    }
+
+    return fallbackMessage;
+}
+
+function getPasswordRequirements(
+    password
+) {
+    return [
+        {
+            id: "minimum-length",
+            label: "Pelo menos 8 caracteres",
+            valid: password.length >= 8,
+        },
+        {
+            id: "lowercase",
+            label: "Uma letra minúscula",
+            valid: /[a-z]/.test(password),
+        },
+        {
+            id: "uppercase",
+            label: "Uma letra maiúscula",
+            valid: /[A-Z]/.test(password),
+        },
+        {
+            id: "number",
+            label: "Pelo menos um número",
+            valid: /\d/.test(password),
+        },
+        {
+            id: "special-character",
+            label: "Um caractere especial",
+            valid:
+                /[^A-Za-z0-9\s]/.test(
+                    password
+                ),
+        },
+    ];
+}
+
 function getInitials(name) {
     const normalizedName =
         String(name ?? "").trim();
@@ -1017,6 +1087,14 @@ function Profile() {
         updateAuthenticatedUser,
     } = useAuth();
 
+    const hasLocalPassword =
+        user?.authMethods?.password ??
+        true;
+
+    const usesGoogle =
+        user?.authMethods?.google ??
+        false;
+
     const [
         activeModal,
         setActiveModal,
@@ -1084,6 +1162,33 @@ function Profile() {
         });
     }, [user]);
 
+    useEffect(() => {
+        let active = true;
+
+        async function loadOwnProfile() {
+            try {
+                const response =
+                    await userService
+                        .getOwnProfile();
+
+                if (active) {
+                    updateAuthenticatedUser(
+                        response.user
+                    );
+                }
+            } catch {
+                // A sessão já é tratada pelo
+                // interceptor global do Axios.
+            }
+        }
+
+        loadOwnProfile();
+
+        return () => {
+            active = false;
+        };
+    }, [updateAuthenticatedUser]);
+
     function showNotification(
         type,
         message
@@ -1103,6 +1208,32 @@ function Profile() {
 
     function openModal(type) {
         clearNotification();
+
+        if (
+            type ===
+            MODAL_TYPES.PASSWORD &&
+            !hasLocalPassword
+        ) {
+            showNotification(
+                "info",
+                "Esta conta utiliza somente o Google e ainda não possui uma senha local."
+            );
+
+            return;
+        }
+
+        if (
+            type ===
+            MODAL_TYPES.DELETE &&
+            !hasLocalPassword
+        ) {
+            showNotification(
+                "info",
+                "A exclusão de contas que utilizam somente o Google ainda não está disponível."
+            );
+
+            return;
+        }
 
         if (
             type ===
@@ -1219,7 +1350,9 @@ function Profile() {
             return;
         }
 
-        if (!email) {
+        if (
+            !EMAIL_PATTERN.test(email)
+        ) {
             showNotification(
                 "error",
                 "Informe um endereço de e-mail válido."
@@ -1230,6 +1363,18 @@ function Profile() {
 
         const emailChanged =
             email !== currentEmail;
+
+        if (
+            emailChanged &&
+            !hasLocalPassword
+        ) {
+            showNotification(
+                "error",
+                "O e-mail de uma conta que utiliza somente o Google não pode ser alterado por esta tela."
+            );
+
+            return;
+        }
 
         if (
             emailChanged &&
@@ -1277,9 +1422,10 @@ function Profile() {
         } catch (error) {
             showNotification(
                 "error",
-                error.response?.data
-                    ?.error ??
-                "Não foi possível atualizar seus dados."
+                getErrorMessage(
+                    error,
+                    "Não foi possível atualizar seus dados."
+                )
             );
         } finally {
             setSavingProfile(false);
@@ -1297,6 +1443,15 @@ function Profile() {
 
         clearNotification();
 
+        if (!hasLocalPassword) {
+            showNotification(
+                "error",
+                "Esta conta utiliza somente o Google e ainda não possui uma senha local."
+            );
+
+            return;
+        }
+
         if (
             !passwordForm.currentPassword
         ) {
@@ -1308,13 +1463,21 @@ function Profile() {
             return;
         }
 
-        if (
-            passwordForm.newPassword
-                .length < 8
-        ) {
+        const requirements =
+            getPasswordRequirements(
+                passwordForm.newPassword
+            );
+
+        const firstInvalidRequirement =
+            requirements.find(
+                (requirement) =>
+                    !requirement.valid
+            );
+
+        if (firstInvalidRequirement) {
             showNotification(
                 "error",
-                "A nova senha deve ter pelo menos 8 caracteres."
+                `A nova senha precisa ter: ${firstInvalidRequirement.label.toLowerCase()}.`
             );
 
             return;
@@ -1373,9 +1536,10 @@ function Profile() {
         } catch (error) {
             showNotification(
                 "error",
-                error.response?.data
-                    ?.error ??
-                "Não foi possível alterar sua senha."
+                getErrorMessage(
+                    error,
+                    "Não foi possível alterar sua senha."
+                )
             );
         } finally {
             setSavingPassword(false);
@@ -1401,6 +1565,15 @@ function Profile() {
             showNotification(
                 "error",
                 "Administradores não podem excluir a própria conta."
+            );
+
+            return;
+        }
+
+        if (!hasLocalPassword) {
+            showNotification(
+                "error",
+                "A exclusão de contas que utilizam somente o Google ainda não está disponível."
             );
 
             return;
@@ -1434,9 +1607,10 @@ function Profile() {
         } catch (error) {
             showNotification(
                 "error",
-                error.response?.data
-                    ?.error ??
-                "Não foi possível excluir sua conta."
+                getErrorMessage(
+                    error,
+                    "Não foi possível excluir sua conta."
+                )
             );
         } finally {
             setDeletingAccount(false);
@@ -1474,6 +1648,17 @@ function Profile() {
             .trim()
             .toLowerCase();
 
+    const passwordRequirements =
+        getPasswordRequirements(
+            passwordForm.newPassword
+        );
+
+    const passwordIsValid =
+        passwordRequirements.every(
+            (requirement) =>
+                requirement.valid
+        );
+
     const passwordsMatch =
         passwordForm
             .passwordConfirmation
@@ -1481,6 +1666,17 @@ function Profile() {
         passwordForm.newPassword ===
         passwordForm
             .passwordConfirmation;
+
+    const accountAccessMethod =
+        usesGoogle && hasLocalPassword
+            ? "Google e senha"
+            : usesGoogle
+                ? "Google"
+                : "E-mail e senha";
+
+    const deleteBlocked =
+        user?.role === "ADMIN" ||
+        !hasLocalPassword;
 
     return (
         <div
@@ -1757,8 +1953,15 @@ function Profile() {
                     <ActionItem
                         icon={FiLock}
                         title="Senha e segurança"
-                        description="Defina uma nova senha para acessar sua conta."
+                        description={
+                            hasLocalPassword
+                                ? "Defina uma nova senha para acessar sua conta."
+                                : "Esta conta utiliza o Google e ainda não possui uma senha local."
+                        }
                         tone="warning"
+                        disabled={
+                            !hasLocalPassword
+                        }
                         onClick={() =>
                             openModal(
                                 MODAL_TYPES.PASSWORD
@@ -1780,24 +1983,26 @@ function Profile() {
 
                     <ActionItem
                         icon={
-                            user?.role === "ADMIN"
+                            deleteBlocked
                                 ? FiShield
                                 : FiTrash2
                         }
                         title={
                             user?.role === "ADMIN"
                                 ? "Conta protegida"
-                                : "Excluir minha conta"
+                                : !hasLocalPassword
+                                    ? "Exclusão indisponível"
+                                    : "Excluir minha conta"
                         }
                         description={
                             user?.role === "ADMIN"
                                 ? "Administradores não podem excluir a própria conta."
-                                : "Remova permanentemente a conta e os dados financeiros."
+                                : !hasLocalPassword
+                                    ? "A exclusão de contas que usam somente o Google será adicionada posteriormente."
+                                    : "Remova permanentemente a conta e os dados financeiros."
                         }
                         tone="danger"
-                        disabled={
-                            user?.role === "ADMIN"
-                        }
+                        disabled={deleteBlocked}
                         onClick={() =>
                             openModal(
                                 MODAL_TYPES.DELETE
@@ -1992,28 +2197,36 @@ function Profile() {
                         autoComplete="email"
                         required
                         disabled={
-                            savingProfile
+                            savingProfile ||
+                            !hasLocalPassword
+                        }
+                        helperText={
+                            hasLocalPassword
+                                ? "Para alterar o e-mail, confirme sua senha atual."
+                                : "O e-mail é administrado pela sua conta Google."
                         }
                     />
 
-                    <PasswordField
-                        id="profile-current-password"
-                        name="currentPassword"
-                        label="Senha atual para confirmar"
-                        value={
-                            profileForm
-                                .currentPassword
-                        }
-                        onChange={
-                            handleProfileChange
-                        }
-                        autoComplete="current-password"
-                        placeholder="Obrigatória somente ao alterar o e-mail"
-                        disabled={
-                            savingProfile
-                        }
-                        helperText="Você só precisa informar a senha atual quando alterar o endereço de e-mail."
-                    />
+                    {hasLocalPassword && (
+                        <PasswordField
+                            id="profile-current-password"
+                            name="currentPassword"
+                            label="Senha atual para confirmar"
+                            value={
+                                profileForm
+                                    .currentPassword
+                            }
+                            onChange={
+                                handleProfileChange
+                            }
+                            autoComplete="current-password"
+                            placeholder="Obrigatória somente ao alterar o e-mail"
+                            disabled={
+                                savingProfile
+                            }
+                            helperText="Você só precisa informar a senha atual quando alterar o endereço de e-mail."
+                        />
+                    )}
                 </form>
             </ProfileModal>
 
@@ -2071,7 +2284,9 @@ function Profile() {
                             type="submit"
                             form="profile-password-form"
                             disabled={
-                                savingPassword
+                                savingPassword ||
+                                !passwordIsValid ||
+                                !passwordsMatch
                             }
                             className="
                                 inline-flex
@@ -2160,6 +2375,70 @@ function Profile() {
                         }
                         helperText="Use uma combinação difícil de adivinhar e diferente da senha atual."
                     />
+
+                    <div
+                        className="
+                            rounded-2xl
+                            border border-border
+                            bg-surface-muted/40
+                            p-3.5
+                        "
+                    >
+                        <p
+                            className="
+                                text-xs
+                                font-semibold
+                                text-foreground
+                            "
+                        >
+                            Requisitos da nova senha
+                        </p>
+
+                        <ul
+                            className="
+                                mt-3 grid
+                                gap-2
+                                sm:grid-cols-2
+                            "
+                        >
+                            {passwordRequirements.map(
+                                (requirement) => (
+                                    <li
+                                        key={
+                                            requirement.id
+                                        }
+                                        className={`
+                                            flex
+                                            items-center
+                                            gap-2
+                                            text-xs
+
+                                            ${requirement.valid
+                                                ? "font-medium text-success"
+                                                : "text-muted-foreground"
+                                            }
+                                        `}
+                                    >
+                                        <FiCheckCircle
+                                            size={15}
+                                            aria-hidden="true"
+                                            className={
+                                                requirement.valid
+                                                    ? "opacity-100"
+                                                    : "opacity-35"
+                                            }
+                                        />
+
+                                        <span>
+                                            {
+                                                requirement.label
+                                            }
+                                        </span>
+                                    </li>
+                                )
+                            )}
+                        </ul>
+                    </div>
 
                     <PasswordField
                         id="password-confirmation"
@@ -2267,6 +2546,14 @@ function Profile() {
                         value={
                             user?.email ??
                             "Não informado"
+                        }
+                    />
+
+                    <DetailRow
+                        icon={FiLock}
+                        label="Método de acesso"
+                        value={
+                            accountAccessMethod
                         }
                     />
                 </div>

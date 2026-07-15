@@ -8,6 +8,7 @@ import {
 } from "react-router";
 
 import {
+    RiCheckboxCircleLine,
     RiLoader4Line,
     RiLockPasswordLine,
     RiMailLine,
@@ -23,12 +24,48 @@ import {
     useAuth,
 } from "../../hooks/useAuth.js";
 
+const EMAIL_PATTERN =
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function getErrorMessage(
+    error,
+    fallbackMessage,
+) {
+    const responseData =
+        error.response?.data;
+
+    if (
+        typeof responseData?.error ===
+        "string"
+    ) {
+        return responseData.error;
+    }
+
+    if (
+        typeof responseData?.message ===
+        "string"
+    ) {
+        return responseData.message;
+    }
+
+    if (
+        typeof error?.message ===
+        "string" &&
+        error.message
+    ) {
+        return error.message;
+    }
+
+    return fallbackMessage;
+}
+
 function Register() {
     const navigate =
         useNavigate();
 
     const {
         register,
+        authenticateWithGoogle,
     } = useAuth();
 
     const [
@@ -54,34 +91,90 @@ function Register() {
         setSubmitting,
     ] = useState(false);
 
-    const passwordProgress =
+    const [
+        googleSubmitting,
+        setGoogleSubmitting,
+    ] = useState(false);
+
+    const busy =
+        submitting ||
+        googleSubmitting;
+
+    const passwordRequirements =
         useMemo(() => {
             const password =
                 formData.password;
 
-            let progress = 0;
-
-            if (password.length >= 8) {
-                progress += 1;
-            }
-
-            if (
-                /[a-z]/.test(password) &&
-                /[A-Z]/.test(password)
-            ) {
-                progress += 1;
-            }
-
-            if (/\d/.test(password)) {
-                progress += 1;
-            }
-
-            return progress;
+            return [
+                {
+                    id: "minimum-length",
+                    label:
+                        "Pelo menos 8 caracteres",
+                    valid:
+                        password.length >= 8,
+                },
+                {
+                    id: "lowercase",
+                    label:
+                        "Uma letra minúscula",
+                    valid:
+                        /[a-z]/.test(
+                            password,
+                        ),
+                },
+                {
+                    id: "uppercase",
+                    label:
+                        "Uma letra maiúscula",
+                    valid:
+                        /[A-Z]/.test(
+                            password,
+                        ),
+                },
+                {
+                    id: "number",
+                    label:
+                        "Pelo menos um número",
+                    valid:
+                        /\d/.test(
+                            password,
+                        ),
+                },
+                {
+                    id: "special-character",
+                    label:
+                        "Um caractere especial",
+                    valid:
+                        /[^A-Za-z0-9\s]/.test(
+                            password,
+                        ),
+                },
+            ];
         }, [formData.password]);
+
+    const passwordProgress =
+        useMemo(
+            () =>
+                passwordRequirements.filter(
+                    (requirement) =>
+                        requirement.valid,
+                ).length,
+            [passwordRequirements],
+        );
+
+    const passwordIsValid =
+        passwordProgress ===
+        passwordRequirements.length;
+
+    const passwordsMatch =
+        formData.passwordConfirmation
+            .length > 0 &&
+        formData.password ===
+        formData.passwordConfirmation;
 
     function showNotification(
         type,
-        message
+        message,
     ) {
         setNotification({
             type,
@@ -106,19 +199,60 @@ function Register() {
             (currentData) => ({
                 ...currentData,
                 [name]: value,
-            })
+            }),
         );
     }
 
-    function handleGoogleRegister() {
+    async function handleGoogleRegister(
+        credential,
+    ) {
+        if (busy) {
+            return;
+        }
+
+        clearNotification();
+        setGoogleSubmitting(true);
+
+        try {
+            await authenticateWithGoogle(
+                credential,
+            );
+
+            navigate(
+                "/dashboard",
+                {
+                    replace: true,
+                },
+            );
+        } catch (error) {
+            showNotification(
+                "error",
+                getErrorMessage(
+                    error,
+                    "Não foi possível criar sua conta com o Google.",
+                ),
+            );
+        } finally {
+            setGoogleSubmitting(false);
+        }
+    }
+
+    function handleGoogleError(error) {
         showNotification(
-            "info",
-            "O cadastro com Google será disponibilizado em breve."
+            "error",
+            getErrorMessage(
+                error,
+                "Não foi possível carregar a autenticação do Google.",
+            ),
         );
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
+
+        if (busy) {
+            return;
+        }
 
         clearNotification();
 
@@ -133,40 +267,47 @@ function Register() {
         if (name.length < 2) {
             showNotification(
                 "error",
-                "Informe seu nome completo."
+                "Informe um nome com pelo menos 2 caracteres.",
             );
 
             return;
         }
 
-        if (!email) {
+        if (name.length > 100) {
             showNotification(
                 "error",
-                "Informe um endereço de e-mail válido."
-            );
-
-            return;
-        }
-
-        if (
-            formData.password.length <
-            8
-        ) {
-            showNotification(
-                "error",
-                "Crie uma senha com pelo menos 8 caracteres."
+                "O nome deve possuir no máximo 100 caracteres.",
             );
 
             return;
         }
 
         if (
-            formData.password !==
-            formData.passwordConfirmation
+            !EMAIL_PATTERN.test(
+                email,
+            )
         ) {
             showNotification(
                 "error",
-                "A confirmação não corresponde à senha criada."
+                "Informe um endereço de e-mail válido.",
+            );
+
+            return;
+        }
+
+        if (!passwordIsValid) {
+            showNotification(
+                "error",
+                "A senha ainda não atende a todos os requisitos de segurança.",
+            );
+
+            return;
+        }
+
+        if (!passwordsMatch) {
+            showNotification(
+                "error",
+                "A confirmação não corresponde à senha criada.",
             );
 
             return;
@@ -186,14 +327,15 @@ function Register() {
                 "/dashboard",
                 {
                     replace: true,
-                }
+                },
             );
         } catch (error) {
             showNotification(
                 "error",
-                error.response?.data
-                    ?.error ??
-                "Não foi possível criar sua conta."
+                getErrorMessage(
+                    error,
+                    "Não foi possível criar sua conta.",
+                ),
             );
         } finally {
             setSubmitting(false);
@@ -252,18 +394,49 @@ function Register() {
                             text-muted-foreground
                         "
                     >
-                        Preencha seus dados para começar a organizar sua vida financeira.
+                        Preencha seus dados ou continue com o Google para começar a organizar sua vida financeira.
                     </p>
                 </header>
 
-                <GoogleAuthButton
-                    onClick={
-                        handleGoogleRegister
+                <div
+                    aria-busy={
+                        googleSubmitting
                     }
-                    disabled={
-                        submitting
-                    }
-                />
+                >
+                    <GoogleAuthButton
+                        onCredential={
+                            handleGoogleRegister
+                        }
+                        onError={
+                            handleGoogleError
+                        }
+                        disabled={busy}
+                        text="signup_with"
+                    />
+                </div>
+
+                {googleSubmitting && (
+                    <p
+                        aria-live="polite"
+                        className="
+                            mt-2
+                            flex items-center
+                            justify-center
+                            gap-2
+                            text-xs
+                            font-medium
+                            text-muted-foreground
+                        "
+                    >
+                        <RiLoader4Line
+                            size={15}
+                            className="animate-spin"
+                            aria-hidden="true"
+                        />
+
+                        Autenticando com o Google...
+                    </p>
+                )}
 
                 <div
                     className="
@@ -308,6 +481,7 @@ function Register() {
                     onSubmit={
                         handleSubmit
                     }
+                    noValidate
                 >
                     <div
                         className="
@@ -333,9 +507,7 @@ function Register() {
                             maxLength={100}
                             autoComplete="name"
                             placeholder="Digite seu nome"
-                            disabled={
-                                submitting
-                            }
+                            disabled={busy}
                         />
 
                         <AuthInput
@@ -354,9 +526,7 @@ function Register() {
                             autoComplete="email"
                             inputMode="email"
                             placeholder="nome@exemplo.com"
-                            disabled={
-                                submitting
-                            }
+                            disabled={busy}
                         />
 
                         <AuthInput
@@ -375,11 +545,11 @@ function Register() {
                             }
                             required
                             minLength={8}
+                            maxLength={72}
                             autoComplete="new-password"
-                            placeholder="Mínimo de 8 caracteres"
-                            disabled={
-                                submitting
-                            }
+                            placeholder="Crie uma senha segura"
+                            disabled={busy}
+                            aria-describedby="password-requirements"
                         />
 
                         <AuthInput
@@ -399,15 +569,30 @@ function Register() {
                             }
                             required
                             minLength={8}
+                            maxLength={72}
                             autoComplete="new-password"
                             placeholder="Digite novamente"
-                            disabled={
-                                submitting
+                            disabled={busy}
+                            aria-invalid={
+                                formData
+                                    .passwordConfirmation
+                                    .length > 0 &&
+                                !passwordsMatch
+                            }
+                            helperText={
+                                formData
+                                    .passwordConfirmation
+                                    .length === 0
+                                    ? ""
+                                    : passwordsMatch
+                                        ? "As senhas correspondem."
+                                        : "As senhas ainda não correspondem."
                             }
                         />
                     </div>
 
                     <div
+                        id="password-requirements"
                         className="
                             rounded-2xl
                             border border-border
@@ -422,59 +607,133 @@ function Register() {
                                 gap-3
                             "
                         >
-                            <p
-                                className="
-                                    text-xs
-                                    font-semibold
-                                    text-foreground
-                                "
-                            >
-                                Segurança da senha
-                            </p>
+                            <div>
+                                <p
+                                    className="
+                                        text-xs
+                                        font-semibold
+                                        text-foreground
+                                    "
+                                >
+                                    Segurança da senha
+                                </p>
+
+                                <p
+                                    className="
+                                        mt-0.5
+                                        text-[11px]
+                                        text-muted-foreground
+                                    "
+                                >
+                                    Use uma combinação difícil de adivinhar.
+                                </p>
+                            </div>
 
                             <span
-                                className="
+                                className={`
+                                    shrink-0
+                                    rounded-full
+                                    px-2.5 py-1
                                     text-[10px]
-                                    font-semibold
-                                    text-muted-foreground
-                                "
+                                    font-bold
+
+                                    ${passwordIsValid
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                                        : "bg-surface text-muted-foreground"
+                                    }
+                                `}
                             >
-                                Mínimo de 8 caracteres
+                                {passwordProgress}/
+                                {
+                                    passwordRequirements.length
+                                }
                             </span>
                         </div>
 
                         <div
                             className="
                                 mt-3 grid
-                                grid-cols-3 gap-1.5
+                                grid-cols-5 gap-1.5
                             "
+                            aria-hidden="true"
                         >
-                            {[1, 2, 3].map(
-                                (level) => (
+                            {passwordRequirements.map(
+                                (
+                                    requirement,
+                                    index,
+                                ) => (
                                     <span
-                                        key={level}
+                                        key={
+                                            requirement.id
+                                        }
                                         className={`
                                             h-1.5
                                             rounded-full
                                             transition-colors
 
-                                            ${passwordProgress >=
-                                                level
+                                            ${passwordProgress >
+                                                index
                                                 ? "bg-primary"
                                                 : "bg-border"
                                             }
                                         `}
                                     />
-                                )
+                                ),
                             )}
                         </div>
+
+                        <ul
+                            className="
+                                mt-3
+                                grid gap-2
+                                sm:grid-cols-2
+                            "
+                        >
+                            {passwordRequirements.map(
+                                (
+                                    requirement,
+                                ) => (
+                                    <li
+                                        key={
+                                            requirement.id
+                                        }
+                                        className={`
+                                            flex
+                                            items-center
+                                            gap-2
+                                            text-xs
+                                            transition-colors
+
+                                            ${requirement.valid
+                                                ? "font-medium text-emerald-600 dark:text-emerald-400"
+                                                : "text-muted-foreground"
+                                            }
+                                        `}
+                                    >
+                                        <RiCheckboxCircleLine
+                                            size={16}
+                                            aria-hidden="true"
+                                            className={
+                                                requirement.valid
+                                                    ? "opacity-100"
+                                                    : "opacity-35"
+                                            }
+                                        />
+
+                                        <span>
+                                            {
+                                                requirement.label
+                                            }
+                                        </span>
+                                    </li>
+                                ),
+                            )}
+                        </ul>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={
-                            submitting
-                        }
+                        disabled={busy}
                         aria-busy={
                             submitting
                         }

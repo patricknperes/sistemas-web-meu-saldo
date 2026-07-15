@@ -3,27 +3,59 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma.js";
 import { AppError } from "../errors/AppError.js";
 
+import {
+  getPasswordValidationErrors,
+  isValidEmail,
+  normalizeEmail,
+} from "../utils/authValidation.js";
+
 const PASSWORD_SALT_ROUNDS = 10;
 
 const publicUserSelect = {
   id: true,
   name: true,
   email: true,
+  avatarUrl: true,
   role: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
 };
 
-function normalizeEmail(email) {
-  return email.trim().toLowerCase();
+const ownProfileSelect = {
+  ...publicUserSelect,
+  passwordHash: true,
+  googleId: true,
+};
+
+function serializeOwnProfile(user) {
+  const {
+    passwordHash,
+    googleId,
+    ...publicUser
+  } = user;
+
+  return {
+    ...publicUser,
+
+    authMethods: {
+      password: Boolean(passwordHash),
+      google: Boolean(googleId),
+    },
+  };
 }
 
 function validateUserId(value) {
   const userId = Number(value);
 
-  if (!Number.isInteger(userId) || userId <= 0) {
-    throw new AppError("Identificador de usuário inválido.", 400);
+  if (
+    !Number.isInteger(userId) ||
+    userId <= 0
+  ) {
+    throw new AppError(
+      "Identificador de usuário inválido.",
+      400
+    );
   }
 
   return userId;
@@ -31,7 +63,10 @@ function validateUserId(value) {
 
 function validateName(name) {
   if (typeof name !== "string") {
-    throw new AppError("O nome precisa ser um texto.", 422);
+    throw new AppError(
+      "O nome precisa ser um texto.",
+      422
+    );
   }
 
   const normalizedName = name.trim();
@@ -55,13 +90,16 @@ function validateName(name) {
 
 function validateEmail(email) {
   if (typeof email !== "string") {
-    throw new AppError("O e-mail precisa ser um texto.", 422);
+    throw new AppError(
+      "O e-mail precisa ser um texto.",
+      422
+    );
   }
 
-  const normalizedEmail = normalizeEmail(email);
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const normalizedEmail =
+    normalizeEmail(email);
 
-  if (!emailPattern.test(normalizedEmail)) {
+  if (!isValidEmail(normalizedEmail)) {
     throw new AppError(
       "Informe um endereço de e-mail válido.",
       422
@@ -71,37 +109,53 @@ function validateEmail(email) {
   return normalizedEmail;
 }
 
-function validatePassword(password, fieldName = "senha") {
-  if (typeof password !== "string") {
-    throw new AppError(`A ${fieldName} precisa ser informada.`, 422);
-  }
-
-  if (password.length < 8) {
-    throw new AppError(
-      `A ${fieldName} deve possuir pelo menos 8 caracteres.`,
-      422
+function validateNewPassword(password) {
+  const validationErrors =
+    getPasswordValidationErrors(
+      password,
+      "A nova senha"
     );
-  }
 
-  if (Buffer.byteLength(password, "utf8") > 72) {
-    throw new AppError(`A ${fieldName} é muito longa.`, 422);
+  if (validationErrors.length > 0) {
+    throw new AppError(
+      validationErrors[0],
+      422,
+      {
+        newPassword:
+          validationErrors,
+      }
+    );
   }
 
   return password;
 }
 
-function validateAllowedFields(input, allowedFields) {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new AppError("O corpo da requisição é inválido.", 400);
+function validateAllowedFields(
+  input,
+  allowedFields
+) {
+  if (
+    !input ||
+    typeof input !== "object" ||
+    Array.isArray(input)
+  ) {
+    throw new AppError(
+      "O corpo da requisição é inválido.",
+      400
+    );
   }
 
-  const invalidFields = Object.keys(input).filter(
-    (field) => !allowedFields.includes(field)
-  );
+  const invalidFields =
+    Object.keys(input).filter(
+      (field) =>
+        !allowedFields.includes(field)
+    );
 
   if (invalidFields.length > 0) {
     throw new AppError(
-      `Campos não permitidos: ${invalidFields.join(", ")}.`,
+      `Campos não permitidos: ${invalidFields.join(
+        ", "
+      )}.`,
       422
     );
   }
@@ -118,25 +172,49 @@ function handlePrismaError(error) {
   throw error;
 }
 
-export async function getOwnProfile(userIdValue) {
-  const userId = validateUserId(userIdValue);
-
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: publicUserSelect,
-  });
-
-  if (!user) {
-    throw new AppError("Usuário não encontrado.", 404);
+function ensureLocalPassword(
+  user,
+  operationMessage
+) {
+  if (!user.passwordHash) {
+    throw new AppError(
+      operationMessage,
+      422
+    );
   }
-
-  return user;
 }
 
-export async function updateOwnProfile(userIdValue, input) {
-  const userId = validateUserId(userIdValue);
+export async function getOwnProfile(
+  userIdValue
+) {
+  const userId =
+    validateUserId(userIdValue);
+
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: ownProfileSelect,
+    });
+
+  if (!user) {
+    throw new AppError(
+      "Usuário não encontrado.",
+      404
+    );
+  }
+
+  return serializeOwnProfile(user);
+}
+
+export async function updateOwnProfile(
+  userIdValue,
+  input
+) {
+  const userId =
+    validateUserId(userIdValue);
 
   validateAllowedFields(input, [
     "name",
@@ -145,28 +223,32 @@ export async function updateOwnProfile(userIdValue, input) {
     "newPassword",
   ]);
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      ...publicUserSelect,
-      passwordHash: true,
-    },
-  });
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: ownProfileSelect,
+    });
 
   if (!user) {
-    throw new AppError("Usuário não encontrado.", 404);
+    throw new AppError(
+      "Usuário não encontrado.",
+      404
+    );
   }
 
   const updateData = {};
 
   if (input.name !== undefined) {
-    updateData.name = validateName(input.name);
+    updateData.name =
+      validateName(input.name);
   }
 
   if (input.email !== undefined) {
-    updateData.email = validateEmail(input.email);
+    updateData.email =
+      validateEmail(input.email);
   }
 
   const wantsToChangeEmail =
@@ -176,37 +258,69 @@ export async function updateOwnProfile(userIdValue, input) {
   const wantsToChangePassword =
     input.newPassword !== undefined;
 
-  if (wantsToChangeEmail || wantsToChangePassword) {
-    if (!input.currentPassword) {
+  if (
+    wantsToChangeEmail ||
+    wantsToChangePassword
+  ) {
+    ensureLocalPassword(
+      user,
+      "Esta conta utiliza somente o Google. A alteração de e-mail ou a criação de uma senha local ainda não está disponível."
+    );
+
+    if (
+      typeof input.currentPassword !==
+        "string" ||
+      !input.currentPassword
+    ) {
       throw new AppError(
         "Informe a senha atual para alterar o e-mail ou a senha.",
         422
       );
     }
 
-    const currentPasswordMatches = await bcrypt.compare(
-      input.currentPassword,
-      user.passwordHash
-    );
+    const currentPasswordMatches =
+      await bcrypt.compare(
+        input.currentPassword,
+        user.passwordHash
+      );
 
     if (!currentPasswordMatches) {
-      throw new AppError("A senha atual está incorreta.", 401);
+      throw new AppError(
+        "A senha atual está incorreta.",
+        401
+      );
     }
   }
 
   if (wantsToChangePassword) {
-    const newPassword = validatePassword(
-      input.newPassword,
-      "nova senha"
-    );
+    const newPassword =
+      validateNewPassword(
+        input.newPassword
+      );
 
-    updateData.passwordHash = await bcrypt.hash(
-      newPassword,
-      PASSWORD_SALT_ROUNDS
-    );
+    const sameAsCurrentPassword =
+      await bcrypt.compare(
+        newPassword,
+        user.passwordHash
+      );
+
+    if (sameAsCurrentPassword) {
+      throw new AppError(
+        "A nova senha precisa ser diferente da senha atual.",
+        422
+      );
+    }
+
+    updateData.passwordHash =
+      await bcrypt.hash(
+        newPassword,
+        PASSWORD_SALT_ROUNDS
+      );
   }
 
-  if (Object.keys(updateData).length === 0) {
+  if (
+    Object.keys(updateData).length === 0
+  ) {
     throw new AppError(
       "Informe pelo menos um campo para atualização.",
       422
@@ -214,43 +328,54 @@ export async function updateOwnProfile(userIdValue, input) {
   }
 
   try {
-    return await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: updateData,
-      select: publicUserSelect,
-    });
+    const updatedUser =
+      await prisma.user.update({
+        where: {
+          id: userId,
+        },
+
+        data: updateData,
+        select: ownProfileSelect,
+      });
+
+    return serializeOwnProfile(
+      updatedUser
+    );
   } catch (error) {
     handlePrismaError(error);
   }
 }
 
-export async function deleteOwnAccount(userIdValue, input) {
-  const userId = validateUserId(userIdValue);
+export async function deleteOwnAccount(
+  userIdValue,
+  input
+) {
+  const userId =
+    validateUserId(userIdValue);
 
-  validateAllowedFields(input, ["password"]);
+  validateAllowedFields(input, [
+    "password",
+  ]);
 
-  if (!input.password) {
-    throw new AppError(
-      "Informe sua senha para excluir a conta.",
-      422
-    );
-  }
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      id: true,
-      role: true,
-      passwordHash: true,
-    },
-  });
+      select: {
+        id: true,
+        role: true,
+        passwordHash: true,
+        googleId: true,
+      },
+    });
 
   if (!user) {
-    throw new AppError("Usuário não encontrado.", 404);
+    throw new AppError(
+      "Usuário não encontrado.",
+      404
+    );
   }
 
   if (user.role === "ADMIN") {
@@ -260,13 +385,33 @@ export async function deleteOwnAccount(userIdValue, input) {
     );
   }
 
-  const passwordMatches = await bcrypt.compare(
-    input.password,
-    user.passwordHash
+  ensureLocalPassword(
+    user,
+    "Contas que utilizam somente o Google ainda não podem ser excluídas por esta tela."
   );
 
+  if (
+    typeof input.password !==
+      "string" ||
+    !input.password
+  ) {
+    throw new AppError(
+      "Informe sua senha para excluir a conta.",
+      422
+    );
+  }
+
+  const passwordMatches =
+    await bcrypt.compare(
+      input.password,
+      user.passwordHash
+    );
+
   if (!passwordMatches) {
-    throw new AppError("Senha incorreta.", 401);
+    throw new AppError(
+      "Senha incorreta.",
+      401
+    );
   }
 
   await prisma.user.delete({
@@ -279,24 +424,33 @@ export async function deleteOwnAccount(userIdValue, input) {
 export async function listAllUsers() {
   return prisma.user.findMany({
     select: publicUserSelect,
+
     orderBy: {
       createdAt: "desc",
     },
   });
 }
 
-export async function getUserById(userIdValue) {
-  const userId = validateUserId(userIdValue);
+export async function getUserById(
+  userIdValue
+) {
+  const userId =
+    validateUserId(userIdValue);
 
-  const user = await prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: publicUserSelect,
-  });
+  const user =
+    await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: publicUserSelect,
+    });
 
   if (!user) {
-    throw new AppError("Usuário não encontrado.", 404);
+    throw new AppError(
+      "Usuário não encontrado.",
+      404
+    );
   }
 
   return user;
@@ -307,11 +461,15 @@ export async function updateUserByAdmin(
   targetUserIdValue,
   input
 ) {
-  const authenticatedUserId = validateUserId(
-    authenticatedUserIdValue
-  );
+  const authenticatedUserId =
+    validateUserId(
+      authenticatedUserIdValue
+    );
 
-  const targetUserId = validateUserId(targetUserIdValue);
+  const targetUserId =
+    validateUserId(
+      targetUserIdValue
+    );
 
   validateAllowedFields(input, [
     "name",
@@ -323,15 +481,21 @@ export async function updateUserByAdmin(
   const updateData = {};
 
   if (input.name !== undefined) {
-    updateData.name = validateName(input.name);
+    updateData.name =
+      validateName(input.name);
   }
 
   if (input.email !== undefined) {
-    updateData.email = validateEmail(input.email);
+    updateData.email =
+      validateEmail(input.email);
   }
 
   if (input.role !== undefined) {
-    if (!["USER", "ADMIN"].includes(input.role)) {
+    if (
+      !["USER", "ADMIN"].includes(
+        input.role
+      )
+    ) {
       throw new AppError(
         "A função deve ser USER ou ADMIN.",
         422
@@ -341,18 +505,26 @@ export async function updateUserByAdmin(
     updateData.role = input.role;
   }
 
-  if (input.isActive !== undefined) {
-    if (typeof input.isActive !== "boolean") {
+  if (
+    input.isActive !== undefined
+  ) {
+    if (
+      typeof input.isActive !==
+      "boolean"
+    ) {
       throw new AppError(
         "O campo isActive deve ser verdadeiro ou falso.",
         422
       );
     }
 
-    updateData.isActive = input.isActive;
+    updateData.isActive =
+      input.isActive;
   }
 
-  if (Object.keys(updateData).length === 0) {
+  if (
+    Object.keys(updateData).length === 0
+  ) {
     throw new AppError(
       "Informe pelo menos um campo para atualização.",
       422
@@ -360,76 +532,107 @@ export async function updateUserByAdmin(
   }
 
   try {
-    return await prisma.$transaction(async (transaction) => {
-      const targetUser = await transaction.user.findUnique({
-        where: {
-          id: targetUserId,
-        },
-        select: {
-          id: true,
-          role: true,
-          isActive: true,
-        },
-      });
+    return await prisma.$transaction(
+      async (transaction) => {
+        const targetUser =
+          await transaction.user.findUnique(
+            {
+              where: {
+                id: targetUserId,
+              },
 
-      if (!targetUser) {
-        throw new AppError("Usuário não encontrado.", 404);
-      }
+              select: {
+                id: true,
+                role: true,
+                isActive: true,
+              },
+            }
+          );
 
-      if (authenticatedUserId === targetUserId) {
+        if (!targetUser) {
+          throw new AppError(
+            "Usuário não encontrado.",
+            404
+          );
+        }
+
         if (
-          updateData.role !== undefined &&
-          updateData.role !== "ADMIN"
+          authenticatedUserId ===
+          targetUserId
         ) {
-          throw new AppError(
-            "Você não pode remover sua própria permissão de administrador.",
-            403
-          );
+          if (
+            updateData.role !==
+              undefined &&
+            updateData.role !==
+              "ADMIN"
+          ) {
+            throw new AppError(
+              "Você não pode remover sua própria permissão de administrador.",
+              403
+            );
+          }
+
+          if (
+            updateData.isActive ===
+            false
+          ) {
+            throw new AppError(
+              "Você não pode desativar sua própria conta administrativa.",
+              403
+            );
+          }
         }
 
-        if (updateData.isActive === false) {
-          throw new AppError(
-            "Você não pode desativar sua própria conta administrativa.",
-            403
-          );
+        const nextRole =
+          updateData.role ??
+          targetUser.role;
+
+        const nextActiveStatus =
+          updateData.isActive ??
+          targetUser.isActive;
+
+        const removesActiveAdmin =
+          targetUser.role ===
+            "ADMIN" &&
+          targetUser.isActive &&
+          (nextRole !== "ADMIN" ||
+            nextActiveStatus ===
+              false);
+
+        if (removesActiveAdmin) {
+          const activeAdminCount =
+            await transaction.user.count(
+              {
+                where: {
+                  role: "ADMIN",
+                  isActive: true,
+                },
+              }
+            );
+
+          if (
+            activeAdminCount <= 1
+          ) {
+            throw new AppError(
+              "O sistema precisa possuir pelo menos um administrador ativo.",
+              409
+            );
+          }
         }
+
+        return transaction.user.update(
+          {
+            where: {
+              id: targetUserId,
+            },
+
+            data: updateData,
+            select:
+              publicUserSelect,
+          }
+        );
       }
-
-      const nextRole =
-        updateData.role ?? targetUser.role;
-
-      const nextActiveStatus =
-        updateData.isActive ?? targetUser.isActive;
-
-      const removesActiveAdmin =
-        targetUser.role === "ADMIN" &&
-        targetUser.isActive &&
-        (nextRole !== "ADMIN" || nextActiveStatus === false);
-
-      if (removesActiveAdmin) {
-        const activeAdminCount = await transaction.user.count({
-          where: {
-            role: "ADMIN",
-            isActive: true,
-          },
-        });
-
-        if (activeAdminCount <= 1) {
-          throw new AppError(
-            "O sistema precisa possuir pelo menos um administrador ativo.",
-            409
-          );
-        }
-      }
-
-      return transaction.user.update({
-        where: {
-          id: targetUserId,
-        },
-        data: updateData,
-        select: publicUserSelect,
-      });
-    });
+    );
   } catch (error) {
     handlePrismaError(error);
   }
@@ -439,58 +642,76 @@ export async function deleteUserByAdmin(
   authenticatedUserIdValue,
   targetUserIdValue
 ) {
-  const authenticatedUserId = validateUserId(
-    authenticatedUserIdValue
-  );
+  const authenticatedUserId =
+    validateUserId(
+      authenticatedUserIdValue
+    );
 
-  const targetUserId = validateUserId(targetUserIdValue);
+  const targetUserId =
+    validateUserId(
+      targetUserIdValue
+    );
 
-  if (authenticatedUserId === targetUserId) {
+  if (
+    authenticatedUserId ===
+    targetUserId
+  ) {
     throw new AppError(
       "Você não pode excluir sua própria conta pela rota administrativa.",
       403
     );
   }
 
-  await prisma.$transaction(async (transaction) => {
-    const targetUser = await transaction.user.findUnique({
-      where: {
-        id: targetUserId,
-      },
-      select: {
-        id: true,
-        role: true,
-        isActive: true,
-      },
-    });
+  await prisma.$transaction(
+    async (transaction) => {
+      const targetUser =
+        await transaction.user.findUnique(
+          {
+            where: {
+              id: targetUserId,
+            },
 
-    if (!targetUser) {
-      throw new AppError("Usuário não encontrado.", 404);
-    }
+            select: {
+              id: true,
+              role: true,
+              isActive: true,
+            },
+          }
+        );
 
-    if (
-      targetUser.role === "ADMIN" &&
-      targetUser.isActive
-    ) {
-      const activeAdminCount = await transaction.user.count({
-        where: {
-          role: "ADMIN",
-          isActive: true,
-        },
-      });
-
-      if (activeAdminCount <= 1) {
+      if (!targetUser) {
         throw new AppError(
-          "O sistema precisa possuir pelo menos um administrador ativo.",
-          409
+          "Usuário não encontrado.",
+          404
         );
       }
-    }
 
-    await transaction.user.delete({
-      where: {
-        id: targetUserId,
-      },
-    });
-  });
+      if (
+        targetUser.role ===
+          "ADMIN" &&
+        targetUser.isActive
+      ) {
+        const activeAdminCount =
+          await transaction.user.count({
+            where: {
+              role: "ADMIN",
+              isActive: true,
+            },
+          });
+
+        if (activeAdminCount <= 1) {
+          throw new AppError(
+            "O sistema precisa possuir pelo menos um administrador ativo.",
+            409
+          );
+        }
+      }
+
+      await transaction.user.delete({
+        where: {
+          id: targetUserId,
+        },
+      });
+    }
+  );
 }

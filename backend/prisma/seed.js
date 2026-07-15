@@ -3,15 +3,28 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "../src/lib/prisma.js";
 
+import {
+  getPasswordValidationErrors,
+  isValidEmail,
+  normalizeEmail,
+} from "../src/utils/authValidation.js";
+
 const PASSWORD_SALT_ROUNDS = 10;
 
 function getAdminEnvironment() {
-  const name = process.env.ADMIN_NAME?.trim();
-  const email = process.env.ADMIN_EMAIL
-    ?.trim()
-    .toLowerCase();
+  const name =
+    typeof process.env.ADMIN_NAME === "string"
+      ? process.env.ADMIN_NAME.trim()
+      : "";
 
-  const password = process.env.ADMIN_PASSWORD;
+  const email = normalizeEmail(
+    process.env.ADMIN_EMAIL
+  );
+
+  const password =
+    typeof process.env.ADMIN_PASSWORD === "string"
+      ? process.env.ADMIN_PASSWORD
+      : "";
 
   const missingVariables = [];
 
@@ -35,23 +48,33 @@ function getAdminEnvironment() {
     );
   }
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (name.length < 2) {
+    throw new Error(
+      "ADMIN_NAME precisa possuir pelo menos 2 caracteres."
+    );
+  }
 
-  if (!emailPattern.test(email)) {
+  if (name.length > 100) {
+    throw new Error(
+      "ADMIN_NAME precisa possuir no máximo 100 caracteres."
+    );
+  }
+
+  if (!isValidEmail(email)) {
     throw new Error(
       "ADMIN_EMAIL precisa conter um endereço de e-mail válido."
     );
   }
 
-  if (password.length < 8) {
-    throw new Error(
-      "ADMIN_PASSWORD precisa possuir pelo menos 8 caracteres."
+  const passwordErrors =
+    getPasswordValidationErrors(
+      password,
+      "ADMIN_PASSWORD"
     );
-  }
 
-  if (Buffer.byteLength(password, "utf8") > 72) {
+  if (passwordErrors.length > 0) {
     throw new Error(
-      "ADMIN_PASSWORD ultrapassa o limite permitido."
+      passwordErrors.join("\n")
     );
   }
 
@@ -69,51 +92,61 @@ async function seed() {
     password,
   } = getAdminEnvironment();
 
-  const passwordHash = await bcrypt.hash(
-    password,
-    PASSWORD_SALT_ROUNDS
+  const passwordHash =
+    await bcrypt.hash(
+      password,
+      PASSWORD_SALT_ROUNDS
+    );
+
+  const administrator =
+    await prisma.user.upsert({
+      where: {
+        email,
+      },
+
+      update: {
+        name,
+        role: "ADMIN",
+        isActive: true,
+
+        /*
+          A senha não será alterada quando
+          o administrador já existir.
+        */
+      },
+
+      create: {
+        name,
+        email,
+        passwordHash,
+        googleId: null,
+        avatarUrl: null,
+        role: "ADMIN",
+        isActive: true,
+      },
+
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+      },
+    });
+
+  console.log(
+    "Administrador configurado com sucesso:"
   );
 
-  const administrator = await prisma.user.upsert({
-    where: {
-      email,
-    },
-
-    update: {
-      name,
-      role: "ADMIN",
-      isActive: true,
-
-      /*
-        A senha não será alterada quando o administrador
-        já existir.
-      */
-    },
-
-    create: {
-      name,
-      email,
-      passwordHash,
-      role: "ADMIN",
-      isActive: true,
-    },
-
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isActive: true,
-    },
-  });
-
-  console.log("Administrador configurado com sucesso:");
   console.log(administrator);
 }
 
 seed()
   .catch((error) => {
-    console.error("Erro ao executar o seed:");
+    console.error(
+      "Erro ao executar o seed:"
+    );
+
     console.error(error);
 
     process.exitCode = 1;

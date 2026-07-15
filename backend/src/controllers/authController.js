@@ -1,4 +1,5 @@
 import {
+  authenticateWithGoogle,
   loginUser,
   registerUser,
 } from "../services/authService.js";
@@ -17,6 +18,23 @@ export async function login(req, res) {
 
   return res.status(200).json({
     message: "Login realizado com sucesso.",
+    ...result,
+  });
+}
+
+export async function googleAuth(req, res) {
+  const result = await authenticateWithGoogle(
+    req.body
+  );
+
+  const message = result.isNewUser
+    ? "Conta criada com o Google com sucesso."
+    : "Login com Google realizado com sucesso.";
+
+  return res.status(
+    result.isNewUser ? 201 : 200
+  ).json({
+    message,
     ...result,
   });
 }

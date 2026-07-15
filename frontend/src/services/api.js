@@ -1,6 +1,7 @@
 import axios from "axios";
 
-export const TOKEN_KEY = "finance_manager_token";
+export const TOKEN_KEY =
+  "finance_manager_token";
 
 export const api = axios.create({
   baseURL:
@@ -12,10 +13,14 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token =
+      localStorage.getItem(
+        TOKEN_KEY
+      );
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization =
+        `Bearer ${token}`;
     }
 
     return config;
@@ -30,19 +35,37 @@ api.interceptors.response.use(
   (response) => response,
 
   (error) => {
-    const status = error.response?.status;
+    const status =
+      error.response?.status;
 
-    const requestUrl = error.config?.url ?? "";
+    const requestUrl =
+      error.config?.url ?? "";
 
     const isAuthenticationRequest =
-      requestUrl.includes("/auth/login") ||
-      requestUrl.includes("/auth/register");
+      requestUrl.includes(
+        "/auth/login"
+      ) ||
+      requestUrl.includes(
+        "/auth/register"
+      ) ||
+      requestUrl.includes(
+        "/auth/google"
+      );
 
-    if (status === 401 && !isAuthenticationRequest) {
-      localStorage.removeItem(TOKEN_KEY);
+    if (
+      status === 401 &&
+      !isAuthenticationRequest
+    ) {
+      localStorage.removeItem(
+        TOKEN_KEY
+      );
 
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
+      if (
+        window.location.pathname !==
+        "/login"
+      ) {
+        window.location.href =
+          "/login";
       }
     }
 
