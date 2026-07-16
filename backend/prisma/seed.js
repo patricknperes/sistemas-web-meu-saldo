@@ -9,11 +9,16 @@ import {
   normalizeEmail,
 } from "../src/utils/authValidation.js";
 
+import {
+  ensureDefaultTagsForUser,
+} from "../src/services/tagService.js";
+
 const PASSWORD_SALT_ROUNDS = 10;
 
 function getAdminEnvironment() {
   const name =
-    typeof process.env.ADMIN_NAME === "string"
+    typeof process.env.ADMIN_NAME ===
+    "string"
       ? process.env.ADMIN_NAME.trim()
       : "";
 
@@ -22,25 +27,34 @@ function getAdminEnvironment() {
   );
 
   const password =
-    typeof process.env.ADMIN_PASSWORD === "string"
+    typeof process.env.ADMIN_PASSWORD ===
+    "string"
       ? process.env.ADMIN_PASSWORD
       : "";
 
   const missingVariables = [];
 
   if (!name) {
-    missingVariables.push("ADMIN_NAME");
+    missingVariables.push(
+      "ADMIN_NAME"
+    );
   }
 
   if (!email) {
-    missingVariables.push("ADMIN_EMAIL");
+    missingVariables.push(
+      "ADMIN_EMAIL"
+    );
   }
 
   if (!password) {
-    missingVariables.push("ADMIN_PASSWORD");
+    missingVariables.push(
+      "ADMIN_PASSWORD"
+    );
   }
 
-  if (missingVariables.length > 0) {
+  if (
+    missingVariables.length > 0
+  ) {
     throw new Error(
       `Variáveis ausentes para criar o administrador: ${missingVariables.join(
         ", "
@@ -72,7 +86,9 @@ function getAdminEnvironment() {
       "ADMIN_PASSWORD"
     );
 
-  if (passwordErrors.length > 0) {
+  if (
+    passwordErrors.length > 0
+  ) {
     throw new Error(
       passwordErrors.join("\n")
     );
@@ -110,9 +126,10 @@ async function seed() {
         isActive: true,
 
         /*
-          A senha não será alterada quando
-          o administrador já existir.
-        */
+         * A senha de um administrador
+         * existente não será alterada
+         * automaticamente pelo seed.
+         */
       },
 
       create: {
@@ -134,11 +151,34 @@ async function seed() {
       },
     });
 
+  /*
+   * Cria as tags padrão para o
+   * administrador caso ele ainda
+   * não possua nenhuma tag.
+   */
+  await ensureDefaultTagsForUser(
+    administrator.id
+  );
+
+  const tagCount =
+    await prisma.tag.count({
+      where: {
+        userId:
+          administrator.id,
+      },
+    });
+
   console.log(
     "Administrador configurado com sucesso:"
   );
 
-  console.log(administrator);
+  console.log(
+    administrator
+  );
+
+  console.log(
+    `Tags disponíveis para o administrador: ${tagCount}`
+  );
 }
 
 seed()

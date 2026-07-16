@@ -12,11 +12,13 @@ import PrivateLayout from "../components/layout/PrivateLayout.jsx";
 
 import Dashboard from "../pages/Dashboard/Dashboard.jsx";
 import Expenses from "../pages/Expenses/Expenses.jsx";
+import ForgotPassword from "../pages/ForgotPassword/ForgotPassword.jsx";
 import History from "../pages/History/History.jsx";
 import Login from "../pages/Login/Login.jsx";
 import NotFound from "../pages/NotFound/NotFound.jsx";
 import Profile from "../pages/Profile/Profile.jsx";
 import Register from "../pages/Register/Register.jsx";
+import ResetPassword from "../pages/ResetPassword/ResetPassword.jsx";
 import Revenues from "../pages/Revenues/Revenues.jsx";
 import Users from "../pages/Users/Users.jsx";
 
@@ -43,39 +45,77 @@ function AppRoutes() {
                     path="cadastro"
                     element={<Register />}
                 />
+
+                <Route
+                    path="esqueci-senha"
+                    element={
+                        <ForgotPassword />
+                    }
+                />
+
+                <Route
+                    path="redefinir-senha"
+                    element={
+                        <ResetPassword />
+                    }
+                />
             </Route>
 
-            <Route element={<PrivateRoute />}>
-                <Route element={<PrivateLayout />}>
+            <Route
+                element={
+                    <PrivateRoute />
+                }
+            >
+                <Route
+                    element={
+                        <PrivateLayout />
+                    }
+                >
                     <Route
                         path="/dashboard"
-                        element={<Dashboard />}
+                        element={
+                            <Dashboard />
+                        }
                     />
 
                     <Route
                         path="/receitas"
-                        element={<Revenues />}
+                        element={
+                            <Revenues />
+                        }
                     />
 
                     <Route
                         path="/despesas"
-                        element={<Expenses />}
+                        element={
+                            <Expenses />
+                        }
                     />
 
                     <Route
                         path="/historico"
-                        element={<History />}
+                        element={
+                            <History />
+                        }
                     />
 
                     <Route
                         path="/perfil"
-                        element={<Profile />}
+                        element={
+                            <Profile />
+                        }
                     />
 
-                    <Route element={<AdminRoute />}>
+                    <Route
+                        element={
+                            <AdminRoute />
+                        }
+                    >
                         <Route
                             path="/usuarios"
-                            element={<Users />}
+                            element={
+                                <Users />
+                            }
                         />
                     </Route>
                 </Route>
@@ -83,7 +123,9 @@ function AppRoutes() {
 
             <Route
                 path="*"
-                element={<NotFound />}
+                element={
+                    <NotFound />
+                }
             />
         </Routes>
     );

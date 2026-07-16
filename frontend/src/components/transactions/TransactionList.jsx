@@ -4,18 +4,15 @@ import {
 } from "motion/react";
 
 import {
-    RiArrowDownCircleLine,
-    RiArrowDownSLine,
     RiArrowLeftSLine,
     RiArrowRightSLine,
-    RiArrowUpCircleLine,
     RiCalendarLine,
     RiDeleteBinLine,
     RiEditLine,
     RiFileList3Line,
     RiLoader4Line,
     RiPriceTag3Line,
-    RiWallet3Line,
+    RiRepeat2Line,
 } from "react-icons/ri";
 
 import {
@@ -26,144 +23,161 @@ import {
     formatDate,
 } from "../../utils/formatDate.js";
 
-const DEFAULT_PAGE_SIZE_OPTIONS = [
-    10,
-    20,
-    30,
-];
-
-const TYPE_STYLES = {
+const TYPE_STYLES = Object.freeze({
     INCOME: {
-        label: "Receita",
-        sign: "+",
-        HeaderIcon: RiArrowUpCircleLine,
-
-        heroGradient:
-            "from-emerald-500 via-emerald-600 to-teal-700",
-
-        heroShadow:
-            "shadow-emerald-500/15",
-
-        heroRing:
-            "ring-emerald-400/20",
-
-        softBackground:
-            "bg-emerald-500/[0.045]",
-
-        softGradient:
-            "from-emerald-500/12 via-emerald-500/[0.035] to-transparent",
-
-        icon:
-            "bg-emerald-500/12 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
-
-        badge:
-            "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
-
         amount:
             "text-emerald-600 dark:text-emerald-400",
 
-        rowAccent:
-            "bg-emerald-500",
+        icon:
+            "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-400",
 
-        rowHover:
-            "hover:bg-emerald-500/[0.035]",
+        recurringBadge:
+            "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300",
 
         pageActive:
-            "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-500/20",
+            "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500",
 
         focusRing:
-            "focus-visible:ring-emerald-500/25",
+            "focus-visible:ring-emerald-500/20",
     },
 
     EXPENSE: {
-        label: "Despesa",
-        sign: "−",
-        HeaderIcon: RiArrowDownCircleLine,
-
-        heroGradient:
-            "from-rose-500 via-rose-600 to-red-700",
-
-        heroShadow:
-            "shadow-rose-500/15",
-
-        heroRing:
-            "ring-rose-400/20",
-
-        softBackground:
-            "bg-rose-500/[0.045]",
-
-        softGradient:
-            "from-rose-500/12 via-rose-500/[0.035] to-transparent",
-
-        icon:
-            "bg-rose-500/12 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
-
-        badge:
-            "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
-
         amount:
             "text-rose-600 dark:text-rose-400",
 
-        rowAccent:
-            "bg-rose-500",
+        icon:
+            "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-400",
 
-        rowHover:
-            "hover:bg-rose-500/[0.035]",
+        recurringBadge:
+            "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300",
 
         pageActive:
-            "border-rose-500 bg-rose-500 text-white shadow-md shadow-rose-500/20",
+            "border-rose-600 bg-rose-600 text-white dark:border-rose-500 dark:bg-rose-500",
 
         focusRing:
-            "focus-visible:ring-rose-500/25",
+            "focus-visible:ring-rose-500/20",
     },
-};
+});
 
 function normalizeNumber(
     value,
-    fallback = 0
+    fallbackValue = 0,
 ) {
     const normalizedValue =
         Number(value);
 
     return Number.isFinite(
-        normalizedValue
+        normalizedValue,
     )
         ? normalizedValue
-        : fallback;
+        : fallbackValue;
+}
+
+function normalizeTransactionType(
+    value,
+) {
+    return value === "EXPENSE"
+        ? "EXPENSE"
+        : "INCOME";
+}
+
+function extractTransactionTags(
+    transaction,
+) {
+    if (
+        !Array.isArray(
+            transaction?.tags,
+        )
+    ) {
+        return [];
+    }
+
+    const tagsById =
+        new Map();
+
+    for (
+        const item of
+        transaction.tags
+    ) {
+        const tag =
+            item?.tag &&
+                typeof item.tag ===
+                "object"
+                ? item.tag
+                : item;
+
+        const tagId =
+            Number(tag?.id);
+
+        if (
+            !Number.isInteger(tagId) ||
+            tagId <= 0
+        ) {
+            continue;
+        }
+
+        tagsById.set(tagId, {
+            ...tag,
+            id: tagId,
+        });
+    }
+
+    return Array.from(
+        tagsById.values(),
+    );
+}
+
+function isGeneratedByRecurrence(
+    transaction,
+) {
+    return Boolean(
+        transaction
+            ?.recurringTransactionId ||
+        transaction
+            ?.recurringTransaction
+            ?.id ||
+        transaction
+            ?.occurrenceDate,
+    );
+}
+
+function getTransactionDate(
+    transaction,
+) {
+    return (
+        transaction?.date ??
+        transaction?.occurrenceDate ??
+        ""
+    );
 }
 
 function getPaginationItems(
     currentPage,
-    totalPages
+    totalPages,
 ) {
-    if (totalPages <= 5) {
+    if (totalPages <= 3) {
         return Array.from(
             {
                 length: totalPages,
             },
-            (_, index) => index + 1
+            (_, index) =>
+                index + 1,
         );
     }
 
-    if (currentPage <= 3) {
+    if (currentPage <= 2) {
         return [
             1,
             2,
             3,
-            4,
-            "ellipsis-right",
-            totalPages,
         ];
     }
 
     if (
         currentPage >=
-        totalPages - 2
+        totalPages - 1
     ) {
         return [
-            1,
-            "ellipsis-left",
-            totalPages - 3,
             totalPages - 2,
             totalPages - 1,
             totalPages,
@@ -171,13 +185,9 @@ function getPaginationItems(
     }
 
     return [
-        1,
-        "ellipsis-left",
         currentPage - 1,
         currentPage,
         currentPage + 1,
-        "ellipsis-right",
-        totalPages,
     ];
 }
 
@@ -185,13 +195,10 @@ function TransactionList({
     transactions = [],
     type = "INCOME",
 
-    title = "Transações",
+    title = "Lançamentos",
     singularLabel,
     pluralLabel,
     emptyMessage,
-
-    totalCents = 0,
-    totalLabel,
 
     loading = false,
     deletingId = null,
@@ -204,28 +211,27 @@ function TransactionList({
     },
 
     currentPage = 1,
-    pageSize = 10,
-    pageSizeOptions =
-    DEFAULT_PAGE_SIZE_OPTIONS,
 
     onEdit,
     onDelete,
 
     onPageChange,
-    onPageSizeChange,
     onPreviousPage,
     onNextPage,
 }) {
     const normalizedType =
-        type === "EXPENSE"
-            ? "EXPENSE"
-            : "INCOME";
+        normalizeTransactionType(
+            type,
+        );
 
     const styles =
-        TYPE_STYLES[normalizedType];
+        TYPE_STYLES[
+        normalizedType
+        ];
 
     const isIncome =
-        normalizedType === "INCOME";
+        normalizedType ===
+        "INCOME";
 
     const resolvedSingularLabel =
         singularLabel ??
@@ -245,55 +251,32 @@ function TransactionList({
 
     const resolvedEmptyMessage =
         emptyMessage ??
-        `Nenhuma ${resolvedSingularLabel} encontrada para os filtros selecionados.`;
+        `Nenhuma ${resolvedSingularLabel} encontrada.`;
 
-    const resolvedTotalLabel =
-        totalLabel ??
-        (
-            isIncome
-                ? "Total de receitas"
-                : "Total de despesas"
-        );
-
-    const normalizedTotalItems =
+    const totalItems =
         Math.max(
             0,
             Math.trunc(
                 normalizeNumber(
-                    pagination.totalItems,
-                    transactions.length
-                )
-            )
+                    pagination
+                        ?.totalItems,
+                    transactions.length,
+                ),
+            ),
         );
 
-    const normalizedPageSize =
-        Math.max(
-            1,
-            Math.trunc(
-                normalizeNumber(
-                    pagination.limit,
-                    pageSize
-                )
-            )
-        );
-
-    const calculatedTotalPages =
-        normalizedTotalItems > 0
-            ? Math.ceil(
-                normalizedTotalItems /
-                normalizedPageSize
-            )
-            : 0;
-
-    const normalizedTotalPages =
+    const totalPages =
         Math.max(
             0,
             Math.trunc(
                 normalizeNumber(
-                    pagination.totalPages,
-                    calculatedTotalPages
-                )
-            )
+                    pagination
+                        ?.totalPages,
+                    totalItems > 0
+                        ? 1
+                        : 0,
+                ),
+            ),
         );
 
     const displayedPage =
@@ -302,15 +285,15 @@ function TransactionList({
                 1,
                 Math.trunc(
                     normalizeNumber(
-                        pagination.page,
-                        currentPage
-                    )
-                )
+                        pagination?.page,
+                        currentPage,
+                    ),
+                ),
             ),
             Math.max(
-                normalizedTotalPages,
-                1
-            )
+                totalPages,
+                1,
+            ),
         );
 
     const canGoPrevious =
@@ -319,61 +302,39 @@ function TransactionList({
 
     const canGoNext =
         displayedPage <
-        normalizedTotalPages &&
+        totalPages &&
         !loading;
-
-    const showPagination =
-        normalizedTotalItems >
-        Math.min(
-            ...pageSizeOptions
-        );
-
-    const firstVisibleItem =
-        normalizedTotalItems === 0
-            ? 0
-            : (
-                displayedPage - 1
-            ) *
-            normalizedPageSize +
-            1;
-
-    const lastVisibleItem =
-        normalizedTotalItems === 0
-            ? 0
-            : Math.min(
-                displayedPage *
-                normalizedPageSize,
-                normalizedTotalItems
-            );
 
     const paginationItems =
         getPaginationItems(
             displayedPage,
-            normalizedTotalPages
+            totalPages,
         );
 
     const recordsLabel =
-        normalizedTotalItems === 1
+        totalItems === 1
             ? resolvedSingularLabel
             : resolvedPluralLabel;
 
     function handlePageChange(
-        nextPage
+        nextPage,
     ) {
         if (
             loading ||
             nextPage < 1 ||
-            nextPage >
-            normalizedTotalPages ||
-            nextPage === displayedPage
+            nextPage > totalPages ||
+            nextPage ===
+            displayedPage
         ) {
             return;
         }
 
-        onPageChange?.(nextPage);
+        onPageChange?.(
+            nextPage,
+        );
     }
 
-    function handlePrevious() {
+    function handlePreviousPage() {
         if (!canGoPrevious) {
             return;
         }
@@ -384,11 +345,11 @@ function TransactionList({
         }
 
         handlePageChange(
-            displayedPage - 1
+            displayedPage - 1,
         );
     }
 
-    function handleNext() {
+    function handleNextPage() {
         if (!canGoNext) {
             return;
         }
@@ -399,31 +360,7 @@ function TransactionList({
         }
 
         handlePageChange(
-            displayedPage + 1
-        );
-    }
-
-    function handlePageSizeChange(
-        event
-    ) {
-        const nextPageSize =
-            Number(
-                event.target.value
-            );
-
-        if (
-            !Number.isInteger(
-                nextPageSize
-            ) ||
-            nextPageSize <= 0 ||
-            nextPageSize ===
-            normalizedPageSize
-        ) {
-            return;
-        }
-
-        onPageSizeChange?.(
-            nextPageSize
+            displayedPage + 1,
         );
     }
 
@@ -431,361 +368,181 @@ function TransactionList({
         <section
             aria-busy={loading}
             className="
-                w-full
                 min-w-0
                 overflow-hidden
-                rounded-[28px]
-                border
-                border-border
+                rounded-3xl
+                border border-border
                 bg-surface
                 shadow-card
             "
         >
-            <TransactionHeader
-                title={title}
-                totalItems={
-                    normalizedTotalItems
-                }
-                recordsLabel={
-                    recordsLabel
-                }
-                totalLabel={
-                    resolvedTotalLabel
-                }
-                totalCents={totalCents}
-                styles={styles}
-            />
-
-            <div
+            <header
                 className="
+                    flex
                     min-w-0
-                    bg-surface
+                    items-start
+                    justify-between
+                    gap-4
+                    border-b border-border
+                    px-4 py-4
+                    sm:items-center
+                    sm:px-5
                 "
             >
-                {loading ? (
-                    <LoadingState
-                        styles={styles}
-                    />
-                ) : transactions.length ===
-                    0 ? (
-                    <EmptyState
-                        message={
-                            resolvedEmptyMessage
-                        }
-                        singularLabel={
-                            resolvedSingularLabel
-                        }
-                        styles={styles}
-                    />
-                ) : (
-                    <TransactionContent
-                        transactions={
-                            transactions
-                        }
-                        singularLabel={
-                            resolvedSingularLabel
-                        }
-                        deletingId={
-                            deletingId
-                        }
-                        styles={styles}
-                        onEdit={onEdit}
-                        onDelete={
-                            onDelete
-                        }
-                    />
-                )}
-            </div>
-
-            {showPagination && (
-                <Pagination
-                    currentPage={
-                        displayedPage
-                    }
-                    totalItems={
-                        normalizedTotalItems
-                    }
-                    firstVisibleItem={
-                        firstVisibleItem
-                    }
-                    lastVisibleItem={
-                        lastVisibleItem
-                    }
-                    pageSize={
-                        normalizedPageSize
-                    }
-                    pageSizeOptions={
-                        pageSizeOptions
-                    }
-                    paginationItems={
-                        paginationItems
-                    }
-                    loading={loading}
-                    canGoPrevious={
-                        canGoPrevious
-                    }
-                    canGoNext={
-                        canGoNext
-                    }
-                    styles={styles}
-                    onPageChange={
-                        handlePageChange
-                    }
-                    onPageSizeChange={
-                        handlePageSizeChange
-                    }
-                    onPrevious={
-                        handlePrevious
-                    }
-                    onNext={
-                        handleNext
-                    }
-                />
-            )}
-        </section>
-    );
-}
-
-function TransactionHeader({
-    title,
-    totalItems,
-    recordsLabel,
-    totalLabel,
-    totalCents,
-    styles,
-}) {
-    const HeaderIcon =
-        styles.HeaderIcon;
-
-    return (
-        <header
-            className={`
-                relative
-                isolate
-                min-w-0
-                overflow-hidden
-                bg-gradient-to-br
-                px-5 py-6
-                text-white
-                shadow-xl
-                sm:px-6
-                sm:py-7
-                lg:px-7
-
-                ${styles.heroGradient}
-                ${styles.heroShadow}
-            `}
-        >
-            <div
-                aria-hidden="true"
-                className="
-                    absolute
-                    -right-12 -top-16
-                    size-48
-                    rounded-full
-                    bg-white/10
-                    blur-2xl
-                "
-            />
-
-            <div
-                aria-hidden="true"
-                className="
-                    absolute
-                    -bottom-24 left-1/3
-                    size-56
-                    rounded-full
-                    bg-black/10
-                    blur-3xl
-                "
-            />
-
-            <div
-                aria-hidden="true"
-                className="
-                    absolute
-                    right-8 top-7
-                    hidden size-28
-                    rounded-full
-                    border
-                    border-white/10
-                    sm:block
-                "
-            />
-
-            <div
-                className="
-                    relative
-                    z-10
-                    grid
-                    min-w-0
-                    gap-6
-                    lg:grid-cols-[minmax(0,1fr)_auto]
-                    lg:items-end
-                "
-            >
-                <div className="min-w-0">
-                    <div
-                        className="
-                            flex
-                            min-w-0
-                            items-center
-                            gap-3
-                        "
-                    >
-                        <span
-                            className={`
-                                flex size-11
-                                shrink-0
-                                items-center
-                                justify-center
-                                rounded-2xl
-                                bg-white/15
-                                text-white
-                                ring-1
-                                ring-inset
-                                backdrop-blur-sm
-
-                                ${styles.heroRing}
-                            `}
-                        >
-                            <HeaderIcon
-                                size={22}
-                                aria-hidden="true"
-                            />
-                        </span>
-
-                        <div className="min-w-0">
-                            <div
-                                className="
-                                    flex
-                                    min-w-0
-                                    flex-wrap
-                                    items-center
-                                    gap-2
-                                "
-                            >
-                                <h2
-                                    title={title}
-                                    className="
-                                        truncate
-                                        text-xl
-                                        font-semibold
-                                        tracking-tight
-                                        sm:text-2xl
-                                    "
-                                >
-                                    {title}
-                                </h2>
-
-                                <span
-                                    aria-label={`${totalItems} registros`}
-                                    className="
-                                        inline-flex
-                                        h-6
-                                        shrink-0
-                                        items-center
-                                        rounded-full
-                                        bg-white/15
-                                        px-2.5
-                                        text-[11px]
-                                        font-semibold
-                                        tabular-nums
-                                        text-white
-                                        ring-1
-                                        ring-inset
-                                        ring-white/15
-                                        backdrop-blur-sm
-                                    "
-                                >
-                                    {totalItems}
-                                </span>
-                            </div>
-
-                            <p
-                                className="
-                                    mt-1.5
-                                    max-w-xl
-                                    text-sm
-                                    leading-5
-                                    text-white/75
-                                "
-                            >
-                                {totalItems > 0
-                                    ? `${totalItems} ${recordsLabel} no período selecionado.`
-                                    : "Os lançamentos adicionados aparecerão organizados aqui."
-                                }
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
                 <div
                     className="
-                        min-w-0
-                        rounded-2xl
-                        border
-                        border-white/15
-                        bg-white/10
-                        px-4 py-3.5
-                        backdrop-blur-md
-                        sm:min-w-64
-                        lg:text-right
+                        flex min-w-0
+                        items-start
+                        gap-3
                     "
                 >
                     <div
-                        className="
-                            flex
+                        className={`
+                            inline-flex
+                            size-10
+                            shrink-0
                             items-center
-                            gap-2
-                            lg:justify-end
-                        "
-                    >
-                        <RiWallet3Line
-                            size={15}
-                            aria-hidden="true"
-                            className="
-                                shrink-0
-                                text-white/70
-                            "
-                        />
+                            justify-center
+                            rounded-xl
+                            border
 
-                        <p
-                            title={totalLabel}
-                            className="
-                                truncate
-                                text-xs
-                                font-medium
-                                text-white/70
-                            "
-                        >
-                            {totalLabel}
-                        </p>
+                            ${styles.icon}
+                        `}
+                    >
+                        <RiFileList3Line
+                            size={19}
+                            aria-hidden="true"
+                        />
                     </div>
 
-                    <strong
-                        title={formatCurrency(
-                            totalCents
-                        )}
-                        className="
-                            mt-1
-                            block
-                            truncate
-                            text-2xl
-                            font-semibold
-                            tracking-tight
-                            tabular-nums
-                            text-white
-                            sm:text-3xl
-                        "
-                    >
-                        {formatCurrency(
-                            totalCents
-                        )}
-                    </strong>
+                    <div className="min-w-0">
+                        <div
+                            className="
+                                flex
+                                min-w-0
+                                flex-wrap
+                                items-center
+                                gap-2
+                            "
+                        >
+                            <h2
+                                title={title}
+                                className="
+                                    truncate
+                                    text-sm
+                                    font-semibold
+                                    text-foreground
+                                    sm:text-base
+                                "
+                            >
+                                {title}
+                            </h2>
+
+                            <span
+                                aria-label={`${totalItems} registros`}
+                                className="
+                                    inline-flex
+                                    min-w-6
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-full
+                                    border border-border
+                                    bg-background
+                                    px-2
+                                    py-0.5
+                                    text-[10px]
+                                    font-semibold
+                                    tabular-nums
+                                    text-muted-foreground
+                                "
+                            >
+                                {totalItems}
+                            </span>
+                        </div>
+
+                        <p
+                            className="
+                                mt-1
+                                text-xs
+                                leading-5
+                                text-muted-foreground
+                            "
+                        >
+                            {totalItems > 0
+                                ? `${totalItems} ${recordsLabel} encontrada${totalItems === 1 ? "" : "s"}.`
+                                : "Os lançamentos cadastrados aparecerão aqui."
+                            }
+                        </p>
+                    </div>
                 </div>
-            </div>
-        </header>
+            </header>
+
+            {loading ? (
+                <LoadingState
+                    styles={styles}
+                />
+            ) : transactions.length ===
+                0 ? (
+                <EmptyState
+                    message={
+                        resolvedEmptyMessage
+                    }
+                    styles={styles}
+                />
+            ) : (
+                <TransactionContent
+                    transactions={
+                        transactions
+                    }
+                    singularLabel={
+                        resolvedSingularLabel
+                    }
+                    deletingId={
+                        deletingId
+                    }
+                    styles={styles}
+                    onEdit={onEdit}
+                    onDelete={
+                        onDelete
+                    }
+                />
+            )}
+
+            {!loading &&
+                totalPages > 1 && (
+                    <Pagination
+                        currentPage={
+                            displayedPage
+                        }
+                        totalPages={
+                            totalPages
+                        }
+                        totalItems={
+                            totalItems
+                        }
+                        paginationItems={
+                            paginationItems
+                        }
+                        canGoPrevious={
+                            canGoPrevious
+                        }
+                        canGoNext={
+                            canGoNext
+                        }
+                        styles={styles}
+                        onPageChange={
+                            handlePageChange
+                        }
+                        onPreviousPage={
+                            handlePreviousPage
+                        }
+                        onNextPage={
+                            handleNextPage
+                        }
+                    />
+                )}
+        </section>
     );
 }
 
@@ -801,20 +558,20 @@ function TransactionContent({
         <div className="min-w-0">
             <TransactionTableHeader />
 
-            <AnimatePresence
-                initial={false}
-                mode="popLayout"
+            <div
+                className="
+                    divide-y
+                    divide-border
+                "
             >
-                <div
-                    className="
-                        divide-y
-                        divide-border
-                    "
+                <AnimatePresence
+                    initial={false}
+                    mode="popLayout"
                 >
                     {transactions.map(
                         (
                             transaction,
-                            index
+                            index,
                         ) => (
                             <TransactionRow
                                 key={
@@ -832,15 +589,17 @@ function TransactionContent({
                                     singularLabel
                                 }
                                 styles={styles}
-                                onEdit={onEdit}
+                                onEdit={
+                                    onEdit
+                                }
                                 onDelete={
                                     onDelete
                                 }
                             />
-                        )
+                        ),
                     )}
-                </div>
-            </AnimatePresence>
+                </AnimatePresence>
+            </div>
         </div>
     );
 }
@@ -850,27 +609,31 @@ function TransactionTableHeader() {
         <div
             className="
                 hidden
-                grid-cols-[minmax(230px,1.7fr)_minmax(130px,0.8fr)_135px_160px_96px]
+                grid-cols-[minmax(220px,1.6fr)_minmax(160px,1fr)_125px_145px_90px]
                 items-center
-                gap-5
-                border-b
-                border-border
-                bg-surface-muted/55
-                px-6
-                py-3.5
+                gap-4
+                border-b border-border
+                bg-surface-muted/35
+                px-5 py-3
                 text-[10px]
-                font-bold
+                font-semibold
                 uppercase
-                tracking-[0.12em]
+                tracking-[0.08em]
                 text-muted-foreground
                 md:grid
             "
         >
-            <span>Movimentação</span>
+            <span>
+                Movimentação
+            </span>
 
-            <span>Categoria</span>
+            <span>
+                Organização
+            </span>
 
-            <span>Data</span>
+            <span>
+                Data
+            </span>
 
             <span className="text-right">
                 Valor
@@ -892,122 +655,95 @@ function TransactionRow({
     onEdit,
     onDelete,
 }) {
-    const category =
-        transaction.category ||
-        "Sem categoria";
+    const tags =
+        extractTransactionTags(
+            transaction,
+        );
+
+    const generatedByRecurrence =
+        isGeneratedByRecurrence(
+            transaction,
+        );
+
+    const transactionDate =
+        getTransactionDate(
+            transaction,
+        );
 
     return (
         <motion.article
             layout
             initial={{
                 opacity: 0,
-                y: 10,
+                y: 8,
             }}
             animate={{
-                opacity: 1,
+                opacity:
+                    deleting
+                        ? 0.5
+                        : 1,
+
                 y: 0,
             }}
             exit={{
                 opacity: 0,
-                x: -12,
+                x: -10,
                 height: 0,
             }}
             transition={{
-                duration: 0.22,
+                duration: 0.2,
+
                 delay: Math.min(
-                    index * 0.025,
-                    0.15
+                    index * 0.02,
+                    0.12,
                 ),
             }}
-            className={`
+            className="
                 group
-                relative
                 min-w-0
                 px-4 py-4
                 transition-colors
-                sm:px-6
-
-                ${styles.rowHover}
-            `}
+                hover:bg-surface-muted/25
+                sm:px-5
+                md:py-3.5
+            "
         >
-            <span
-                aria-hidden="true"
-                className={`
-                    absolute
-                    bottom-3 left-0 top-3
-                    w-1
-                    rounded-r-full
-                    opacity-0
-                    transition-opacity
-                    group-hover:opacity-100
-
-                    ${styles.rowAccent}
-                `}
-            />
-
             <div
                 className="
                     grid
                     min-w-0
                     gap-4
-                    md:grid-cols-[minmax(230px,1.7fr)_minmax(130px,0.8fr)_135px_160px_96px]
+                    md:grid-cols-[minmax(220px,1.6fr)_minmax(160px,1fr)_125px_145px_90px]
                     md:items-center
-                    md:gap-5
                 "
             >
                 <TransactionDescription
                     transaction={
                         transaction
                     }
-                    category={category}
+                    generatedByRecurrence={
+                        generatedByRecurrence
+                    }
                     styles={styles}
                 />
 
-                <div
-                    className="
-                        hidden
-                        min-w-0
-                        md:block
-                    "
-                >
-                    <CategoryBadge
-                        category={category}
-                        styles={styles}
-                    />
-                </div>
+                <TransactionTags
+                    tags={tags}
+                    category={
+                        transaction.category
+                    }
+                />
 
-                <div
-                    className="
-                        hidden
-                        min-w-0
-                        items-center
-                        gap-2
-                        text-sm
-                        text-muted-foreground
-                        md:flex
-                    "
-                >
-                    <RiCalendarLine
-                        size={15}
-                        aria-hidden="true"
-                        className="shrink-0"
-                    />
-
-                    <span
-                        className="
-                            truncate
-                            tabular-nums
-                        "
-                    >
-                        {formatDate(
-                            transaction.date
-                        )}
-                    </span>
-                </div>
+                <TransactionDate
+                    value={
+                        transactionDate
+                    }
+                />
 
                 <TransactionAmount
                     amountCents={
-                        transaction.amountCents
+                        transaction
+                            .amountCents
                     }
                     styles={styles}
                 />
@@ -1018,6 +754,9 @@ function TransactionRow({
                     }
                     singularLabel={
                         singularLabel
+                    }
+                    generatedByRecurrence={
+                        generatedByRecurrence
                     }
                     deleting={
                         deleting
@@ -1035,11 +774,184 @@ function TransactionRow({
 
 function TransactionDescription({
     transaction,
-    category,
+    generatedByRecurrence,
     styles,
 }) {
-    const HeaderIcon =
-        styles.HeaderIcon;
+    return (
+        <div className="min-w-0">
+            <div
+                className="
+                    flex
+                    min-w-0
+                    items-start
+                    justify-between
+                    gap-3
+                "
+            >
+                <div className="min-w-0">
+                    <h3
+                        title={
+                            transaction
+                                .description
+                        }
+                        className="
+                            truncate
+                            text-sm
+                            font-semibold
+                            leading-5
+                            text-foreground
+                        "
+                    >
+                        {
+                            transaction
+                                .description
+                        }
+                    </h3>
+
+                    {generatedByRecurrence && (
+                        <span
+                            title="Essa movimentação foi criada automaticamente por uma regra recorrente."
+                            className={`
+                                mt-1.5
+                                inline-flex
+                                max-w-full
+                                items-center
+                                gap-1.5
+                                rounded-full
+                                border
+                                px-2 py-0.5
+                                text-[10px]
+                                font-semibold
+
+                                ${styles.recurringBadge}
+                            `}
+                        >
+                            <RiRepeat2Line
+                                size={12}
+                                aria-hidden="true"
+                                className="shrink-0"
+                            />
+
+                            <span className="truncate">
+                                Gerada automaticamente
+                            </span>
+                        </span>
+                    )}
+
+                    {transaction.notes && (
+                        <p
+                            title={
+                                transaction
+                                    .notes
+                            }
+                            className="
+                                mt-1.5
+                                line-clamp-2
+                                text-xs
+                                leading-5
+                                text-muted-foreground
+                                md:truncate
+                            "
+                        >
+                            {
+                                transaction
+                                    .notes
+                            }
+                        </p>
+                    )}
+                </div>
+
+                <strong
+                    title={formatCurrency(
+                        transaction
+                            .amountCents,
+                    )}
+                    className={`
+                        shrink-0
+                        text-sm
+                        font-semibold
+                        tabular-nums
+                        md:hidden
+
+                        ${styles.amount}
+                    `}
+                >
+                    {formatCurrency(
+                        transaction
+                            .amountCents,
+                    )}
+                </strong>
+            </div>
+        </div>
+    );
+}
+
+function TransactionTags({
+    tags,
+    category,
+}) {
+    if (tags.length === 0) {
+        return (
+            <div
+                className="
+                    flex
+                    min-w-0
+                    items-center
+                    justify-between
+                    gap-3
+                    md:block
+                "
+            >
+                <span
+                    className="
+                        text-xs
+                        text-muted-foreground
+                        md:hidden
+                    "
+                >
+                    Organização
+                </span>
+
+                <span
+                    title={
+                        category ||
+                        "Sem tags"
+                    }
+                    className="
+                        inline-flex
+                        max-w-[70%]
+                        items-center
+                        gap-1.5
+                        truncate
+                        rounded-full
+                        border border-border
+                        bg-background
+                        px-2.5 py-1
+                        text-[10px]
+                        font-semibold
+                        text-muted-foreground
+                        md:max-w-full
+                    "
+                >
+                    <RiPriceTag3Line
+                        size={12}
+                        aria-hidden="true"
+                        className="shrink-0"
+                    />
+
+                    {category ||
+                        "Sem tags"}
+                </span>
+            </div>
+        );
+    }
+
+    const visibleTags =
+        tags.slice(0, 2);
+
+    const hiddenTagCount =
+        tags.length -
+        visibleTags.length;
 
     return (
         <div
@@ -1047,154 +959,103 @@ function TransactionDescription({
                 flex
                 min-w-0
                 items-start
+                justify-between
                 gap-3
+                md:block
             "
         >
             <span
-                className={`
-                    flex size-10
-                    shrink-0
-                    items-center
-                    justify-center
-                    rounded-2xl
-
-                    ${styles.icon}
-                `}
+                className="
+                    pt-1
+                    text-xs
+                    text-muted-foreground
+                    md:hidden
+                "
             >
-                <HeaderIcon
-                    size={18}
-                    aria-hidden="true"
-                />
+                Tags
             </span>
 
-            <div className="min-w-0 flex-1">
-                <h3
-                    title={
-                        transaction.description
-                    }
-                    className="
-                        truncate
-                        text-sm
-                        font-semibold
-                        text-foreground
-                        sm:text-[15px]
-                    "
-                >
-                    {transaction.description}
-                </h3>
+            <div
+                className="
+                    flex
+                    max-w-[72%]
+                    flex-wrap
+                    justify-end
+                    gap-1.5
+                    md:max-w-full
+                    md:justify-start
+                "
+            >
+                {visibleTags.map(
+                    (tag) => (
+                        <span
+                            key={
+                                tag.id
+                            }
+                            title={
+                                tag.name
+                            }
+                            className="
+                                inline-flex
+                                max-w-36
+                                items-center
+                                gap-1.5
+                                rounded-full
+                                border border-border
+                                bg-background
+                                px-2.5 py-1
+                                text-[10px]
+                                font-semibold
+                                text-foreground
+                            "
+                        >
+                            <span
+                                aria-hidden="true"
+                                className="
+                                    size-1.5
+                                    shrink-0
+                                    rounded-full
+                                "
+                                style={{
+                                    backgroundColor:
+                                        tag.color ??
+                                        "#64748B",
+                                }}
+                            />
 
-                {transaction.notes ? (
-                    <p
-                        title={
-                            transaction.notes
-                        }
-                        className="
-                            mt-1
-                            line-clamp-1
-                            text-xs
-                            leading-5
-                            text-muted-foreground
-                        "
-                    >
-                        {transaction.notes}
-                    </p>
-                ) : (
-                    <p
-                        className="
-                            mt-1
-                            text-xs
-                            text-muted-foreground/70
-                        "
-                    >
-                        Sem observações adicionais
-                    </p>
+                            <span className="truncate">
+                                {tag.name}
+                            </span>
+                        </span>
+                    ),
                 )}
 
-                <div
-                    className="
-                        mt-2.5
-                        flex
-                        min-w-0
-                        flex-wrap
-                        items-center
-                        gap-2
-                        md:hidden
-                    "
-                >
-                    <CategoryBadge
-                        category={category}
-                        styles={styles}
-                        compact
-                    />
-
-                    <span
-                        className="
+                {hiddenTagCount >
+                    0 && (
+                        <span
+                            title={`${hiddenTagCount} tags adicionais`}
+                            className="
                             inline-flex
                             items-center
-                            gap-1.5
-                            text-xs
-                            tabular-nums
+                            rounded-full
+                            border border-border
+                            bg-surface-muted/50
+                            px-2.5 py-1
+                            text-[10px]
+                            font-semibold
                             text-muted-foreground
                         "
-                    >
-                        <RiCalendarLine
-                            size={13}
-                            aria-hidden="true"
-                        />
-
-                        {formatDate(
-                            transaction.date
-                        )}
-                    </span>
-                </div>
+                        >
+                            +{hiddenTagCount}
+                        </span>
+                    )}
             </div>
         </div>
     );
 }
 
-function CategoryBadge({
-    category,
-    styles,
-    compact = false,
-}) {
-    return (
-        <span
-            title={category}
-            className={`
-                inline-flex
-                max-w-full
-                items-center
-                gap-1.5
-                rounded-full
-                font-medium
-
-                ${compact
-                    ? "px-2 py-1 text-[11px]"
-                    : "px-2.5 py-1.5 text-xs"
-                }
-
-                ${styles.badge}
-            `}
-        >
-            <RiPriceTag3Line
-                size={compact
-                    ? 12
-                    : 13
-                }
-                aria-hidden="true"
-                className="shrink-0"
-            />
-
-            <span className="truncate">
-                {category}
-            </span>
-        </span>
-    );
-}
-
-function TransactionAmount({
-    amountCents,
-    styles,
+function TransactionDate({
+    value,
 }) {
     return (
         <div
@@ -1204,81 +1065,96 @@ function TransactionAmount({
                 items-center
                 justify-between
                 gap-3
-                rounded-2xl
-                bg-surface-muted/55
-                px-3.5 py-3
-                md:block
-                md:bg-transparent
-                md:p-0
-                md:text-right
+                md:justify-start
             "
         >
             <span
                 className="
                     text-xs
-                    font-medium
                     text-muted-foreground
                     md:hidden
                 "
             >
-                Valor da movimentação
+                Data
             </span>
 
-            <div className="min-w-0">
-                <strong
-                    title={formatCurrency(
-                        amountCents
-                    )}
-                    className={`
-                        block
-                        min-w-0
-                        truncate
-                        text-base
-                        font-semibold
-                        tracking-tight
-                        tabular-nums
-                        sm:text-lg
-
-                        ${styles.amount}
-                    `}
-                >
-                    {styles.sign}{" "}
-                    {formatCurrency(
-                        Math.abs(
-                            normalizeNumber(
-                                amountCents
-                            )
-                        )
-                    )}
-                </strong>
-
-                <span
+            <time
+                dateTime={value}
+                className="
+                    inline-flex
+                    min-w-0
+                    items-center
+                    gap-2
+                    truncate
+                    text-sm
+                    tabular-nums
+                    text-muted-foreground
+                "
+            >
+                <RiCalendarLine
+                    size={14}
+                    aria-hidden="true"
                     className="
-                        mt-0.5
                         hidden
-                        text-[10px]
-                        font-medium
-                        uppercase
-                        tracking-[0.08em]
-                        text-muted-foreground
+                        shrink-0
                         md:block
                     "
-                >
-                    {styles.label}
+                />
+
+                <span className="truncate">
+                    {value
+                        ? formatDate(value)
+                        : "Não informada"
+                    }
                 </span>
-            </div>
+            </time>
         </div>
+    );
+}
+
+function TransactionAmount({
+    amountCents,
+    styles,
+}) {
+    return (
+        <strong
+            title={formatCurrency(
+                amountCents,
+            )}
+            className={`
+                hidden
+                min-w-0
+                truncate
+                text-right
+                text-sm
+                font-semibold
+                tabular-nums
+                md:block
+
+                ${styles.amount}
+            `}
+        >
+            {formatCurrency(
+                amountCents,
+            )}
+        </strong>
     );
 }
 
 function ActionButtons({
     transaction,
     singularLabel,
+    generatedByRecurrence,
     deleting,
     styles,
     onEdit,
     onDelete,
 }) {
+    const editLabel =
+        generatedByRecurrence
+            ? "Editar somente esta ocorrência"
+            : `Editar ${singularLabel}`;
+
     return (
         <div
             className="
@@ -1286,118 +1162,95 @@ function ActionButtons({
                 items-center
                 justify-end
                 gap-2
+                border-t border-border
+                pt-3
+                md:border-0
+                md:pt-0
             "
         >
             <button
                 type="button"
                 onClick={() =>
                     onEdit?.(
-                        transaction
+                        transaction,
                     )
                 }
                 disabled={deleting}
-                aria-label={`Editar ${singularLabel} ${transaction.description}`}
-                title={`Editar ${singularLabel}`}
+                aria-label={
+                    editLabel
+                }
+                title={
+                    editLabel
+                }
                 className={`
                     inline-flex
-                    h-10
-                    flex-1
+                    size-9
                     items-center
                     justify-center
-                    gap-2
                     rounded-xl
-                    border
-                    border-border
-                    bg-surface
-                    px-3
-                    text-xs
-                    font-medium
+                    border border-border
+                    bg-background
                     text-muted-foreground
                     transition
-                    hover:border-primary/25
-                    hover:bg-primary-muted
-                    hover:text-primary
+                    hover:border-border-strong
+                    hover:bg-surface-hover
+                    hover:text-foreground
                     focus-visible:outline-none
-                    focus-visible:ring-2
+                    focus-visible:ring-4
                     disabled:pointer-events-none
-                    disabled:opacity-40
-                    md:size-10
-                    md:flex-none
-                    md:px-0
+                    disabled:opacity-45
 
                     ${styles.focusRing}
                 `}
             >
                 <RiEditLine
-                    size={17}
+                    size={16}
                     aria-hidden="true"
                 />
-
-                <span className="md:sr-only">
-                    Editar
-                </span>
             </button>
 
             <button
                 type="button"
                 onClick={() =>
                     onDelete?.(
-                        transaction
+                        transaction,
                     )
                 }
                 disabled={deleting}
-                aria-label={`Excluir ${singularLabel} ${transaction.description}`}
+                aria-label={`Excluir ${singularLabel}`}
                 title={`Excluir ${singularLabel}`}
                 className="
                     inline-flex
-                    h-10
-                    flex-1
+                    size-9
                     items-center
                     justify-center
-                    gap-2
                     rounded-xl
-                    border
-                    border-rose-500/10
-                    bg-rose-500/[0.045]
-                    px-3
-                    text-xs
-                    font-medium
-                    text-rose-600
+                    border border-border
+                    bg-background
+                    text-muted-foreground
                     transition
-                    hover:border-rose-500/20
-                    hover:bg-rose-500/10
-                    hover:text-rose-700
+                    hover:border-danger/30
+                    hover:bg-danger/5
+                    hover:text-danger
                     focus-visible:outline-none
-                    focus-visible:ring-2
-                    focus-visible:ring-rose-500/25
+                    focus-visible:ring-4
+                    focus-visible:ring-danger/10
                     disabled:pointer-events-none
-                    disabled:opacity-40
-                    dark:text-rose-400
-                    dark:hover:text-rose-300
-                    md:size-10
-                    md:flex-none
-                    md:px-0
+                    disabled:opacity-45
                 "
             >
                 {deleting ? (
                     <RiLoader4Line
-                        size={17}
+                        size={16}
                         aria-hidden="true"
                         className="animate-spin"
                     />
                 ) : (
                     <RiDeleteBinLine
-                        size={17}
+                        size={16}
                         aria-hidden="true"
                     />
                 )}
-
-                <span className="md:sr-only">
-                    {deleting
-                        ? "Excluindo"
-                        : "Excluir"
-                    }
-                </span>
             </button>
         </div>
     );
@@ -1408,492 +1261,247 @@ function LoadingState({
 }) {
     return (
         <div
-            role="status"
-            aria-live="polite"
             className="
-                divide-y
-                divide-border
+                flex min-h-64
+                flex-col
+                items-center
+                justify-center
+                px-5
+                text-center
             "
         >
-            {Array.from({
-                length: 5,
-            }).map(
-                (_, index) => (
-                    <div
-                        key={index}
-                        className="
-                            grid
-                            animate-pulse
-                            gap-4
-                            px-4 py-4
-                            sm:px-6
-                            md:grid-cols-[minmax(230px,1.7fr)_minmax(130px,0.8fr)_135px_160px_96px]
-                            md:items-center
-                            md:gap-5
-                        "
-                    >
-                        <div
-                            className="
-                                flex
-                                min-w-0
-                                items-center
-                                gap-3
-                            "
-                        >
-                            <div
-                                className={`
-                                    size-10
-                                    shrink-0
-                                    rounded-2xl
+            <div
+                className={`
+                    inline-flex
+                    size-12
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    border
 
-                                    ${styles.softBackground}
-                                `}
-                            />
+                    ${styles.icon}
+                `}
+            >
+                <RiLoader4Line
+                    size={22}
+                    aria-hidden="true"
+                    className="animate-spin"
+                />
+            </div>
 
-                            <div className="min-w-0 flex-1">
-                                <div
-                                    className="
-                                        h-4
-                                        w-2/3
-                                        rounded-full
-                                        bg-surface-muted
-                                    "
-                                />
+            <p
+                className="
+                    mt-4
+                    text-sm
+                    font-semibold
+                    text-foreground
+                "
+            >
+                Carregando lançamentos
+            </p>
 
-                                <div
-                                    className="
-                                        mt-2
-                                        h-3
-                                        w-1/2
-                                        rounded-full
-                                        bg-surface-muted
-                                    "
-                                />
-                            </div>
-                        </div>
-
-                        <div
-                            className="
-                                hidden
-                                h-7
-                                w-24
-                                rounded-full
-                                bg-surface-muted
-                                md:block
-                            "
-                        />
-
-                        <div
-                            className="
-                                hidden
-                                h-4
-                                w-20
-                                rounded-full
-                                bg-surface-muted
-                                md:block
-                            "
-                        />
-
-                        <div
-                            className="
-                                h-5
-                                w-28
-                                rounded-full
-                                bg-surface-muted
-                                md:ml-auto
-                            "
-                        />
-
-                        <div
-                            className="
-                                hidden
-                                h-10
-                                w-[88px]
-                                rounded-xl
-                                bg-surface-muted
-                                md:block
-                            "
-                        />
-                    </div>
-                )
-            )}
-
-            <span className="sr-only">
-                Carregando transações...
-            </span>
+            <p
+                className="
+                    mt-1
+                    text-xs
+                    text-muted-foreground
+                "
+            >
+                Aguarde enquanto buscamos os dados.
+            </p>
         </div>
     );
 }
 
 function EmptyState({
     message,
-    singularLabel,
     styles,
 }) {
-    const HeaderIcon =
-        styles.HeaderIcon;
-
     return (
         <div
-            className={`
-                relative
-                flex min-h-80
+            className="
+                flex min-h-64
                 flex-col
                 items-center
                 justify-center
-                overflow-hidden
-                px-5 py-16
+                px-5 py-10
                 text-center
-                bg-gradient-to-b
-
-                ${styles.softGradient}
-            `}
+            "
         >
             <div
-                aria-hidden="true"
-                className="
-                    absolute
-                    left-1/2 top-1/2
-                    size-44
-                    -translate-x-1/2
-                    -translate-y-1/2
-                    rounded-full
-                    bg-current
-                    opacity-[0.025]
-                    blur-3xl
-                "
-            />
-
-            <span
                 className={`
-                    relative
-                    flex size-16
+                    inline-flex
+                    size-12
                     items-center
                     justify-center
-                    rounded-3xl
+                    rounded-2xl
+                    border
 
                     ${styles.icon}
                 `}
             >
-                <HeaderIcon
-                    size={28}
+                <RiFileList3Line
+                    size={22}
                     aria-hidden="true"
                 />
-            </span>
+            </div>
 
-            <h3
+            <p
                 className="
-                    relative
-                    mt-5
-                    text-base
+                    mt-4
+                    text-sm
                     font-semibold
                     text-foreground
                 "
             >
-                Nenhuma {singularLabel} encontrada
-            </h3>
+                Nenhum lançamento encontrado
+            </p>
 
             <p
                 className="
-                    relative
-                    mt-1.5
+                    mt-1
                     max-w-sm
-                    text-sm
-                    leading-6
+                    text-xs
+                    leading-5
                     text-muted-foreground
                 "
             >
                 {message}
             </p>
-
-            <div
-                className={`
-                    relative
-                    mt-5
-                    inline-flex
-                    items-center
-                    gap-2
-                    rounded-full
-                    px-3 py-1.5
-                    text-xs
-                    font-medium
-
-                    ${styles.badge}
-                `}
-            >
-                <RiFileList3Line
-                    size={14}
-                    aria-hidden="true"
-                />
-
-                Ajuste os filtros ou adicione um novo registro
-            </div>
         </div>
     );
 }
 
 function Pagination({
     currentPage,
+    totalPages,
     totalItems,
-    firstVisibleItem,
-    lastVisibleItem,
-    pageSize,
-    pageSizeOptions,
     paginationItems,
-    loading,
     canGoPrevious,
     canGoNext,
     styles,
     onPageChange,
-    onPageSizeChange,
-    onPrevious,
-    onNext,
+    onPreviousPage,
+    onNextPage,
 }) {
     return (
         <footer
             className="
                 flex
-                min-w-0
                 flex-col
-                gap-4
-                border-t
-                border-border
-                bg-surface-muted/35
-                px-4 py-4
-                sm:px-6
-                lg:flex-row
-                lg:items-center
-                lg:justify-between
+                gap-3
+                border-t border-border
+                px-4 py-3.5
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
+                sm:px-5
             "
         >
-            <div
+            <p
                 className="
-                    flex
-                    min-w-0
-                    flex-col
-                    gap-3
-                    sm:flex-row
-                    sm:items-center
+                    text-center
+                    text-xs
+                    text-muted-foreground
+                    sm:text-left
                 "
             >
-                <p
-                    className="
-                        text-xs
-                        text-muted-foreground
-                    "
+                Página{" "}
+                <strong className="text-foreground">
+                    {currentPage}
+                </strong>{" "}
+                de{" "}
+                <strong className="text-foreground">
+                    {totalPages}
+                </strong>
+
+                <span
+                    aria-hidden="true"
+                    className="mx-2"
                 >
-                    Exibindo{" "}
-                    <span
-                        className="
-                            font-semibold
-                            tabular-nums
-                            text-foreground
-                        "
-                    >
-                        {firstVisibleItem}
-                    </span>
+                    ·
+                </span>
 
-                    {"–"}
-
-                    <span
-                        className="
-                            font-semibold
-                            tabular-nums
-                            text-foreground
-                        "
-                    >
-                        {lastVisibleItem}
-                    </span>
-
-                    {" de "}
-
-                    <span
-                        className="
-                            font-semibold
-                            tabular-nums
-                            text-foreground
-                        "
-                    >
-                        {totalItems}
-                    </span>
-
-                    {" registros"}
-                </p>
-
-                <div
-                    className="
-                        hidden
-                        h-4
-                        w-px
-                        bg-border
-                        sm:block
-                    "
-                />
-
-                <div
-                    className="
-                        flex
-                        items-center
-                        gap-2
-                    "
-                >
-                    <label
-                        htmlFor="transaction-page-size"
-                        className="
-                            text-xs
-                            text-muted-foreground
-                        "
-                    >
-                        Por página
-                    </label>
-
-                    <div
-                        className="
-                            relative
-                            w-[68px]
-                        "
-                    >
-                        <select
-                            id="transaction-page-size"
-                            value={pageSize}
-                            onChange={
-                                onPageSizeChange
-                            }
-                            disabled={loading}
-                            className={`
-                                h-9
-                                w-full
-                                appearance-none
-                                rounded-xl
-                                border
-                                border-border
-                                bg-surface
-                                pl-3 pr-7
-                                text-xs
-                                font-semibold
-                                text-foreground
-                                outline-none
-                                transition
-                                hover:border-border-strong
-                                focus:border-border-strong
-                                focus:ring-2
-                                disabled:cursor-not-allowed
-                                disabled:opacity-50
-
-                                ${styles.focusRing}
-                            `}
-                        >
-                            {pageSizeOptions.map(
-                                (
-                                    option
-                                ) => (
-                                    <option
-                                        key={
-                                            option
-                                        }
-                                        value={
-                                            option
-                                        }
-                                    >
-                                        {
-                                            option
-                                        }
-                                    </option>
-                                )
-                            )}
-                        </select>
-
-                        <RiArrowDownSLine
-                            size={14}
-                            aria-hidden="true"
-                            className="
-                                pointer-events-none
-                                absolute
-                                right-2.5
-                                top-1/2
-                                -translate-y-1/2
-                                text-muted-foreground
-                            "
-                        />
-                    </div>
-                </div>
-            </div>
+                {totalItems} registros
+            </p>
 
             <nav
-                aria-label="Paginação"
+                aria-label="Paginação dos lançamentos"
                 className="
                     flex
-                    min-w-0
                     items-center
-                    justify-between
-                    gap-1
-                    overflow-x-auto
-                    sm:justify-end
+                    justify-center
+                    gap-1.5
                 "
             >
-                <PaginationArrow
-                    direction="previous"
+                <button
+                    type="button"
+                    onClick={
+                        onPreviousPage
+                    }
                     disabled={
                         !canGoPrevious
                     }
-                    onClick={onPrevious}
-                    styles={styles}
-                />
+                    aria-label="Página anterior"
+                    title="Página anterior"
+                    className={`
+                        inline-flex
+                        size-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-xl
+                        border border-border
+                        bg-background
+                        text-muted-foreground
+                        transition
+                        hover:border-border-strong
+                        hover:bg-surface-hover
+                        hover:text-foreground
+                        focus-visible:outline-none
+                        focus-visible:ring-4
+                        disabled:pointer-events-none
+                        disabled:opacity-35
+
+                        ${styles.focusRing}
+                    `}
+                >
+                    <RiArrowLeftSLine
+                        size={19}
+                        aria-hidden="true"
+                    />
+                </button>
 
                 {paginationItems.map(
-                    (
-                        item,
-                        index
-                    ) => {
-                        if (
-                            typeof item ===
-                            "string"
-                        ) {
-                            return (
-                                <span
-                                    key={`${item}-${index}`}
-                                    aria-hidden="true"
-                                    className="
-                                        inline-flex
-                                        size-9
-                                        shrink-0
-                                        items-center
-                                        justify-center
-                                        text-xs
-                                        text-muted-foreground
-                                    "
-                                >
-                                    …
-                                </span>
-                            );
-                        }
-
-                        const isCurrent =
-                            item ===
+                    (pageNumber) => {
+                        const current =
+                            pageNumber ===
                             currentPage;
 
                         return (
                             <button
-                                key={item}
+                                key={
+                                    pageNumber
+                                }
                                 type="button"
                                 onClick={() =>
                                     onPageChange(
-                                        item
+                                        pageNumber,
                                     )
                                 }
                                 disabled={
-                                    loading
+                                    current ||
+                                    !onPageChange
                                 }
-                                aria-label={`Ir para a página ${item}`}
                                 aria-current={
-                                    isCurrent
+                                    current
                                         ? "page"
                                         : undefined
                                 }
+                                aria-label={`Ir para a página ${pageNumber}`}
                                 className={`
                                     inline-flex
                                     size-9
-                                    shrink-0
                                     items-center
                                     justify-center
                                     rounded-xl
@@ -1903,95 +1511,61 @@ function Pagination({
                                     tabular-nums
                                     transition
                                     focus-visible:outline-none
-                                    focus-visible:ring-2
-                                    disabled:pointer-events-none
-                                    disabled:opacity-50
+                                    focus-visible:ring-4
+
+                                    ${current
+                                        ? styles.pageActive
+                                        : "border-border bg-background text-muted-foreground hover:border-border-strong hover:bg-surface-hover hover:text-foreground"
+                                    }
 
                                     ${styles.focusRing}
-
-                                    ${isCurrent
-                                        ? styles.pageActive
-                                        : `
-                                                border-transparent
-                                                text-muted-foreground
-                                                hover:border-border
-                                                hover:bg-surface
-                                                hover:text-foreground
-                                            `
-                                    }
                                 `}
                             >
-                                {item}
+                                {pageNumber}
                             </button>
                         );
-                    }
+                    },
                 )}
 
-                <PaginationArrow
-                    direction="next"
-                    disabled={!canGoNext}
-                    onClick={onNext}
-                    styles={styles}
-                />
+                <button
+                    type="button"
+                    onClick={
+                        onNextPage
+                    }
+                    disabled={
+                        !canGoNext
+                    }
+                    aria-label="Próxima página"
+                    title="Próxima página"
+                    className={`
+                        inline-flex
+                        size-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-xl
+                        border border-border
+                        bg-background
+                        text-muted-foreground
+                        transition
+                        hover:border-border-strong
+                        hover:bg-surface-hover
+                        hover:text-foreground
+                        focus-visible:outline-none
+                        focus-visible:ring-4
+                        disabled:pointer-events-none
+                        disabled:opacity-35
+
+                        ${styles.focusRing}
+                    `}
+                >
+                    <RiArrowRightSLine
+                        size={19}
+                        aria-hidden="true"
+                    />
+                </button>
             </nav>
         </footer>
-    );
-}
-
-function PaginationArrow({
-    direction,
-    disabled,
-    onClick,
-    styles,
-}) {
-    const isPrevious =
-        direction === "previous";
-
-    const Icon =
-        isPrevious
-            ? RiArrowLeftSLine
-            : RiArrowRightSLine;
-
-    const label =
-        isPrevious
-            ? "Página anterior"
-            : "Próxima página";
-
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            aria-label={label}
-            title={label}
-            className={`
-                inline-flex
-                size-9
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                border
-                border-border
-                bg-surface
-                text-muted-foreground
-                transition
-                hover:border-border-strong
-                hover:bg-surface-hover
-                hover:text-foreground
-                focus-visible:outline-none
-                focus-visible:ring-2
-                disabled:pointer-events-none
-                disabled:opacity-30
-
-                ${styles.focusRing}
-            `}
-        >
-            <Icon
-                size={18}
-                aria-hidden="true"
-            />
-        </button>
     );
 }
 

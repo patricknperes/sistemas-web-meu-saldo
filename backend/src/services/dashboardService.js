@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma.js";
 import { AppError } from "../errors/AppError.js";
 
+import {
+  materializeRecurringTransactions,
+} from "./recurrenceService.js";
+
 const recentTransactionSelect = {
   id: true,
   description: true,
@@ -9,8 +13,39 @@ const recentTransactionSelect = {
   category: true,
   date: true,
   notes: true,
+  userId: true,
+
+  recurringTransactionId: true,
+  occurrenceDate: true,
+
   createdAt: true,
   updatedAt: true,
+
+  tags: {
+    select: {
+      tag: {
+        select: {
+          id: true,
+          name: true,
+          normalizedName: true,
+          color: true,
+          scope: true,
+          isDefault: true,
+          isActive: true,
+        },
+      },
+    },
+  },
+
+  recurringTransaction: {
+    select: {
+      id: true,
+      description: true,
+      isActive: true,
+      dayOfMonth: true,
+      intervalMonths: true,
+    },
+  },
 };
 
 function validateUserId(value) {
@@ -30,7 +65,11 @@ function validateUserId(value) {
 }
 
 function validateHistoryYear(value) {
-  if (value === undefined) {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
     return null;
   }
 
@@ -221,12 +260,63 @@ function buildDashboardWhere(
   return where;
 }
 
+function serializeRecentTransaction(
+  transaction
+) {
+  const {
+    tags: tagLinks,
+    recurringTransaction,
+    ...transactionData
+  } = transaction;
+
+  const tags = (tagLinks ?? [])
+    .map(
+      (tagLink) =>
+        tagLink.tag
+    )
+    .sort(
+      (
+        firstTag,
+        secondTag
+      ) =>
+        firstTag.name.localeCompare(
+          secondTag.name,
+          "pt-BR"
+        )
+    );
+
+  return {
+    ...transactionData,
+
+    tags,
+
+    isRecurring: Boolean(
+      transactionData
+        .recurringTransactionId
+    ),
+
+    recurringTransaction,
+  };
+}
+
 export async function getMonthlyHistory(
   userIdValue,
   yearValue
 ) {
   const userId =
     validateUserId(userIdValue);
+
+  /*
+   * Antes de calcular o histórico,
+   * registra somente as ocorrências
+   * recorrentes cuja data já chegou.
+   *
+   * Valores futuros não serão criados
+   * nem contabilizados.
+   */
+  await materializeRecurringTransactions(
+    userId
+  );
 
   const selectedYear =
     validateHistoryYear(yearValue);
@@ -241,7 +331,11 @@ export async function getMonthlyHistory(
         Date.UTC(
           selectedYear,
           0,
-          1
+          1,
+          0,
+          0,
+          0,
+          0
         )
       ),
 
@@ -249,7 +343,11 @@ export async function getMonthlyHistory(
         Date.UTC(
           selectedYear + 1,
           0,
-          1
+          1,
+          0,
+          0,
+          0,
+          0
         )
       ),
     };
@@ -301,6 +399,8 @@ export async function getMonthlyHistory(
         totalExpenseCents: 0,
         balanceCents: 0,
         transactionCount: 0,
+        incomeCount: 0,
+        expenseCount: 0,
       });
     }
 
@@ -313,9 +413,13 @@ export async function getMonthlyHistory(
     ) {
       monthData.totalIncomeCents +=
         transaction.amountCents;
+
+      monthData.incomeCount += 1;
     } else {
       monthData.totalExpenseCents +=
         transaction.amountCents;
+
+      monthData.expenseCount += 1;
     }
 
     monthData.transactionCount += 1;
@@ -325,7 +429,7 @@ export async function getMonthlyHistory(
       monthData.totalExpenseCents;
   }
 
-  const history = Array
+  return Array
     .from(monthlyMap.values())
     .sort(
       (
@@ -336,8 +440,6 @@ export async function getMonthlyHistory(
           firstMonth.key
         )
     );
-
-  return history;
 }
 
 export async function getDashboardSummary(
@@ -346,6 +448,26 @@ export async function getDashboardSummary(
 ) {
   const userId =
     validateUserId(userIdValue);
+
+  /*
+   * Essa verificação é feita antes
+   * de calcular o saldo.
+   *
+   * Exemplo:
+   *
+   * Recorrência no dia 5
+   * Hoje é dia 3
+   * → não cria nem contabiliza
+   *
+   * Hoje é dia 5
+   * → cria e contabiliza
+   *
+   * Hoje é dia 8 e o servidor estava parado
+   * → cria com a data do dia 5
+   */
+  await materializeRecurringTransactions(
+    userId
+  );
 
   const where =
     buildDashboardWhere(
@@ -411,12 +533,12 @@ export async function getDashboardSummary(
       .amountCents ?? 0;
 
   const incomeCount =
-    incomeGroup?._count._all ??
-    0;
+    incomeGroup?._count
+      ._all ?? 0;
 
   const expenseCount =
-    expenseGroup?._count._all ??
-    0;
+    expenseGroup?._count
+      ._all ?? 0;
 
   const balanceCents =
     totalIncomeCents -
@@ -433,6 +555,10 @@ export async function getDashboardSummary(
     transactionCount,
     incomeCount,
     expenseCount,
-    recentTransactions,
+
+    recentTransactions:
+      recentTransactions.map(
+        serializeRecentTransaction
+      ),
   };
 }

@@ -16,26 +16,49 @@ enum TransactionType {
   EXPENSE
 }
 
+enum TagScope {
+  INCOME
+  EXPENSE
+  BOTH
+}
+
 model User {
-  id    Int    @id @default(autoincrement())
-  name  String
-  email String @unique
-
-  // Usuários cadastrados somente pelo Google
-  // não precisam possuir uma senha local.
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
   passwordHash String?
+  googleId     String?  @unique
+  avatarUrl    String?
+  role         UserRole @default(USER)
+  isActive     Boolean  @default(true)
 
-  // Identificador único recebido da conta Google.
-  googleId String? @unique
+  // Incrementado quando a senha é redefinida.
+  // Isso permitirá invalidar tokens JWT antigos.
+  tokenVersion Int @default(0)
 
-  // Endereço da foto de perfil recebida do Google.
-  avatarUrl String?
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  tags                  Tag[]
+  passwordResetTokens   PasswordResetToken[]
 
-  role         UserRole      @default(USER)
-  isActive     Boolean       @default(true)
-  transactions Transaction[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  userId    Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([userId, usedAt])
 }
 
 model Transaction {
@@ -47,10 +70,98 @@ model Transaction {
   date        DateTime        @default(now())
   notes       String?
   userId      Int
-  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
 
+  recurringTransactionId Int?
+  occurrenceDate         DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  recurringTransaction RecurringTransaction? @relation(fields: [recurringTransactionId], references: [id], onDelete: SetNull)
+
+  tags TransactionTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([recurringTransactionId, occurrenceDate])
   @@index([userId])
   @@index([userId, type, date])
+  @@index([recurringTransactionId])
+}
+
+model RecurringTransaction {
+  id          Int             @id @default(autoincrement())
+  description String
+  amountCents Int
+  type        TransactionType
+  category    String
+  notes       String?
+
+  startDate DateTime
+  endDate   DateTime?
+
+  dayOfMonth     Int
+  intervalMonths Int @default(1)
+
+  nextOccurrenceDate DateTime
+  isActive           Boolean  @default(true)
+
+  userId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactions Transaction[]
+  tags         RecurringTransactionTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, type, isActive])
+  @@index([isActive, nextOccurrenceDate])
+}
+
+model Tag {
+  id             Int      @id @default(autoincrement())
+  name           String
+  normalizedName String
+  color          String   @default("#64748B")
+  scope          TagScope @default(BOTH)
+  isDefault      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  userId         Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  transactionLinks TransactionTag[]
+  recurringLinks   RecurringTransactionTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, normalizedName])
+  @@index([userId])
+  @@index([userId, scope, isActive])
+}
+
+model TransactionTag {
+  transactionId Int
+  tagId         Int
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  tag         Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([transactionId, tagId])
+  @@index([tagId])
+}
+
+model RecurringTransactionTag {
+  recurringTransactionId Int
+  tagId                  Int
+
+  recurringTransaction RecurringTransaction @relation(fields: [recurringTransactionId], references: [id], onDelete: Cascade)
+  tag                  Tag                  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([recurringTransactionId, tagId])
+  @@index([tagId])
 }

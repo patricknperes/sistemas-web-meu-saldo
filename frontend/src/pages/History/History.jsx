@@ -22,6 +22,8 @@ import {
     FiTrendingUp,
 } from "react-icons/fi";
 
+import HistoryTransactionList from "../../components/history/HistoryTransactionList.jsx";
+
 import {
     dashboardService,
 } from "../../services/dashboardService.js";
@@ -49,17 +51,11 @@ const TONE_STYLES = {
         iconContainer:
             "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20",
 
-        softIconContainer:
-            "bg-emerald-500/12 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
-
         value:
             "text-emerald-600 dark:text-emerald-400",
 
         badge:
             "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
-
-        dot:
-            "bg-emerald-400",
 
         glow:
             "bg-emerald-300/25",
@@ -75,46 +71,14 @@ const TONE_STYLES = {
         iconContainer:
             "bg-rose-500 text-white shadow-lg shadow-rose-500/20",
 
-        softIconContainer:
-            "bg-rose-500/12 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
-
         value:
             "text-rose-600 dark:text-rose-400",
 
         badge:
             "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
 
-        dot:
-            "bg-rose-400",
-
         glow:
             "bg-rose-300/25",
-    },
-
-    info: {
-        heroGradient:
-            "from-sky-500 via-blue-600 to-indigo-700",
-
-        softGradient:
-            "from-sky-500/16 via-sky-500/6 to-transparent",
-
-        iconContainer:
-            "bg-sky-500 text-white shadow-lg shadow-sky-500/20",
-
-        softIconContainer:
-            "bg-sky-500/12 text-sky-600 ring-1 ring-inset ring-sky-500/15 dark:text-sky-400",
-
-        value:
-            "text-sky-600 dark:text-sky-400",
-
-        badge:
-            "bg-sky-500/10 text-sky-700 ring-1 ring-inset ring-sky-500/20 dark:text-sky-300",
-
-        dot:
-            "bg-sky-400",
-
-        glow:
-            "bg-sky-300/25",
     },
 
     neutral: {
@@ -127,17 +91,11 @@ const TONE_STYLES = {
         iconContainer:
             "bg-slate-600 text-white shadow-lg shadow-slate-500/20",
 
-        softIconContainer:
-            "bg-slate-500/12 text-slate-600 ring-1 ring-inset ring-slate-500/15 dark:text-slate-300",
-
         value:
             "text-foreground",
 
         badge:
             "bg-slate-500/10 text-slate-600 ring-1 ring-inset ring-slate-500/20 dark:text-slate-300",
-
-        dot:
-            "bg-slate-400",
 
         glow:
             "bg-slate-300/20",
@@ -145,66 +103,151 @@ const TONE_STYLES = {
 };
 
 function normalizeCents(value) {
-    const normalizedValue = Number(value);
+    const normalizedValue =
+        Number(value);
 
-    return Number.isFinite(normalizedValue)
+    return Number.isFinite(
+        normalizedValue,
+    )
         ? normalizedValue
         : 0;
 }
 
-function getYearPageStart(year) {
-    const normalizedYear = Math.min(
-        Math.max(Number(year), MIN_YEAR),
-        MAX_YEAR
-    );
+function normalizeTransactionCount(
+    value,
+) {
+    const normalizedValue =
+        Number(value);
 
-    const pageStart =
+    return Number.isFinite(
+        normalizedValue,
+    )
+        ? Math.max(
+            0,
+            Math.trunc(
+                normalizedValue,
+            ),
+        )
+        : 0;
+}
+
+function getYearPageStart(year) {
+    const normalizedYear =
+        Math.min(
+            Math.max(
+                Number(year),
+                MIN_YEAR,
+            ),
+            MAX_YEAR,
+        );
+
+    const pageIndex =
         Math.floor(
-            normalizedYear / YEARS_PER_PAGE
-        ) * YEARS_PER_PAGE;
+            (
+                normalizedYear -
+                MIN_YEAR
+            ) /
+            YEARS_PER_PAGE,
+        );
 
     return Math.min(
-        Math.max(pageStart, MIN_YEAR),
-        MAX_YEAR - YEARS_PER_PAGE + 1
+        MIN_YEAR +
+        pageIndex *
+        YEARS_PER_PAGE,
+        MAX_YEAR -
+        YEARS_PER_PAGE +
+        1,
     );
 }
 
-function getBalancePresentation(balanceCents) {
+function getBalancePresentation(
+    balanceCents,
+) {
     const balance =
-        normalizeCents(balanceCents);
+        normalizeCents(
+            balanceCents,
+        );
 
     if (balance > 0) {
         return {
             tone: "success",
-            label: "Saldo positivo",
-            icon: FiArrowUpRight,
+            label:
+                "Saldo positivo",
+            icon:
+                FiArrowUpRight,
         };
     }
 
     if (balance < 0) {
         return {
             tone: "danger",
-            label: "Saldo negativo",
-            icon: FiArrowDownRight,
+            label:
+                "Saldo negativo",
+            icon:
+                FiArrowDownRight,
         };
     }
 
     return {
         tone: "neutral",
-        label: "Saldo zerado",
-        icon: FiMinus,
+        label:
+            "Saldo zerado",
+        icon:
+            FiMinus,
     };
 }
 
-function getMovementPercent(value, total) {
+function getMovementPercent(
+    value,
+    total,
+) {
     if (total <= 0) {
         return 0;
     }
 
     return Math.min(
-        Math.max((value / total) * 100, 0),
-        100
+        Math.max(
+            (
+                value /
+                total
+            ) *
+            100,
+            0,
+        ),
+        100,
     );
+}
+
+function getErrorMessage(
+    error,
+    fallbackMessage,
+) {
+    const responseData =
+        error?.response?.data;
+
+    if (
+        typeof responseData?.error ===
+        "string"
+    ) {
+        return responseData.error;
+    }
+
+    if (
+        typeof responseData?.message ===
+        "string"
+    ) {
+        return responseData.message;
+    }
+
+    if (
+        typeof error?.message ===
+        "string" &&
+        error.message
+    ) {
+        return error.message;
+    }
+
+    return fallbackMessage;
 }
 
 function HistoryLoading() {
@@ -218,23 +261,30 @@ function HistoryLoading() {
             >
                 <div
                     className="
-                        h-64 rounded-3xl
+                        h-64
+                        rounded-3xl
                         bg-surface-muted
                         lg:col-span-6
                     "
                 />
 
-                {[1, 2].map((item) => (
-                    <div
-                        key={item}
-                        className="
-                            h-64 rounded-3xl
-                            border border-border
-                            bg-surface
-                            lg:col-span-3
-                        "
-                    />
-                ))}
+                {[1, 2].map(
+                    (item) => (
+                        <div
+                            key={
+                                item
+                            }
+                            className="
+                                h-64
+                                rounded-3xl
+                                border
+                                border-border
+                                bg-surface
+                                lg:col-span-3
+                            "
+                        />
+                    ),
+                )}
             </div>
 
             <div
@@ -246,59 +296,80 @@ function HistoryLoading() {
             >
                 {Array.from({
                     length: 6,
-                }).map((_, index) => (
-                    <article
-                        key={index}
-                        className="
-                            h-72 rounded-3xl
-                            border border-border
-                            bg-surface
-                            p-5 shadow-card
-                        "
-                    >
-                        <div
+                }).map(
+                    (
+                        _,
+                        index,
+                    ) => (
+                        <article
+                            key={
+                                index
+                            }
                             className="
-                                flex items-center
-                                justify-between gap-3
+                                h-72
+                                rounded-3xl
+                                border
+                                border-border
+                                bg-surface
+                                p-5
+                                shadow-card
                             "
                         >
                             <div
                                 className="
-                                    size-12 rounded-2xl
+                                    flex
+                                    items-center
+                                    justify-between
+                                    gap-3
+                                "
+                            >
+                                <div
+                                    className="
+                                        size-12
+                                        rounded-2xl
+                                        bg-surface-muted
+                                    "
+                                />
+
+                                <div
+                                    className="
+                                        h-6
+                                        w-20
+                                        rounded-full
+                                        bg-surface-muted
+                                    "
+                                />
+                            </div>
+
+                            <div
+                                className="
+                                    mt-6
+                                    h-16
+                                    rounded-2xl
                                     bg-surface-muted
                                 "
                             />
 
                             <div
                                 className="
-                                    h-6 w-20 rounded-full
+                                    mt-3
+                                    h-16
+                                    rounded-2xl
                                     bg-surface-muted
                                 "
                             />
-                        </div>
 
-                        <div
-                            className="
-                                mt-6 h-16 rounded-2xl
-                                bg-surface-muted
-                            "
-                        />
-
-                        <div
-                            className="
-                                mt-3 h-16 rounded-2xl
-                                bg-surface-muted
-                            "
-                        />
-
-                        <div
-                            className="
-                                mt-4 h-12 rounded-xl
-                                bg-surface-muted
-                            "
-                        />
-                    </article>
-                ))}
+                            <div
+                                className="
+                                    mt-4
+                                    h-12
+                                    rounded-xl
+                                    bg-surface-muted
+                                "
+                            />
+                        </article>
+                    ),
+                )}
             </div>
         </div>
     );
@@ -310,10 +381,14 @@ function AnnualBalanceCard({
     transactionCount,
 }) {
     const presentation =
-        getBalancePresentation(balanceCents);
+        getBalancePresentation(
+            balanceCents,
+        );
 
     const styles =
-        TONE_STYLES[presentation.tone];
+        TONE_STYLES[
+        presentation.tone
+        ];
 
     const StatusIcon =
         presentation.icon;
@@ -321,13 +396,15 @@ function AnnualBalanceCard({
     return (
         <article
             className={`
-                group relative
-                min-h-64 min-w-0
+                group
+                relative
+                min-h-64
+                min-w-0
                 overflow-hidden
                 rounded-3xl
                 bg-gradient-to-br
-                ${styles.heroGradient}
-                p-5 text-white
+                p-5
+                text-white
                 shadow-xl
                 shadow-slate-900/10
                 transition-all
@@ -336,14 +413,20 @@ function AnnualBalanceCard({
                 hover:shadow-2xl
                 sm:p-6
                 lg:col-span-6
+
+                ${styles.heroGradient}
             `}
         >
             <div
                 aria-hidden="true"
                 className="
-                    absolute -right-16 -top-20
-                    size-56 rounded-full
-                    bg-white/15 blur-2xl
+                    absolute
+                    -right-16
+                    -top-20
+                    size-56
+                    rounded-full
+                    bg-white/15
+                    blur-2xl
                     transition-transform
                     duration-500
                     group-hover:scale-110
@@ -353,9 +436,13 @@ function AnnualBalanceCard({
             <div
                 aria-hidden="true"
                 className="
-                    absolute -bottom-24 -left-16
-                    size-56 rounded-full
-                    bg-black/10 blur-2xl
+                    absolute
+                    -bottom-24
+                    -left-16
+                    size-56
+                    rounded-full
+                    bg-black/10
+                    blur-2xl
                 "
             />
 
@@ -369,47 +456,56 @@ function AnnualBalanceCard({
 
             <div
                 className="
-                    relative flex h-full
-                    flex-col justify-between
+                    relative
+                    flex h-full
+                    flex-col
+                    justify-between
                     gap-8
                 "
             >
                 <div
                     className="
-                        flex items-start
-                        justify-between gap-4
+                        flex
+                        items-start
+                        justify-between
+                        gap-4
                     "
                 >
                     <div>
                         <p
                             className="
-                                text-sm font-medium
+                                text-sm
+                                font-medium
                                 text-white/75
                             "
                         >
-                            Saldo acumulado em {year}
+                            Saldo acumulado em{" "}
+                            {year}
                         </p>
 
                         <p
                             className="
-                                mt-1 text-xs
+                                mt-1
+                                text-xs
                                 text-white/60
                             "
                         >
-                            Resultado de todos os meses carregados
+                            Resultado de todos os meses do ano
                         </p>
                     </div>
 
                     <span
                         className="
-                            flex size-11
+                            flex
+                            size-11
                             shrink-0
                             items-center
                             justify-center
                             rounded-2xl
                             bg-white/15
                             text-white
-                            ring-1 ring-inset
+                            ring-1
+                            ring-inset
                             ring-white/20
                             backdrop-blur-sm
                         "
@@ -431,32 +527,38 @@ function AnnualBalanceCard({
                             sm:text-4xl
                         "
                         title={formatCurrency(
-                            balanceCents
+                            balanceCents,
                         )}
                     >
                         {formatCurrency(
-                            balanceCents
+                            balanceCents,
                         )}
                     </p>
 
                     <div
                         className="
-                            mt-4 flex
+                            mt-4
+                            flex
                             flex-wrap
                             items-center
-                            justify-between gap-3
+                            justify-between
+                            gap-3
                         "
                     >
                         <span
                             className="
                                 inline-flex
-                                items-center gap-1.5
+                                items-center
+                                gap-1.5
                                 rounded-full
                                 bg-white/15
-                                px-3 py-1.5
-                                text-xs font-medium
+                                px-3
+                                py-1.5
+                                text-xs
+                                font-medium
                                 text-white
-                                ring-1 ring-inset
+                                ring-1
+                                ring-inset
                                 ring-white/20
                                 backdrop-blur-sm
                             "
@@ -466,14 +568,18 @@ function AnnualBalanceCard({
                                 aria-hidden="true"
                             />
 
-                            {presentation.label}
+                            {
+                                presentation.label
+                            }
                         </span>
 
                         <span
                             className="
                                 inline-flex
-                                items-center gap-1.5
-                                text-xs font-medium
+                                items-center
+                                gap-1.5
+                                text-xs
+                                font-medium
                                 text-white/70
                             "
                         >
@@ -482,7 +588,11 @@ function AnnualBalanceCard({
                                 aria-hidden="true"
                             />
 
-                            {transactionCount} {transactionCount === 1
+                            {
+                                transactionCount
+                            }{" "}
+                            {transactionCount ===
+                                1
                                 ? "lançamento"
                                 : "lançamentos"}
                         </span>
@@ -503,16 +613,23 @@ function AnnualValueCard({
     const styles =
         TONE_STYLES[tone];
 
+    const positive =
+        tone === "success";
+
     return (
         <article
             className="
-                group relative
-                min-h-64 min-w-0
+                group
+                relative
+                min-h-64
+                min-w-0
                 overflow-hidden
                 rounded-3xl
-                border border-border
+                border
+                border-border
                 bg-surface
-                p-5 shadow-card
+                p-5
+                shadow-card
                 transition-all
                 duration-300
                 hover:-translate-y-1
@@ -523,8 +640,12 @@ function AnnualValueCard({
             <div
                 aria-hidden="true"
                 className={`
-                    absolute inset-x-0 top-0
-                    h-32 bg-gradient-to-b
+                    absolute
+                    inset-x-0
+                    top-0
+                    h-32
+                    bg-gradient-to-b
+
                     ${styles.softGradient}
                 `}
             />
@@ -532,33 +653,42 @@ function AnnualValueCard({
             <div
                 aria-hidden="true"
                 className={`
-                    absolute -right-12 -top-12
-                    size-32 rounded-full
-                    ${styles.glow}
+                    absolute
+                    -right-12
+                    -top-12
+                    size-32
+                    rounded-full
                     blur-3xl
                     transition-transform
                     duration-500
                     group-hover:scale-125
+
+                    ${styles.glow}
                 `}
             />
 
             <div
                 className="
-                    relative flex h-full
-                    flex-col justify-between
+                    relative
+                    flex h-full
+                    flex-col
+                    justify-between
                     gap-7
                 "
             >
                 <div
                     className="
-                        flex items-start
-                        justify-between gap-3
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
                     "
                 >
                     <div className="min-w-0">
                         <p
                             className="
-                                truncate text-sm
+                                truncate
+                                text-sm
                                 font-semibold
                                 text-foreground
                             "
@@ -568,7 +698,8 @@ function AnnualValueCard({
 
                         <p
                             className="
-                                mt-1 text-xs
+                                mt-1
+                                text-xs
                                 leading-5
                                 text-muted-foreground
                             "
@@ -579,15 +710,17 @@ function AnnualValueCard({
 
                     <span
                         className={`
-                            flex size-11
+                            flex
+                            size-11
                             shrink-0
                             items-center
                             justify-center
                             rounded-2xl
-                            ${styles.iconContainer}
                             transition-transform
                             duration-300
                             group-hover:scale-105
+
+                            ${styles.iconContainer}
                         `}
                     >
                         <Icon
@@ -600,9 +733,11 @@ function AnnualValueCard({
                 <div>
                     <p
                         className={`
-                            truncate text-2xl
+                            truncate
+                            text-2xl
                             font-semibold
                             tracking-tight
+
                             ${styles.value}
                         `}
                         title={value}
@@ -612,15 +747,20 @@ function AnnualValueCard({
 
                     <span
                         className={`
-                            mt-4 inline-flex
-                            items-center gap-1.5
+                            mt-4
+                            inline-flex
+                            items-center
+                            gap-1.5
                             rounded-full
-                            px-2.5 py-1
-                            text-xs font-medium
+                            px-2.5
+                            py-1
+                            text-xs
+                            font-medium
+
                             ${styles.badge}
                         `}
                     >
-                        {tone === "success" ? (
+                        {positive ? (
                             <FiArrowUpRight
                                 size={13}
                                 aria-hidden="true"
@@ -640,63 +780,85 @@ function AnnualValueCard({
     );
 }
 
-function MonthCard({ monthData }) {
+function MonthCard({
+    monthData,
+}) {
     const incomeCents =
         normalizeCents(
-            monthData.totalIncomeCents
+            monthData
+                .totalIncomeCents,
         );
 
     const expenseCents =
         normalizeCents(
-            monthData.totalExpenseCents
+            monthData
+                .totalExpenseCents,
         );
 
     const balanceCents =
         normalizeCents(
-            monthData.balanceCents
+            monthData
+                .balanceCents,
         );
 
     const transactionCount =
-        Number(monthData.transactionCount) || 0;
+        normalizeTransactionCount(
+            monthData
+                .transactionCount,
+        );
 
     const presentation =
-        getBalancePresentation(balanceCents);
+        getBalancePresentation(
+            balanceCents,
+        );
 
     const styles =
-        TONE_STYLES[presentation.tone];
+        TONE_STYLES[
+        presentation.tone
+        ];
 
     const BalanceIcon =
         presentation.icon;
 
     const totalMovement =
-        incomeCents + expenseCents;
+        incomeCents +
+        expenseCents;
 
     const incomePercent =
         getMovementPercent(
             incomeCents,
-            totalMovement
+            totalMovement,
         );
 
     const expensePercent =
         getMovementPercent(
             expenseCents,
-            totalMovement
+            totalMovement,
         );
 
     const monthName =
-        getMonthName(monthData.month);
+        getMonthName(
+            monthData.month,
+        );
 
-    const monthNumber = String(
-        monthData.month
-    ).padStart(2, "0");
+    const monthNumber =
+        String(
+            monthData.month,
+        ).padStart(
+            2,
+            "0",
+        );
 
     return (
         <article
             className="
-                group relative min-w-0
+                group
+                relative
+                min-w-0
                 overflow-hidden
                 rounded-3xl
-                border border-border
+                border
+                border-border
                 bg-surface
                 shadow-card
                 transition-all
@@ -708,8 +870,12 @@ function MonthCard({ monthData }) {
             <div
                 aria-hidden="true"
                 className={`
-                    absolute inset-x-0 top-0
-                    h-36 bg-gradient-to-b
+                    absolute
+                    inset-x-0
+                    top-0
+                    h-36
+                    bg-gradient-to-b
+
                     ${styles.softGradient}
                 `}
             />
@@ -717,41 +883,54 @@ function MonthCard({ monthData }) {
             <div
                 aria-hidden="true"
                 className={`
-                    absolute -right-14 -top-14
-                    size-36 rounded-full
-                    ${styles.glow}
+                    absolute
+                    -right-14
+                    -top-14
+                    size-36
+                    rounded-full
                     blur-3xl
                     transition-transform
                     duration-500
                     group-hover:scale-125
+
+                    ${styles.glow}
                 `}
             />
 
             <header
                 className="
-                    relative flex
+                    relative
+                    flex
                     items-start
-                    justify-between gap-4
-                    px-5 pb-4 pt-5
+                    justify-between
+                    gap-4
+                    px-5
+                    pb-4
+                    pt-5
                 "
             >
                 <div
                     className="
-                        flex min-w-0
-                        items-center gap-3
+                        flex
+                        min-w-0
+                        items-center
+                        gap-3
                     "
                 >
                     <span
                         className={`
-                            flex size-12
+                            flex
+                            size-12
                             shrink-0
-                            flex-col items-center
+                            flex-col
+                            items-center
                             justify-center
                             rounded-2xl
-                            ${styles.iconContainer}
                             transition-transform
                             duration-300
                             group-hover:scale-105
+
+                            ${styles.iconContainer}
                         `}
                     >
                         <span
@@ -768,8 +947,10 @@ function MonthCard({ monthData }) {
 
                         <span
                             className="
-                                mt-0.5 text-base
-                                font-bold leading-none
+                                mt-0.5
+                                text-base
+                                font-bold
+                                leading-none
                             "
                         >
                             {monthNumber}
@@ -779,7 +960,8 @@ function MonthCard({ monthData }) {
                     <div className="min-w-0">
                         <h2
                             className="
-                                truncate text-base
+                                truncate
+                                text-base
                                 font-semibold
                                 capitalize
                                 text-foreground
@@ -790,7 +972,8 @@ function MonthCard({ monthData }) {
 
                         <p
                             className="
-                                mt-0.5 text-xs
+                                mt-0.5
+                                text-xs
                                 text-muted-foreground
                             "
                         >
@@ -801,11 +984,16 @@ function MonthCard({ monthData }) {
 
                 <span
                     className={`
-                        inline-flex shrink-0
-                        items-center gap-1.5
+                        inline-flex
+                        shrink-0
+                        items-center
+                        gap-1.5
                         rounded-full
-                        px-2.5 py-1
-                        text-xs font-medium
+                        px-2.5
+                        py-1
+                        text-xs
+                        font-medium
+
                         ${styles.badge}
                     `}
                 >
@@ -814,41 +1002,52 @@ function MonthCard({ monthData }) {
                         aria-hidden="true"
                     />
 
-                    {presentation.label}
+                    {
+                        presentation.label
+                    }
                 </span>
             </header>
 
             <div
                 className="
-                    relative space-y-3
-                    px-5 pb-5
+                    relative
+                    space-y-3
+                    px-5
+                    pb-5
                 "
             >
                 <div
                     className="
                         rounded-2xl
-                        border border-emerald-500/10
+                        border
+                        border-emerald-500/10
                         bg-emerald-500/[0.06]
                         p-3.5
                     "
                 >
                     <div
                         className="
-                            flex items-center
-                            justify-between gap-4
+                            flex
+                            items-center
+                            justify-between
+                            gap-4
                         "
                     >
                         <span
                             className="
-                                flex min-w-0
-                                items-center gap-2
-                                text-xs font-medium
+                                flex
+                                min-w-0
+                                items-center
+                                gap-2
+                                text-xs
+                                font-medium
                                 text-muted-foreground
                             "
                         >
                             <span
                                 className="
-                                    flex size-8
+                                    flex
+                                    size-8
                                     shrink-0
                                     items-center
                                     justify-center
@@ -869,24 +1068,27 @@ function MonthCard({ monthData }) {
 
                         <strong
                             className="
-                                min-w-0 truncate
-                                text-sm font-semibold
+                                min-w-0
+                                truncate
+                                text-sm
+                                font-semibold
                                 text-emerald-600
                                 dark:text-emerald-400
                             "
                             title={formatCurrency(
-                                incomeCents
+                                incomeCents,
                             )}
                         >
                             {formatCurrency(
-                                incomeCents
+                                incomeCents,
                             )}
                         </strong>
                     </div>
 
                     <div
                         className="
-                            mt-3 h-1.5
+                            mt-3
+                            h-1.5
                             overflow-hidden
                             rounded-full
                             bg-emerald-500/10
@@ -894,7 +1096,8 @@ function MonthCard({ monthData }) {
                     >
                         <div
                             className="
-                                h-full rounded-full
+                                h-full
+                                rounded-full
                                 bg-emerald-500
                                 transition-[width]
                                 duration-500
@@ -909,28 +1112,35 @@ function MonthCard({ monthData }) {
                 <div
                     className="
                         rounded-2xl
-                        border border-rose-500/10
+                        border
+                        border-rose-500/10
                         bg-rose-500/[0.06]
                         p-3.5
                     "
                 >
                     <div
                         className="
-                            flex items-center
-                            justify-between gap-4
+                            flex
+                            items-center
+                            justify-between
+                            gap-4
                         "
                     >
                         <span
                             className="
-                                flex min-w-0
-                                items-center gap-2
-                                text-xs font-medium
+                                flex
+                                min-w-0
+                                items-center
+                                gap-2
+                                text-xs
+                                font-medium
                                 text-muted-foreground
                             "
                         >
                             <span
                                 className="
-                                    flex size-8
+                                    flex
+                                    size-8
                                     shrink-0
                                     items-center
                                     justify-center
@@ -951,24 +1161,27 @@ function MonthCard({ monthData }) {
 
                         <strong
                             className="
-                                min-w-0 truncate
-                                text-sm font-semibold
+                                min-w-0
+                                truncate
+                                text-sm
+                                font-semibold
                                 text-rose-600
                                 dark:text-rose-400
                             "
                             title={formatCurrency(
-                                expenseCents
+                                expenseCents,
                             )}
                         >
                             {formatCurrency(
-                                expenseCents
+                                expenseCents,
                             )}
                         </strong>
                     </div>
 
                     <div
                         className="
-                            mt-3 h-1.5
+                            mt-3
+                            h-1.5
                             overflow-hidden
                             rounded-full
                             bg-rose-500/10
@@ -976,7 +1189,8 @@ function MonthCard({ monthData }) {
                     >
                         <div
                             className="
-                                h-full rounded-full
+                                h-full
+                                rounded-full
                                 bg-rose-500
                                 transition-[width]
                                 duration-500
@@ -990,16 +1204,20 @@ function MonthCard({ monthData }) {
 
                 <div
                     className="
-                        flex items-end
-                        justify-between gap-4
-                        border-t border-border
+                        flex
+                        items-end
+                        justify-between
+                        gap-4
+                        border-t
+                        border-border
                         pt-4
                     "
                 >
                     <div className="min-w-0">
                         <p
                             className="
-                                text-xs font-medium
+                                text-xs
+                                font-medium
                                 text-muted-foreground
                             "
                         >
@@ -1008,29 +1226,37 @@ function MonthCard({ monthData }) {
 
                         <p
                             className={`
-                                mt-1 truncate
-                                text-xl font-semibold
+                                mt-1
+                                truncate
+                                text-xl
+                                font-semibold
                                 tracking-tight
+
                                 ${styles.value}
                             `}
                             title={formatCurrency(
-                                balanceCents
+                                balanceCents,
                             )}
                         >
                             {formatCurrency(
-                                balanceCents
+                                balanceCents,
                             )}
                         </p>
                     </div>
 
                     <span
+                        title={`${transactionCount} lançamentos`}
                         className="
-                            inline-flex shrink-0
-                            items-center gap-1.5
+                            inline-flex
+                            shrink-0
+                            items-center
+                            gap-1.5
                             rounded-xl
                             bg-surface-muted
-                            px-2.5 py-2
-                            text-xs font-medium
+                            px-2.5
+                            py-2
+                            text-xs
+                            font-medium
                             text-muted-foreground
                         "
                     >
@@ -1039,7 +1265,9 @@ function MonthCard({ monthData }) {
                             aria-hidden="true"
                         />
 
-                        {transactionCount}
+                        {
+                            transactionCount
+                        }
                     </span>
                 </div>
             </div>
@@ -1047,9 +1275,96 @@ function MonthCard({ monthData }) {
     );
 }
 
+function EmptyHistory({
+    year,
+}) {
+    return (
+        <section
+            className="
+                relative
+                flex
+                min-h-72
+                overflow-hidden
+                flex-col
+                items-center
+                justify-center
+                rounded-3xl
+                border
+                border-border
+                bg-surface
+                p-6
+                text-center
+                shadow-card
+            "
+        >
+            <div
+                aria-hidden="true"
+                className="
+                    absolute
+                    -right-16
+                    -top-16
+                    size-48
+                    rounded-full
+                    bg-sky-500/10
+                    blur-3xl
+                "
+            />
+
+            <span
+                className="
+                    relative
+                    flex
+                    size-14
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    bg-sky-500/12
+                    text-sky-600
+                    ring-1
+                    ring-inset
+                    ring-sky-500/15
+                    dark:text-sky-400
+                "
+            >
+                <FiFileText
+                    size={23}
+                    aria-hidden="true"
+                />
+            </span>
+
+            <h2
+                className="
+                    relative
+                    mt-4
+                    text-lg
+                    font-semibold
+                    text-foreground
+                "
+            >
+                Nenhum lançamento em{" "}
+                {year}
+            </h2>
+
+            <p
+                className="
+                    relative
+                    mt-1
+                    max-w-md
+                    text-sm
+                    leading-6
+                    text-muted-foreground
+                "
+            >
+                Não existem receitas ou despesas registradas nesse ano.
+            </p>
+        </section>
+    );
+}
+
 function History() {
     const currentYear =
-        new Date().getFullYear();
+        new Date()
+            .getFullYear();
 
     const yearPickerReference =
         useRef(null);
@@ -1062,13 +1377,17 @@ function History() {
     const [
         selectedYear,
         setSelectedYear,
-    ] = useState(currentYear);
+    ] = useState(
+        currentYear,
+    );
 
     const [
         visibleStartYear,
         setVisibleStartYear,
     ] = useState(() =>
-        getYearPageStart(currentYear)
+        getYearPageStart(
+            currentYear,
+        ),
     );
 
     const [
@@ -1091,98 +1410,137 @@ function History() {
         setErrorMessage,
     ] = useState("");
 
-    const visibleYears = useMemo(
-        () =>
-            Array.from(
-                {
-                    length: YEARS_PER_PAGE,
-                },
-                (_, index) =>
-                    visibleStartYear + index
-            ).filter(
-                (year) =>
-                    year >= MIN_YEAR &&
-                    year <= MAX_YEAR
-            ),
-        [visibleStartYear]
-    );
+    const [
+        transactionListRefreshKey,
+        setTransactionListRefreshKey,
+    ] = useState(0);
 
-    const annualSummary = useMemo(
-        () =>
-            history.reduce(
-                (accumulator, monthData) => ({
-                    totalIncomeCents:
-                        accumulator.totalIncomeCents +
-                        normalizeCents(
-                            monthData.totalIncomeCents
-                        ),
+    const visibleYears =
+        useMemo(
+            () =>
+                Array.from(
+                    {
+                        length:
+                            YEARS_PER_PAGE,
+                    },
+                    (
+                        _,
+                        index,
+                    ) =>
+                        visibleStartYear +
+                        index,
+                ).filter(
+                    (year) =>
+                        year >=
+                        MIN_YEAR &&
+                        year <=
+                        MAX_YEAR,
+                ),
+            [
+                visibleStartYear,
+            ],
+        );
 
-                    totalExpenseCents:
-                        accumulator.totalExpenseCents +
-                        normalizeCents(
-                            monthData.totalExpenseCents
-                        ),
+    const annualSummary =
+        useMemo(
+            () =>
+                history.reduce(
+                    (
+                        accumulator,
+                        monthData,
+                    ) => ({
+                        totalIncomeCents:
+                            accumulator
+                                .totalIncomeCents +
+                            normalizeCents(
+                                monthData
+                                    .totalIncomeCents,
+                            ),
 
-                    balanceCents:
-                        accumulator.balanceCents +
-                        normalizeCents(
-                            monthData.balanceCents
-                        ),
+                        totalExpenseCents:
+                            accumulator
+                                .totalExpenseCents +
+                            normalizeCents(
+                                monthData
+                                    .totalExpenseCents,
+                            ),
 
-                    transactionCount:
-                        accumulator.transactionCount +
-                        (Number(
-                            monthData.transactionCount
-                        ) || 0),
-                }),
-                {
-                    totalIncomeCents: 0,
-                    totalExpenseCents: 0,
-                    balanceCents: 0,
-                    transactionCount: 0,
+                        balanceCents:
+                            accumulator
+                                .balanceCents +
+                            normalizeCents(
+                                monthData
+                                    .balanceCents,
+                            ),
+
+                        transactionCount:
+                            accumulator
+                                .transactionCount +
+                            normalizeTransactionCount(
+                                monthData
+                                    .transactionCount,
+                            ),
+                    }),
+                    {
+                        totalIncomeCents: 0,
+                        totalExpenseCents: 0,
+                        balanceCents: 0,
+                        transactionCount: 0,
+                    },
+                ),
+            [history],
+        );
+
+    const loadHistory =
+        useCallback(
+            async ({
+                initial = false,
+            } = {}) => {
+                if (initial) {
+                    setLoading(true);
+                } else {
+                    setRefreshing(
+                        true,
+                    );
                 }
-            ),
-        [history]
-    );
 
-    const loadHistory = useCallback(
-        async ({
-            initial = false,
-        } = {}) => {
-            if (initial) {
-                setLoading(true);
-            } else {
-                setRefreshing(true);
-            }
+                setErrorMessage("");
 
-            setErrorMessage("");
+                try {
+                    const response =
+                        await dashboardService.getHistory(
+                            selectedYear,
+                        );
 
-            try {
-                const response =
-                    await dashboardService.getHistory(
-                        selectedYear
+                    setHistory(
+                        Array.isArray(
+                            response?.history,
+                        )
+                            ? response.history
+                            : [],
                     );
 
-                setHistory(
-                    Array.isArray(
-                        response.history
-                    )
-                        ? response.history
-                        : []
-                );
-            } catch (error) {
-                setErrorMessage(
-                    error.response?.data
-                        ?.error ??
-                    "Não foi possível carregar o histórico."
-                );
-            } finally {
-                setLoading(false);
-                setRefreshing(false);
-            }
-        },
-        [selectedYear]
-    );
+                    return true;
+                } catch (error) {
+                    setHistory([]);
+
+                    setErrorMessage(
+                        getErrorMessage(
+                            error,
+                            "Não foi possível carregar o histórico.",
+                        ),
+                    );
+
+                    return false;
+                } finally {
+                    setLoading(false);
+                    setRefreshing(
+                        false,
+                    );
+                }
+            },
+            [selectedYear],
+        );
 
     useEffect(() => {
         loadHistory({
@@ -1195,67 +1553,86 @@ function History() {
             return undefined;
         }
 
-        function handlePointerDown(event) {
+        function handlePointerDown(
+            event,
+        ) {
             if (
                 yearPickerReference.current &&
                 !yearPickerReference.current.contains(
-                    event.target
+                    event.target,
                 )
             ) {
-                setYearPickerOpen(false);
+                setYearPickerOpen(
+                    false,
+                );
             }
         }
 
-        function handleKeyDown(event) {
-            if (event.key === "Escape") {
-                setYearPickerOpen(false);
+        function handleKeyDown(
+            event,
+        ) {
+            if (
+                event.key ===
+                "Escape"
+            ) {
+                setYearPickerOpen(
+                    false,
+                );
             }
         }
 
         document.addEventListener(
             "mousedown",
-            handlePointerDown
+            handlePointerDown,
         );
 
         document.addEventListener(
             "keydown",
-            handleKeyDown
+            handleKeyDown,
         );
 
         return () => {
             document.removeEventListener(
                 "mousedown",
-                handlePointerDown
+                handlePointerDown,
             );
 
             document.removeEventListener(
                 "keydown",
-                handleKeyDown
+                handleKeyDown,
             );
         };
     }, [yearPickerOpen]);
 
     function toggleYearPicker() {
         setVisibleStartYear(
-            getYearPageStart(selectedYear)
+            getYearPageStart(
+                selectedYear,
+            ),
         );
 
         setYearPickerOpen(
             (currentValue) =>
-                !currentValue
+                !currentValue,
         );
     }
 
-    function handleSelectYear(year) {
+    function handleSelectYear(
+        year,
+    ) {
         setSelectedYear(year);
         setYearPickerOpen(false);
     }
 
     function handleSelectCurrentYear() {
-        setSelectedYear(currentYear);
+        setSelectedYear(
+            currentYear,
+        );
 
         setVisibleStartYear(
-            getYearPageStart(currentYear)
+            getYearPageStart(
+                currentYear,
+            ),
         );
 
         setYearPickerOpen(false);
@@ -1263,30 +1640,44 @@ function History() {
 
     function handlePreviousYears() {
         setVisibleStartYear(
-            (currentStartYear) =>
+            (
+                currentStartYear,
+            ) =>
                 Math.max(
                     currentStartYear -
                     YEARS_PER_PAGE,
-                    MIN_YEAR
-                )
+                    MIN_YEAR,
+                ),
         );
     }
 
     function handleNextYears() {
         setVisibleStartYear(
-            (currentStartYear) =>
+            (
+                currentStartYear,
+            ) =>
                 Math.min(
                     currentStartYear +
                     YEARS_PER_PAGE,
                     MAX_YEAR -
                     YEARS_PER_PAGE +
-                    1
-                )
+                    1,
+                ),
+        );
+    }
+
+    async function handleRefreshHistory() {
+        await loadHistory();
+
+        setTransactionListRefreshKey(
+            (currentKey) =>
+                currentKey + 1,
         );
     }
 
     const previousDisabled =
-        visibleStartYear <= MIN_YEAR;
+        visibleStartYear <=
+        MIN_YEAR;
 
     const nextDisabled =
         visibleStartYear +
@@ -1294,27 +1685,46 @@ function History() {
         1 >=
         MAX_YEAR;
 
+    const firstVisibleYear =
+        visibleYears[0] ??
+        visibleStartYear;
+
+    const lastVisibleYear =
+        visibleYears[
+        visibleYears.length -
+        1
+        ] ??
+        visibleStartYear;
+
     return (
         <div
             className="
-                w-full min-w-0
+                w-full
+                min-w-0
                 max-w-none
-                px-4 py-5
-                sm:px-6 sm:py-6
+                px-4
+                py-5
+                sm:px-6
+                sm:py-6
                 lg:px-8
             "
         >
             <div
                 className="
-                    flex w-full min-w-0
-                    flex-col gap-5
+                    flex
+                    w-full
+                    min-w-0
+                    flex-col
+                    gap-5
                     sm:gap-6
                 "
             >
                 <header
                     className="
-                        flex min-w-0
-                        flex-col gap-4
+                        flex
+                        min-w-0
+                        flex-col
+                        gap-4
                         sm:flex-row
                         sm:items-start
                         sm:justify-between
@@ -1323,14 +1733,19 @@ function History() {
                     <div className="min-w-0">
                         <div
                             className="
-                                mb-2 inline-flex
-                                items-center gap-2
+                                mb-2
+                                inline-flex
+                                items-center
+                                gap-2
                                 rounded-full
                                 bg-sky-500/10
-                                px-2.5 py-1
-                                text-xs font-medium
+                                px-2.5
+                                py-1
+                                text-xs
+                                font-medium
                                 text-sky-700
-                                ring-1 ring-inset
+                                ring-1
+                                ring-inset
                                 ring-sky-500/15
                                 dark:text-sky-300
                             "
@@ -1345,7 +1760,8 @@ function History() {
 
                         <h1
                             className="
-                                truncate text-2xl
+                                truncate
+                                text-2xl
                                 font-semibold
                                 tracking-tight
                                 text-foreground
@@ -1356,43 +1772,58 @@ function History() {
 
                         <p
                             className="
-                                mt-1 text-sm
+                                mt-1
+                                text-sm
                                 leading-6
                                 text-muted-foreground
                             "
                         >
-                            Compare receitas, despesas e o saldo de cada mês.
+                            Compare receitas, despesas, saldo e movimentações de cada período.
                         </p>
                     </div>
 
                     <div
                         className="
-                            flex w-full
-                            flex-col gap-2
+                            flex
+                            w-full
+                            flex-col
+                            gap-2
                             sm:w-auto
                             sm:flex-row
                         "
                     >
                         <div
-                            ref={yearPickerReference}
+                            ref={
+                                yearPickerReference
+                            }
                             className="
-                                relative w-full
+                                relative
+                                w-full
                                 sm:w-auto
                             "
                         >
                             <button
                                 type="button"
-                                onClick={toggleYearPicker}
+                                onClick={
+                                    toggleYearPicker
+                                }
                                 aria-haspopup="dialog"
-                                aria-expanded={yearPickerOpen}
+                                aria-expanded={
+                                    yearPickerOpen
+                                }
                                 className="
-                                    inline-flex min-h-10
-                                    w-full items-center
-                                    justify-between gap-3
+                                    inline-flex
+                                    min-h-10
+                                    w-full
+                                    items-center
+                                    justify-between
+                                    gap-3
                                     rounded-xl
-                                    border border-sky-500/15
+                                    border
+                                    border-sky-500/15
                                     bg-sky-500/[0.06]
-                                    px-4 text-sm
+                                    px-4
+                                    text-sm
                                     font-medium
                                     text-foreground
                                     shadow-sm
@@ -1405,7 +1836,9 @@ function History() {
                             >
                                 <span
                                     className="
-                                        flex items-center gap-2
+                                        flex
+                                        items-center
+                                        gap-2
                                     "
                                 >
                                     <FiCalendar
@@ -1417,7 +1850,9 @@ function History() {
                                         "
                                     />
 
-                                    {selectedYear}
+                                    {
+                                        selectedYear
+                                    }
                                 </span>
 
                                 <FiChevronRight
@@ -1426,6 +1861,7 @@ function History() {
                                     className={`
                                         text-muted-foreground
                                         transition-transform
+
                                         ${yearPickerOpen
                                             ? "rotate-90"
                                             : ""
@@ -1439,19 +1875,28 @@ function History() {
                                     role="dialog"
                                     aria-label="Selecionar ano"
                                     className="
-                                        absolute right-0 top-full
-                                        z-50 mt-2 w-full
-                                        min-w-72 rounded-3xl
-                                        border border-border
-                                        bg-surface p-3
+                                        absolute
+                                        right-0
+                                        top-full
+                                        z-50
+                                        mt-2
+                                        w-full
+                                        min-w-72
+                                        rounded-3xl
+                                        border
+                                        border-border
+                                        bg-surface
+                                        p-3
                                         shadow-dialog
                                         sm:w-80
                                     "
                                 >
                                     <div
                                         className="
-                                            flex items-center
-                                            justify-between gap-3
+                                            flex
+                                            items-center
+                                            justify-between
+                                            gap-3
                                             rounded-2xl
                                             bg-surface-muted
                                             p-1
@@ -1459,11 +1904,16 @@ function History() {
                                     >
                                         <button
                                             type="button"
-                                            onClick={handlePreviousYears}
-                                            disabled={previousDisabled}
+                                            onClick={
+                                                handlePreviousYears
+                                            }
+                                            disabled={
+                                                previousDisabled
+                                            }
                                             aria-label="Mostrar anos anteriores"
                                             className="
-                                                inline-flex size-9
+                                                inline-flex
+                                                size-9
                                                 items-center
                                                 justify-center
                                                 rounded-xl
@@ -1483,24 +1933,32 @@ function History() {
 
                                         <p
                                             className="
-                                                text-sm font-semibold
+                                                text-sm
+                                                font-semibold
                                                 text-foreground
                                             "
                                         >
-                                            {visibleYears[0]}
+                                            {
+                                                firstVisibleYear
+                                            }
                                             {" — "}
-                                            {visibleYears[
-                                                visibleYears.length - 1
-                                            ]}
+                                            {
+                                                lastVisibleYear
+                                            }
                                         </p>
 
                                         <button
                                             type="button"
-                                            onClick={handleNextYears}
-                                            disabled={nextDisabled}
+                                            onClick={
+                                                handleNextYears
+                                            }
+                                            disabled={
+                                                nextDisabled
+                                            }
                                             aria-label="Mostrar próximos anos"
                                             className="
-                                                inline-flex size-9
+                                                inline-flex
+                                                size-9
                                                 items-center
                                                 justify-center
                                                 rounded-xl
@@ -1521,62 +1979,67 @@ function History() {
 
                                     <div
                                         className="
-                                            mt-3 grid
-                                            grid-cols-3 gap-2
+                                            mt-3
+                                            grid
+                                            grid-cols-3
+                                            gap-2
                                         "
                                     >
                                         {visibleYears.map(
-                                            (year) => {
+                                            (
+                                                year,
+                                            ) => {
                                                 const isSelected =
-                                                    year === selectedYear;
+                                                    year ===
+                                                    selectedYear;
 
                                                 const isCurrent =
-                                                    year === currentYear;
+                                                    year ===
+                                                    currentYear;
 
                                                 return (
                                                     <button
-                                                        key={year}
+                                                        key={
+                                                            year
+                                                        }
                                                         type="button"
                                                         onClick={() =>
                                                             handleSelectYear(
-                                                                year
+                                                                year,
                                                             )
                                                         }
-                                                        aria-pressed={isSelected}
+                                                        aria-pressed={
+                                                            isSelected
+                                                        }
                                                         className={`
-                                                            relative min-h-10
-                                                            rounded-xl border
-                                                            px-2 text-sm
+                                                            relative
+                                                            min-h-10
+                                                            rounded-xl
+                                                            border
+                                                            px-2
+                                                            text-sm
                                                             font-medium
                                                             transition-all
+
                                                             ${isSelected
-                                                                ? `
-                                                                        border-transparent
-                                                                        bg-gradient-to-br
-                                                                        from-sky-500
-                                                                        to-blue-600
-                                                                        text-white
-                                                                        shadow-md
-                                                                        shadow-sky-500/20
-                                                                    `
-                                                                : `
-                                                                        border-transparent
-                                                                        text-foreground
-                                                                        hover:border-border
-                                                                        hover:bg-surface-hover
-                                                                    `
+                                                                ? "border-transparent bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20"
+                                                                : "border-transparent text-foreground hover:border-border hover:bg-surface-hover"
                                                             }
                                                         `}
                                                     >
-                                                        {year}
+                                                        {
+                                                            year
+                                                        }
 
                                                         {isCurrent &&
                                                             !isSelected && (
                                                                 <span
                                                                     aria-label="Ano atual"
                                                                     className="
-                                                                        absolute bottom-1.5
-                                                                        left-1/2 size-1
+                                                                        absolute
+                                                                        bottom-1.5
+                                                                        left-1/2
+                                                                        size-1
                                                                         -translate-x-1/2
                                                                         rounded-full
                                                                         bg-sky-500
@@ -1585,25 +2048,33 @@ function History() {
                                                             )}
                                                     </button>
                                                 );
-                                            }
+                                            },
                                         )}
                                     </div>
 
                                     <div
                                         className="
-                                            mt-3 border-t
-                                            border-border pt-3
+                                            mt-3
+                                            border-t
+                                            border-border
+                                            pt-3
                                         "
                                     >
                                         <button
                                             type="button"
-                                            onClick={handleSelectCurrentYear}
+                                            onClick={
+                                                handleSelectCurrentYear
+                                            }
                                             className="
-                                                inline-flex min-h-9
-                                                w-full items-center
-                                                justify-center gap-2
+                                                inline-flex
+                                                min-h-9
+                                                w-full
+                                                items-center
+                                                justify-center
+                                                gap-2
                                                 rounded-xl
-                                                text-sm font-medium
+                                                text-sm
+                                                font-medium
                                                 text-sky-600
                                                 transition-colors
                                                 hover:bg-sky-500/10
@@ -1624,21 +2095,27 @@ function History() {
 
                         <button
                             type="button"
-                            onClick={() =>
-                                loadHistory()
+                            onClick={
+                                handleRefreshHistory
                             }
                             disabled={
                                 refreshing ||
                                 loading
                             }
                             className="
-                                inline-flex min-h-10
-                                w-full items-center
-                                justify-center gap-2
+                                inline-flex
+                                min-h-10
+                                w-full
+                                items-center
+                                justify-center
+                                gap-2
                                 rounded-xl
-                                border border-border
-                                bg-surface px-4
-                                text-sm font-medium
+                                border
+                                border-border
+                                bg-surface
+                                px-4
+                                text-sm
+                                font-medium
                                 text-foreground
                                 shadow-sm
                                 transition-all
@@ -1671,18 +2148,25 @@ function History() {
                     <div
                         role="alert"
                         className="
-                            flex items-center gap-3
+                            flex
+                            items-center
+                            gap-3
                             rounded-2xl
-                            border border-rose-500/15
+                            border
+                            border-rose-500/15
                             bg-rose-500/[0.08]
-                            px-4 py-3 text-sm
+                            px-4
+                            py-3
+                            text-sm
                             text-rose-700
                             dark:text-rose-300
                         "
                     >
                         <span
                             className="
-                                flex size-9 shrink-0
+                                flex
+                                size-9
+                                shrink-0
                                 items-center
                                 justify-center
                                 rounded-xl
@@ -1695,7 +2179,12 @@ function History() {
                             />
                         </span>
 
-                        <p className="min-w-0 flex-1">
+                        <p
+                            className="
+                                min-w-0
+                                flex-1
+                            "
+                        >
                             {errorMessage}
                         </p>
                     </div>
@@ -1703,79 +2192,27 @@ function History() {
 
                 {loading ? (
                     <HistoryLoading />
-                ) : history.length === 0 ? (
-                    <section
-                        className="
-                            relative flex min-h-72
-                            overflow-hidden
-                            flex-col items-center
-                            justify-center
-                            rounded-3xl
-                            border border-border
-                            bg-surface p-6
-                            text-center shadow-card
-                        "
-                    >
-                        <div
-                            aria-hidden="true"
-                            className="
-                                absolute -right-16 -top-16
-                                size-48 rounded-full
-                                bg-sky-500/10 blur-3xl
-                            "
-                        />
-
-                        <span
-                            className="
-                                relative flex size-14
-                                items-center
-                                justify-center
-                                rounded-2xl
-                                bg-sky-500/12
-                                text-sky-600
-                                ring-1 ring-inset
-                                ring-sky-500/15
-                                dark:text-sky-400
-                            "
-                        >
-                            <FiFileText
-                                size={23}
-                                aria-hidden="true"
-                            />
-                        </span>
-
-                        <h2
-                            className="
-                                relative mt-4
-                                text-lg font-semibold
-                                text-foreground
-                            "
-                        >
-                            Nenhum lançamento em {selectedYear}
-                        </h2>
-
-                        <p
-                            className="
-                                relative mt-1
-                                max-w-sm text-sm
-                                leading-6
-                                text-muted-foreground
-                            "
-                        >
-                            As receitas e despesas deste ano aparecerão aqui assim que forem cadastradas.
-                        </p>
-                    </section>
+                ) : history.length ===
+                    0 ? (
+                    <EmptyHistory
+                        year={
+                            selectedYear
+                        }
+                    />
                 ) : (
                     <>
                         <section
                             aria-label={`Resumo financeiro de ${selectedYear}`}
                             className="
-                                grid gap-4
+                                grid
+                                gap-4
                                 lg:grid-cols-12
                             "
                         >
                             <AnnualBalanceCard
-                                year={selectedYear}
+                                year={
+                                    selectedYear
+                                }
                                 balanceCents={
                                     annualSummary.balanceCents
                                 }
@@ -1785,22 +2222,26 @@ function History() {
                             />
 
                             <AnnualValueCard
-                                title="Receitas no ano"
-                                description="Tudo o que entrou durante o período."
+                                title="Receitas do ano"
+                                description="Todas as entradas registradas no período."
                                 value={formatCurrency(
-                                    annualSummary.totalIncomeCents
+                                    annualSummary.totalIncomeCents,
                                 )}
-                                icon={FiTrendingUp}
+                                icon={
+                                    FiTrendingUp
+                                }
                                 tone="success"
                             />
 
                             <AnnualValueCard
-                                title="Despesas no ano"
-                                description="Tudo o que saiu durante o período."
+                                title="Despesas do ano"
+                                description="Todas as saídas registradas no período."
                                 value={formatCurrency(
-                                    annualSummary.totalExpenseCents
+                                    annualSummary.totalExpenseCents,
                                 )}
-                                icon={FiTrendingDown}
+                                icon={
+                                    FiTrendingDown
+                                }
                                 tone="danger"
                             />
                         </section>
@@ -1811,7 +2252,9 @@ function History() {
                         >
                             <div
                                 className="
-                                    flex flex-col gap-2
+                                    flex
+                                    flex-col
+                                    gap-3
                                     sm:flex-row
                                     sm:items-end
                                     sm:justify-between
@@ -1821,7 +2264,8 @@ function History() {
                                     <h2
                                         id="monthly-history-title"
                                         className="
-                                            text-lg font-semibold
+                                            text-lg
+                                            font-semibold
                                             text-foreground
                                         "
                                     >
@@ -1830,22 +2274,31 @@ function History() {
 
                                     <p
                                         className="
-                                            mt-1 text-sm
+                                            mt-1
+                                            text-sm
                                             text-muted-foreground
                                         "
                                     >
-                                        Veja como suas movimentações se distribuíram em {selectedYear}.
+                                        Veja como suas movimentações se distribuíram em{" "}
+                                        {
+                                            selectedYear
+                                        }
+                                        .
                                     </p>
                                 </div>
 
                                 <span
                                     className="
-                                        inline-flex w-fit
-                                        items-center gap-2
+                                        inline-flex
+                                        w-fit
+                                        items-center
+                                        gap-2
                                         rounded-full
                                         bg-surface-muted
-                                        px-3 py-1.5
-                                        text-xs font-medium
+                                        px-3
+                                        py-1.5
+                                        text-xs
+                                        font-medium
                                         text-muted-foreground
                                     "
                                 >
@@ -1854,7 +2307,11 @@ function History() {
                                         aria-hidden="true"
                                     />
 
-                                    {history.length} {history.length === 1
+                                    {
+                                        history.length
+                                    }{" "}
+                                    {history.length ===
+                                        1
                                         ? "mês com movimentação"
                                         : "meses com movimentação"}
                                 </span>
@@ -1863,26 +2320,40 @@ function History() {
                             <div
                                 aria-label={`Histórico financeiro de ${selectedYear}`}
                                 className="
-                                    grid gap-4
+                                    grid
+                                    gap-4
                                     md:grid-cols-2
                                     xl:grid-cols-3
                                 "
                             >
                                 {history.map(
-                                    (monthData) => (
+                                    (
+                                        monthData,
+                                    ) => (
                                         <MonthCard
                                             key={
                                                 monthData.key ??
                                                 `${monthData.year}-${monthData.month}`
                                             }
-                                            monthData={monthData}
+                                            monthData={
+                                                monthData
+                                            }
                                         />
-                                    )
+                                    ),
                                 )}
                             </div>
                         </section>
                     </>
                 )}
+
+                <HistoryTransactionList
+                    year={
+                        selectedYear
+                    }
+                    refreshKey={
+                        transactionListRefreshKey
+                    }
+                />
             </div>
         </div>
     );

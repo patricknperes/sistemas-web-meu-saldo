@@ -1,7 +1,7 @@
 import {
     useEffect,
-    useId,
-    useRef,
+    useMemo,
+    useState,
 } from "react";
 
 import {
@@ -14,492 +14,961 @@ import {
 } from "motion/react";
 
 import {
-    RiArrowDownLine,
-    RiArrowUpLine,
     RiCalendarLine,
-    RiCheckLine,
     RiCloseLine,
+    RiErrorWarningLine,
     RiFileTextLine,
-    RiInformationLine,
     RiLoader4Line,
     RiMoneyDollarCircleLine,
-    RiPriceTag3Line,
-    RiStickyNoteLine,
+    RiRepeat2Line,
+    RiSaveLine,
 } from "react-icons/ri";
 
-const TYPE_STYLES = {
-    INCOME: {
-        label: "Receita",
-        icon: RiArrowUpLine,
+import {
+    getTransactionTypeConfig,
+    normalizeTransactionType,
+} from "../../config/transactionTypeConfig.js";
 
-        headerGradient:
-            "from-emerald-500 via-emerald-600 to-teal-700",
+import {
+    recurringTransactionService,
+} from "../../services/recurringTransactionService.js";
 
-        headerShadow:
-            "shadow-emerald-500/20",
+import {
+    transactionService,
+} from "../../services/transactionService.js";
 
-        softBackground:
-            "bg-emerald-500/[0.055]",
+import RecurrenceFields from "./RecurrenceFields.jsx";
+import TagSelector from "./TagSelector.jsx";
 
-        softBorder:
-            "border-emerald-500/15",
+const FORM_KINDS = Object.freeze({
+    SINGLE: "SINGLE",
+    RECURRING: "RECURRING",
+});
 
-        iconContainer:
-            "bg-emerald-500/10 text-emerald-600 ring-1 ring-inset ring-emerald-500/15 dark:text-emerald-400",
+const MAX_AMOUNT_CENTS =
+    999_999_999_999;
 
-        fieldFocus:
-            "focus:border-emerald-500/55 focus:ring-emerald-500/10",
+function getTodayInputValue() {
+    const now = new Date();
 
-        amount:
-            "text-emerald-600 dark:text-emerald-400",
+    const year =
+        now.getFullYear();
 
-        badge:
-            "bg-emerald-500/10 text-emerald-700 ring-1 ring-inset ring-emerald-500/20 dark:text-emerald-300",
+    const month =
+        String(
+            now.getMonth() + 1,
+        ).padStart(2, "0");
 
-        submitButton:
-            "from-emerald-500 via-emerald-600 to-teal-700 shadow-emerald-500/25 hover:shadow-emerald-500/30 focus-visible:ring-emerald-500/25",
-    },
+    const day =
+        String(
+            now.getDate(),
+        ).padStart(2, "0");
 
-    EXPENSE: {
-        label: "Despesa",
-        icon: RiArrowDownLine,
-
-        headerGradient:
-            "from-rose-500 via-rose-600 to-red-700",
-
-        headerShadow:
-            "shadow-rose-500/20",
-
-        softBackground:
-            "bg-rose-500/[0.055]",
-
-        softBorder:
-            "border-rose-500/15",
-
-        iconContainer:
-            "bg-rose-500/10 text-rose-600 ring-1 ring-inset ring-rose-500/15 dark:text-rose-400",
-
-        fieldFocus:
-            "focus:border-rose-500/55 focus:ring-rose-500/10",
-
-        amount:
-            "text-rose-600 dark:text-rose-400",
-
-        badge:
-            "bg-rose-500/10 text-rose-700 ring-1 ring-inset ring-rose-500/20 dark:text-rose-300",
-
-        submitButton:
-            "from-rose-500 via-rose-600 to-red-700 shadow-rose-500/25 hover:shadow-rose-500/30 focus-visible:ring-rose-500/25",
-    },
-};
-
-/*
- * O valor é armazenado no estado somente como
- * uma sequência de dígitos representando centavos.
- *
- * Exemplos:
- * "1"      -> R$ 0,01
- * "100"    -> R$ 1,00
- * "123456" -> R$ 1.234,56
- */
-function normalizeAmountDigits(value) {
-    return String(value ?? "")
-        .replace(/\D/g, "")
-        .replace(/^0+(?=\d)/, "");
+    return `${year}-${month}-${day}`;
 }
 
-function formatAmountInput(value) {
-    const digits =
-        normalizeAmountDigits(value);
-
-    if (!digits) {
+function normalizeDateInput(value) {
+    if (!value) {
         return "";
     }
 
-    const paddedValue =
-        digits.padStart(3, "0");
+    if (
+        typeof value === "string"
+    ) {
+        return value.slice(0, 10);
+    }
 
-    const integerPart =
-        paddedValue
-            .slice(0, -2)
-            .replace(
-                /^0+(?=\d)/,
-                ""
-            );
+    const date =
+        new Date(value);
 
-    const decimalPart =
-        paddedValue.slice(-2);
+    if (
+        Number.isNaN(
+            date.getTime(),
+        )
+    ) {
+        return "";
+    }
 
-    const formattedInteger =
-        integerPart.replace(
-            /\B(?=(\d{3})+(?!\d))/g,
-            "."
-        );
-
-    return `${formattedInteger},${decimalPart}`;
+    return date
+        .toISOString()
+        .slice(0, 10);
 }
 
-function FieldLabel({
-    htmlFor,
-    children,
-    optional = false,
-}) {
-    return (
-        <div
-            className="
-                mb-2
-                flex min-w-0
-                items-center
-                justify-between
-                gap-3
-            "
-        >
-            <label
-                htmlFor={htmlFor}
-                className="
-                    truncate
-                    text-sm
-                    font-semibold
-                    text-foreground
-                "
-            >
-                {children}
-            </label>
+function normalizeFormKind(value) {
+    return value ===
+        FORM_KINDS.RECURRING
+        ? FORM_KINDS.RECURRING
+        : FORM_KINDS.SINGLE;
+}
 
-            {optional && (
-                <span
-                    className="
-                        shrink-0
-                        text-[11px]
-                        font-medium
-                        text-muted-foreground
-                    "
-                >
-                    Opcional
-                </span>
-            )}
-        </div>
+function normalizePositiveInteger(
+    value,
+    fallbackValue,
+) {
+    const normalizedValue =
+        Number(value);
+
+    if (
+        !Number.isInteger(
+            normalizedValue,
+        ) ||
+        normalizedValue <= 0
+    ) {
+        return fallbackValue;
+    }
+
+    return normalizedValue;
+}
+
+function extractTags(entity) {
+    if (
+        !Array.isArray(
+            entity?.tags,
+        )
+    ) {
+        return [];
+    }
+
+    return entity.tags
+        .map((item) => {
+            if (
+                item?.tag &&
+                typeof item.tag ===
+                "object"
+            ) {
+                return item.tag;
+            }
+
+            return item;
+        })
+        .filter(
+            (tag) =>
+                Number.isInteger(
+                    Number(tag?.id),
+                ) &&
+                Number(tag.id) > 0,
+        );
+}
+
+function extractTagIds(entity) {
+    return [
+        ...new Set(
+            extractTags(entity)
+                .map((tag) =>
+                    Number(tag.id),
+                ),
+        ),
+    ];
+}
+
+function formatCurrencyFromCents(
+    amountCents,
+) {
+    const normalizedAmount =
+        Number(amountCents);
+
+    const safeAmount =
+        Number.isFinite(
+            normalizedAmount,
+        )
+            ? normalizedAmount
+            : 0;
+
+    return new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL",
+        },
+    ).format(
+        safeAmount / 100,
     );
 }
 
-function InputIcon({
-    icon: Icon,
-    styles,
-}) {
-    return (
-        <span
-            aria-hidden="true"
-            className={`
-                pointer-events-none
-                absolute
-                left-2 top-1/2
-                flex size-8
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-xl
+function parseCurrencyInput(value) {
+    const digits =
+        String(value ?? "")
+            .replace(/\D/g, "")
+            .slice(0, 14);
 
-                ${styles.iconContainer}
-            `}
+    if (!digits) {
+        return 0;
+    }
+
+    const amount =
+        Number(digits);
+
+    if (
+        !Number.isSafeInteger(
+            amount,
+        )
+    ) {
+        return 0;
+    }
+
+    return Math.min(
+        amount,
+        MAX_AMOUNT_CENTS,
+    );
+}
+
+function getErrorMessage(
+    error,
+    fallbackMessage,
+) {
+    const responseData =
+        error?.response?.data;
+
+    if (
+        typeof responseData?.error ===
+        "string"
+    ) {
+        return responseData.error;
+    }
+
+    if (
+        typeof responseData?.message ===
+        "string"
+    ) {
+        return responseData.message;
+    }
+
+    if (
+        Array.isArray(
+            responseData?.errors,
+        ) &&
+        responseData.errors.length > 0
+    ) {
+        const firstError =
+            responseData.errors[0];
+
+        if (
+            typeof firstError ===
+            "string"
+        ) {
+            return firstError;
+        }
+
+        if (
+            typeof firstError?.message ===
+            "string"
+        ) {
+            return firstError.message;
+        }
+    }
+
+    if (
+        typeof error?.message ===
+        "string" &&
+        error.message
+    ) {
+        return error.message;
+    }
+
+    return fallbackMessage;
+}
+
+function createEmptyForm() {
+    const today =
+        getTodayInputValue();
+
+    return {
+        description: "",
+        amountCents: 0,
+        date: today,
+        notes: "",
+        tagIds: [],
+        tags: [],
+
+        startDate: today,
+        endDate: null,
+        dayOfMonth:
+            new Date().getDate(),
+        intervalMonths: 1,
+    };
+}
+
+function createInitialForm({
+    transaction,
+    recurringTransaction,
+}) {
+    const entity =
+        recurringTransaction ??
+        transaction;
+
+    if (!entity) {
+        return createEmptyForm();
+    }
+
+    const today =
+        getTodayInputValue();
+
+    return {
+        description:
+            entity.description ??
+            "",
+
+        amountCents:
+            Number(
+                entity.amountCents,
+            ) || 0,
+
+        date:
+            normalizeDateInput(
+                entity.date,
+            ) || today,
+
+        notes:
+            entity.notes ?? "",
+
+        tagIds:
+            extractTagIds(entity),
+
+        tags:
+            extractTags(entity),
+
+        startDate:
+            normalizeDateInput(
+                entity.startDate,
+            ) || today,
+
+        endDate:
+            normalizeDateInput(
+                entity.endDate,
+            ) || null,
+
+        dayOfMonth:
+            normalizePositiveInteger(
+                entity.dayOfMonth,
+                new Date().getDate(),
+            ),
+
+        intervalMonths:
+            normalizePositiveInteger(
+                entity.intervalMonths,
+                1,
+            ),
+    };
+}
+
+function FieldError({
+    message,
+}) {
+    if (!message) {
+        return null;
+    }
+
+    return (
+        <p
+            role="alert"
+            className="
+                mt-1.5
+                flex items-start
+                gap-1.5
+                text-xs
+                font-medium
+                leading-5
+                text-danger
+            "
         >
-            <Icon size={16} />
-        </span>
+            <RiErrorWarningLine
+                size={14}
+                aria-hidden="true"
+                className="
+                    mt-0.5
+                    shrink-0
+                "
+            />
+
+            <span>
+                {message}
+            </span>
+        </p>
     );
 }
 
 function TransactionFormModal({
     open,
+    isOpen,
     type = "INCOME",
-    editing = false,
-    formData = {},
-    submitting = false,
-    onChange,
-    onSubmit,
+
+    transaction = null,
+    recurringTransaction = null,
+
+    initialKind = "SINGLE",
+
     onClose,
+    onSaved,
+    onSuccess,
 }) {
-    const generatedId =
-        useId();
-
-    const dialogReference =
-        useRef(null);
-
-    const firstInputReference =
-        useRef(null);
-
-    const previousActiveElementReference =
-        useRef(null);
-
-    const onCloseReference =
-        useRef(onClose);
-
-    const submittingReference =
-        useRef(submitting);
-
-    useEffect(() => {
-        onCloseReference.current =
-            onClose;
-    }, [onClose]);
-
-    useEffect(() => {
-        submittingReference.current =
-            submitting;
-    }, [submitting]);
+    const visible =
+        isOpen ?? open ?? false;
 
     const normalizedType =
-        type === "EXPENSE"
-            ? "EXPENSE"
-            : "INCOME";
+        normalizeTransactionType(
+            type,
+        ) || "INCOME";
 
-    const styles =
-        TYPE_STYLES[normalizedType];
-
-    const isIncome =
-        normalizedType === "INCOME";
-
-    const transactionName =
-        isIncome
-            ? "receita"
-            : "despesa";
-
-    const title =
-        editing
-            ? `Editar ${transactionName}`
-            : `Nova ${transactionName}`;
-
-    const subtitle =
-        editing
-            ? `Revise e atualize os dados desta ${transactionName}.`
-            : `Registre uma nova ${transactionName} para manter seu saldo atualizado.`;
-
-    const submitLabel =
-        editing
-            ? "Salvar alterações"
-            : `Cadastrar ${transactionName}`;
-
-    const descriptionPlaceholder =
-        isIncome
-            ? "Ex.: Salário mensal"
-            : "Ex.: Conta de energia";
-
-    const categoryPlaceholder =
-        isIncome
-            ? "Ex.: Trabalho"
-            : "Ex.: Moradia";
-
-    const fieldPrefix =
-        `${generatedId}-${normalizedType.toLowerCase()}`;
-
-    const HeaderIcon =
-        styles.icon;
-
-    const formattedAmount =
-        formatAmountInput(
-            formData.amount
+    const config =
+        useMemo(
+            () =>
+                getTransactionTypeConfig(
+                    normalizedType,
+                ),
+            [normalizedType],
         );
 
-    const amountPreview =
-        formattedAmount
-            ? `R$ ${formattedAmount}`
-            : "R$ 0,00";
+    const editingTransaction =
+        Boolean(
+            transaction?.id,
+        );
 
-    const notesLength =
-        String(
-            formData.notes ?? ""
-        ).length;
+    const editingRecurring =
+        Boolean(
+            recurringTransaction?.id,
+        );
+
+    const editing =
+        editingTransaction ||
+        editingRecurring;
+
+    const [formKind, setFormKind] =
+        useState(
+            editingRecurring
+                ? FORM_KINDS.RECURRING
+                : normalizeFormKind(
+                    initialKind,
+                ),
+        );
+
+    const [formData, setFormData] =
+        useState(
+            createInitialForm({
+                transaction,
+                recurringTransaction,
+            }),
+        );
+
+    const [fieldErrors, setFieldErrors] =
+        useState({});
+
+    const [
+        requestError,
+        setRequestError,
+    ] = useState("");
+
+    const [submitting, setSubmitting] =
+        useState(false);
+
+    const recurring =
+        formKind ===
+        FORM_KINDS.RECURRING;
 
     useEffect(() => {
-        if (!open) {
+        if (!visible) {
             return undefined;
         }
 
-        previousActiveElementReference.current =
-            document.activeElement;
+        setFormKind(
+            editingRecurring
+                ? FORM_KINDS.RECURRING
+                : editingTransaction
+                    ? FORM_KINDS.SINGLE
+                    : normalizeFormKind(
+                        initialKind,
+                    ),
+        );
 
-        const previousBodyOverflow =
-            document.body.style.overflow;
+        setFormData(
+            createInitialForm({
+                transaction,
+                recurringTransaction,
+            }),
+        );
+
+        setFieldErrors({});
+        setRequestError("");
+        setSubmitting(false);
+
+        const previousOverflow =
+            document.body.style
+                .overflow;
 
         document.body.style.overflow =
             "hidden";
 
-        const focusFrame =
-            window.requestAnimationFrame(
-                () => {
-                    firstInputReference
-                        .current
-                        ?.focus();
-                }
-            );
-
         function handleKeyDown(event) {
             if (
-                event.key ===
-                "Escape"
+                event.key === "Escape" &&
+                !submitting
             ) {
-                if (
-                    !submittingReference.current
-                ) {
-                    onCloseReference
-                        .current
-                        ?.();
-                }
-
-                return;
-            }
-
-            if (
-                event.key !==
-                "Tab"
-            ) {
-                return;
-            }
-
-            const dialog =
-                dialogReference.current;
-
-            if (!dialog) {
-                return;
-            }
-
-            const focusableElements =
-                Array.from(
-                    dialog.querySelectorAll(
-                        [
-                            "button:not(:disabled)",
-                            "input:not(:disabled)",
-                            "textarea:not(:disabled)",
-                            "select:not(:disabled)",
-                            "a[href]",
-                            '[tabindex]:not([tabindex="-1"])',
-                        ].join(",")
-                    )
-                );
-
-            if (
-                focusableElements.length ===
-                0
-            ) {
-                event.preventDefault();
-                return;
-            }
-
-            const firstElement =
-                focusableElements[0];
-
-            const lastElement =
-                focusableElements[
-                focusableElements.length -
-                1
-                ];
-
-            if (
-                event.shiftKey &&
-                document.activeElement ===
-                firstElement
-            ) {
-                event.preventDefault();
-                lastElement.focus();
-                return;
-            }
-
-            if (
-                !event.shiftKey &&
-                document.activeElement ===
-                lastElement
-            ) {
-                event.preventDefault();
-                firstElement.focus();
+                onClose?.();
             }
         }
 
         window.addEventListener(
             "keydown",
-            handleKeyDown
+            handleKeyDown,
         );
 
         return () => {
-            window.cancelAnimationFrame(
-                focusFrame
-            );
+            document.body.style.overflow =
+                previousOverflow;
 
             window.removeEventListener(
                 "keydown",
-                handleKeyDown
+                handleKeyDown,
             );
-
-            document.body.style.overflow =
-                previousBodyOverflow;
-
-            previousActiveElementReference
-                .current
-                ?.focus?.();
         };
-    }, [open]);
+    }, [
+        visible,
+        transaction,
+        recurringTransaction,
+        initialKind,
+        editingTransaction,
+        editingRecurring,
+        onClose,
+    ]);
 
-    function handleClose() {
-        if (submitting) {
-            return;
-        }
+    const modalTitle =
+        useMemo(() => {
+            if (editingRecurring) {
+                return `Editar ${config.singular} recorrente`;
+            }
 
-        onClose?.();
+            if (editingTransaction) {
+                return config.editModalTitle;
+            }
+
+            if (recurring) {
+                return `Cadastrar ${config.singular} recorrente`;
+            }
+
+            return config.createModalTitle;
+        }, [
+            config,
+            editingRecurring,
+            editingTransaction,
+            recurring,
+        ]);
+
+    const submitLabel =
+        useMemo(() => {
+            if (submitting) {
+                return editing
+                    ? "Salvando alterações..."
+                    : "Cadastrando...";
+            }
+
+            if (editing) {
+                return "Salvar alterações";
+            }
+
+            if (recurring) {
+                return `Cadastrar ${config.singular} recorrente`;
+            }
+
+            return config.createButtonLabel;
+        }, [
+            config,
+            editing,
+            recurring,
+            submitting,
+        ]);
+
+    function updateField(
+        fieldName,
+        fieldValue,
+    ) {
+        setFormData(
+            (currentData) => ({
+                ...currentData,
+                [fieldName]:
+                    fieldValue,
+            }),
+        );
+
+        setFieldErrors(
+            (currentErrors) => {
+                if (
+                    !currentErrors[
+                    fieldName
+                    ]
+                ) {
+                    return currentErrors;
+                }
+
+                const nextErrors = {
+                    ...currentErrors,
+                };
+
+                delete nextErrors[
+                    fieldName
+                ];
+
+                return nextErrors;
+            },
+        );
+
+        setRequestError("");
     }
 
-    function handleOverlayMouseDown(
-        event
+    function handleKindChange(
+        nextKind,
     ) {
         if (
-            event.target ===
-            event.currentTarget &&
-            !submitting
-        ) {
-            onClose?.();
-        }
-    }
-
-    function handleFormSubmit(event) {
-        if (submitting) {
-            event.preventDefault();
-            return;
-        }
-
-        onSubmit?.(event);
-    }
-
-    function handleAmountBeforeInput(
-        event
-    ) {
-        const insertedValue =
-            event.data;
-
-        if (
-            insertedValue ===
-            null
+            editing ||
+            submitting
         ) {
             return;
         }
 
-        if (
-            /\D/.test(
-                insertedValue
-            )
-        ) {
-            event.preventDefault();
-        }
+        setFormKind(nextKind);
+        setFieldErrors({});
+        setRequestError("");
     }
 
     function handleAmountChange(
-        event
+        event,
     ) {
-        const amountDigits =
-            normalizeAmountDigits(
-                event.target.value
-            );
+        updateField(
+            "amountCents",
+            parseCurrencyInput(
+                event.target.value,
+            ),
+        );
+    }
 
-        onChange?.({
-            target: {
-                name: "amount",
-                value: amountDigits,
+    function handleTagsChange(
+        tagIds,
+    ) {
+        updateField(
+            "tagIds",
+            tagIds,
+        );
+    }
+
+    function handleTagCreated(tag) {
+        setFormData(
+            (currentData) => ({
+                ...currentData,
+                tags: [
+                    ...currentData.tags.filter(
+                        (
+                            currentTag,
+                        ) =>
+                            currentTag.id !==
+                            tag.id,
+                    ),
+                    tag,
+                ],
+            }),
+        );
+    }
+
+    function handleRecurrenceChange(
+        recurrenceData,
+    ) {
+        setFormData(
+            (currentData) => ({
+                ...currentData,
+                ...recurrenceData,
+            }),
+        );
+
+        setFieldErrors(
+            (currentErrors) => {
+                const nextErrors = {
+                    ...currentErrors,
+                };
+
+                delete nextErrors.startDate;
+                delete nextErrors.endDate;
+                delete nextErrors.dayOfMonth;
+                delete nextErrors.intervalMonths;
+
+                return nextErrors;
             },
-        });
+        );
+
+        setRequestError("");
+    }
+
+    function validateForm() {
+        const errors = {};
+
+        const description =
+            formData.description
+                .trim()
+                .replace(/\s+/g, " ");
+
+        if (!description) {
+            errors.description =
+                "Informe uma descrição.";
+        } else if (
+            description.length < 2
+        ) {
+            errors.description =
+                "A descrição deve possuir pelo menos 2 caracteres.";
+        } else if (
+            description.length > 120
+        ) {
+            errors.description =
+                "A descrição deve possuir no máximo 120 caracteres.";
+        }
+
+        if (
+            !Number.isInteger(
+                formData.amountCents,
+            ) ||
+            formData.amountCents <= 0
+        ) {
+            errors.amountCents =
+                "Informe um valor maior que zero.";
+        }
+
+        if (
+            formData.amountCents >
+            MAX_AMOUNT_CENTS
+        ) {
+            errors.amountCents =
+                "O valor informado ultrapassa o limite permitido.";
+        }
+
+        if (
+            formData.notes.trim()
+                .length > 500
+        ) {
+            errors.notes =
+                "As observações devem possuir no máximo 500 caracteres.";
+        }
+
+        if (!recurring) {
+            if (!formData.date) {
+                errors.date =
+                    `Informe ${config.article} ${config.dateLabel.toLowerCase()}.`;
+            }
+        }
+
+        if (recurring) {
+            if (!formData.startDate) {
+                errors.startDate =
+                    "Informe a data inicial da recorrência.";
+            }
+
+            if (
+                formData.endDate &&
+                formData.startDate &&
+                formData.endDate <
+                formData.startDate
+            ) {
+                errors.endDate =
+                    "A data final não pode ser anterior à data inicial.";
+            }
+
+            const dayOfMonth =
+                Number(
+                    formData.dayOfMonth,
+                );
+
+            if (
+                !Number.isInteger(
+                    dayOfMonth,
+                ) ||
+                dayOfMonth < 1 ||
+                dayOfMonth > 31
+            ) {
+                errors.dayOfMonth =
+                    "Selecione um dia entre 1 e 31.";
+            }
+
+            const intervalMonths =
+                Number(
+                    formData.intervalMonths,
+                );
+
+            if (
+                !Number.isInteger(
+                    intervalMonths,
+                ) ||
+                intervalMonths < 1
+            ) {
+                errors.intervalMonths =
+                    "Selecione uma frequência válida.";
+            }
+        }
+
+        setFieldErrors(errors);
+
+        return {
+            valid:
+                Object.keys(errors)
+                    .length === 0,
+
+            description,
+        };
+    }
+
+    async function handleSubmit(
+        event,
+    ) {
+        event.preventDefault();
+
+        if (submitting) {
+            return;
+        }
+
+        const validation =
+            validateForm();
+
+        if (!validation.valid) {
+            return;
+        }
+
+        setSubmitting(true);
+        setRequestError("");
+
+        const basePayload = {
+            description:
+                validation.description,
+
+            amountCents:
+                formData.amountCents,
+
+            type:
+                normalizedType,
+
+            notes:
+                formData.notes.trim() ||
+                null,
+
+            tagIds:
+                formData.tagIds,
+        };
+
+        try {
+            let response;
+            let savedEntity;
+            let operationKind;
+
+            if (recurring) {
+                const recurringPayload = {
+                    ...basePayload,
+
+                    startDate:
+                        formData.startDate,
+
+                    endDate:
+                        formData.endDate ||
+                        null,
+
+                    dayOfMonth:
+                        Number(
+                            formData.dayOfMonth,
+                        ),
+
+                    intervalMonths:
+                        Number(
+                            formData.intervalMonths,
+                        ),
+                };
+
+                if (editingRecurring) {
+                    response =
+                        await recurringTransactionService.update(
+                            recurringTransaction.id,
+                            recurringPayload,
+                        );
+                } else {
+                    response =
+                        await recurringTransactionService.create(
+                            recurringPayload,
+                        );
+                }
+
+                savedEntity =
+                    response
+                        ?.recurringTransaction ??
+                    response;
+
+                operationKind =
+                    FORM_KINDS.RECURRING;
+            } else {
+                const transactionPayload = {
+                    ...basePayload,
+
+                    date:
+                        formData.date,
+                };
+
+                if (editingTransaction) {
+                    response =
+                        await transactionService.update(
+                            transaction.id,
+                            transactionPayload,
+                        );
+                } else {
+                    response =
+                        await transactionService.create(
+                            transactionPayload,
+                        );
+                }
+
+                savedEntity =
+                    response
+                        ?.transaction ??
+                    response;
+
+                operationKind =
+                    FORM_KINDS.SINGLE;
+            }
+
+            const result = {
+                kind:
+                    operationKind,
+
+                action:
+                    editing
+                        ? "UPDATE"
+                        : "CREATE",
+
+                entity:
+                    savedEntity,
+
+                response,
+            };
+
+            await onSaved?.(result);
+            await onSuccess?.(result);
+
+            onClose?.();
+        } catch (error) {
+            setRequestError(
+                getErrorMessage(
+                    error,
+                    editing
+                        ? `Não foi possível atualizar ${config.article} ${config.singular}.`
+                        : `Não foi possível cadastrar ${config.article} ${config.singular}.`,
+                ),
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    function handleBackdropMouseDown(
+        event,
+    ) {
+        if (
+            event.target !==
+            event.currentTarget
+        ) {
+            return;
+        }
+
+        if (!submitting) {
+            onClose?.();
+        }
     }
 
     if (
@@ -511,12 +980,11 @@ function TransactionFormModal({
 
     return createPortal(
         <AnimatePresence>
-            {open && (
+            {visible && (
                 <motion.div
-                    key="transaction-form-overlay"
                     role="presentation"
                     onMouseDown={
-                        handleOverlayMouseDown
+                        handleBackdropMouseDown
                     }
                     initial={{
                         opacity: 0,
@@ -528,32 +996,29 @@ function TransactionFormModal({
                         opacity: 0,
                     }}
                     transition={{
-                        duration: 0.2,
+                        duration: 0.18,
                     }}
                     className="
                         fixed inset-0
-                        z-[190]
-                        flex items-end
+                        z-[100]
+                        flex
+                        items-end
                         justify-center
-                        overflow-hidden
-                        bg-slate-950/55
-                        backdrop-blur-sm
+                        bg-slate-950/45
+                        p-0
+                        backdrop-blur-[2px]
                         sm:items-center
                         sm:p-5
                     "
                 >
                     <motion.div
-                        ref={
-                            dialogReference
-                        }
                         role="dialog"
                         aria-modal="true"
-                        aria-labelledby={`${fieldPrefix}-title`}
-                        aria-describedby={`${fieldPrefix}-subtitle`}
+                        aria-labelledby="transaction-form-modal-title"
                         initial={{
                             opacity: 0,
-                            y: 34,
-                            scale: 0.975,
+                            y: 24,
+                            scale: 0.985,
                         }}
                         animate={{
                             opacity: 1,
@@ -562,11 +1027,11 @@ function TransactionFormModal({
                         }}
                         exit={{
                             opacity: 0,
-                            y: 24,
-                            scale: 0.98,
+                            y: 16,
+                            scale: 0.99,
                         }}
                         transition={{
-                            duration: 0.27,
+                            duration: 0.2,
                             ease: [
                                 0.22,
                                 1,
@@ -574,826 +1039,759 @@ function TransactionFormModal({
                                 1,
                             ],
                         }}
+                        onMouseDown={(
+                            event,
+                        ) =>
+                            event.stopPropagation()
+                        }
                         className="
                             flex
-                            max-h-[94dvh]
+                            max-h-[96dvh]
                             w-full
-                            max-w-2xl
                             flex-col
                             overflow-hidden
-                            rounded-t-[30px]
+                            rounded-t-3xl
                             border border-border
                             bg-surface
-                            text-foreground
                             shadow-2xl
-                            sm:max-h-[calc(100dvh-2.5rem)]
-                            sm:rounded-[30px]
+                            sm:max-h-[92dvh]
+                            sm:max-w-3xl
+                            sm:rounded-3xl
                         "
                     >
+                        <header
+                            className="
+                                flex
+                                shrink-0
+                                items-start
+                                justify-between
+                                gap-4
+                                border-b border-border
+                                px-4 py-4
+                                sm:px-6
+                                sm:py-5
+                            "
+                        >
+                            <div
+                                className="
+                                    flex min-w-0
+                                    items-start
+                                    gap-3
+                                "
+                            >
+                                <div
+                                    className={`
+                                        inline-flex
+                                        size-10
+                                        shrink-0
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        border
+                                        ${config.softBackgroundClasses}
+                                        ${config.borderClasses}
+                                        ${config.accentClasses}
+                                    `}
+                                >
+                                    {recurring ? (
+                                        <RiRepeat2Line
+                                            size={20}
+                                            aria-hidden="true"
+                                        />
+                                    ) : (
+                                        <config.icon
+                                            size={20}
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="min-w-0">
+                                    <h2
+                                        id="transaction-form-modal-title"
+                                        className="
+                                            truncate
+                                            text-base
+                                            font-semibold
+                                            text-foreground
+                                            sm:text-lg
+                                        "
+                                    >
+                                        {
+                                            modalTitle
+                                        }
+                                    </h2>
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            text-xs
+                                            leading-5
+                                            text-muted-foreground
+                                            sm:text-sm
+                                        "
+                                    >
+                                        {recurring
+                                            ? "Defina os dados e o período da recorrência."
+                                            : "Preencha os dados da movimentação."}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={
+                                    onClose
+                                }
+                                disabled={
+                                    submitting
+                                }
+                                aria-label="Fechar formulário"
+                                title="Fechar"
+                                className="
+                                    inline-flex
+                                    size-9
+                                    shrink-0
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    text-muted-foreground
+                                    transition
+                                    hover:bg-surface-hover
+                                    hover:text-foreground
+                                    focus-visible:ring-4
+                                    focus-visible:ring-primary/15
+                                    disabled:pointer-events-none
+                                    disabled:opacity-50
+                                "
+                            >
+                                <RiCloseLine
+                                    size={20}
+                                    aria-hidden="true"
+                                />
+                            </button>
+                        </header>
+
                         <form
                             onSubmit={
-                                handleFormSubmit
+                                handleSubmit
                             }
                             className="
                                 flex min-h-0
                                 flex-1 flex-col
                             "
                         >
-                            <header
-                                className={`
-                                    relative
-                                    isolate
-                                    shrink-0
-                                    overflow-hidden
-                                    bg-gradient-to-br
-                                    px-5 py-5
-                                    text-white
-                                    shadow-xl
-                                    sm:px-6
-                                    sm:py-6
-
-                                    ${styles.headerGradient}
-                                    ${styles.headerShadow}
-                                `}
-                            >
-                                <div
-                                    aria-hidden="true"
-                                    className="
-                                        absolute
-                                        -right-12 -top-16
-                                        size-40
-                                        rounded-full
-                                        bg-white/15
-                                        blur-2xl
-                                    "
-                                />
-
-                                <div
-                                    aria-hidden="true"
-                                    className="
-                                        absolute
-                                        -bottom-20 left-1/3
-                                        size-44
-                                        rounded-full
-                                        bg-black/10
-                                        blur-3xl
-                                    "
-                                />
-
-                                <div
-                                    aria-hidden="true"
-                                    className="
-                                        absolute
-                                        right-16 top-5
-                                        hidden size-24
-                                        rounded-full
-                                        border
-                                        border-white/10
-                                        sm:block
-                                    "
-                                />
-
-                                <div
-                                    className="
-                                        relative
-                                        z-10
-                                        flex min-w-0
-                                        items-center
-                                        gap-3.5
-                                    "
-                                >
-                                    <span
-                                        className="
-                                            flex size-12
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-2xl
-                                            bg-white/15
-                                            text-white
-                                            ring-1
-                                            ring-inset
-                                            ring-white/20
-                                            backdrop-blur-sm
-                                        "
-                                    >
-                                        <HeaderIcon
-                                            size={23}
-                                            aria-hidden="true"
-                                        />
-                                    </span>
-
-                                    <div
-                                        className="
-                                            min-w-0
-                                            flex-1
-                                        "
-                                    >
-                                        <span
-                                            className="
-                                                inline-flex
-                                                items-center
-                                                rounded-full
-                                                bg-white/15
-                                                px-2.5 py-1
-                                                text-[10px]
-                                                font-bold
-                                                uppercase
-                                                tracking-[0.12em]
-                                                text-white/85
-                                                ring-1
-                                                ring-inset
-                                                ring-white/15
-                                            "
-                                        >
-                                            {editing
-                                                ? "Edição"
-                                                : "Novo lançamento"
-                                            }
-                                        </span>
-
-                                        <h2
-                                            id={`${fieldPrefix}-title`}
-                                            className="
-                                                mt-2
-                                                truncate
-                                                text-xl
-                                                font-semibold
-                                                tracking-tight
-                                                sm:text-2xl
-                                            "
-                                        >
-                                            {title}
-                                        </h2>
-
-                                        <p
-                                            id={`${fieldPrefix}-subtitle`}
-                                            className="
-                                                mt-1
-                                                line-clamp-2
-                                                max-w-lg
-                                                text-sm
-                                                leading-5
-                                                text-white/75
-                                            "
-                                        >
-                                            {subtitle}
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={
-                                            handleClose
-                                        }
-                                        disabled={
-                                            submitting
-                                        }
-                                        aria-label="Fechar formulário"
-                                        title="Fechar"
-                                        className="
-                                            inline-flex
-                                            size-10
-                                            shrink-0
-                                            items-center
-                                            justify-center
-                                            rounded-xl
-                                            bg-white/10
-                                            text-white/80
-                                            ring-1
-                                            ring-inset
-                                            ring-white/15
-                                            transition
-                                            hover:bg-white/20
-                                            hover:text-white
-                                            focus-visible:outline-none
-                                            focus-visible:ring-4
-                                            focus-visible:ring-white/15
-                                            disabled:pointer-events-none
-                                            disabled:opacity-40
-                                        "
-                                    >
-                                        <RiCloseLine
-                                            size={21}
-                                            aria-hidden="true"
-                                        />
-                                    </button>
-                                </div>
-                            </header>
-
                             <div
                                 className="
-                                    min-h-0
                                     flex-1
                                     overflow-y-auto
+                                    overscroll-contain
                                     px-4 py-5
-                                    scrollbar-subtle
                                     sm:px-6
-                                    sm:py-6
                                 "
                             >
-                                <motion.section
-                                    initial={{
-                                        opacity: 0,
-                                        y: 8,
-                                    }}
-                                    animate={{
-                                        opacity: 1,
-                                        y: 0,
-                                    }}
-                                    transition={{
-                                        delay: 0.05,
-                                        duration: 0.22,
-                                    }}
-                                    className={`
-                                        relative
-                                        overflow-hidden
-                                        rounded-3xl
-                                        border
-                                        p-4
-                                        sm:p-5
-
-                                        ${styles.softBackground}
-                                        ${styles.softBorder}
-                                    `}
-                                >
-                                    <div
-                                        aria-hidden="true"
-                                        className="
-                                            absolute
-                                            -right-8 -top-10
-                                            size-28
-                                            rounded-full
-                                            bg-current
-                                            opacity-[0.035]
-                                            blur-2xl
-                                        "
-                                    />
-
-                                    <div
-                                        className="
-                                            relative
-                                            flex
-                                            min-w-0
-                                            flex-col gap-4
-                                            sm:flex-row
-                                            sm:items-center
-                                            sm:justify-between
-                                        "
-                                    >
-                                        <div
-                                            className="
-                                                flex min-w-0
-                                                items-center
-                                                gap-3
-                                            "
-                                        >
-                                            <span
-                                                className={`
-                                                    flex size-11
-                                                    shrink-0
-                                                    items-center
-                                                    justify-center
-                                                    rounded-2xl
-
-                                                    ${styles.iconContainer}
-                                                `}
-                                            >
-                                                <RiMoneyDollarCircleLine
-                                                    size={21}
-                                                    aria-hidden="true"
-                                                />
-                                            </span>
-
-                                            <div className="min-w-0">
-                                                <p
-                                                    className="
-                                                        text-[10px]
-                                                        font-bold
-                                                        uppercase
-                                                        tracking-[0.11em]
-                                                        text-muted-foreground
-                                                    "
-                                                >
-                                                    Valor do lançamento
-                                                </p>
-
-                                                <p
-                                                    className={`
-                                                        mt-0.5
-                                                        truncate
-                                                        text-2xl
-                                                        font-semibold
-                                                        tracking-tight
-                                                        tabular-nums
-                                                        sm:text-3xl
-
-                                                        ${styles.amount}
-                                                    `}
-                                                    title={
-                                                        amountPreview
-                                                    }
-                                                >
-                                                    {
-                                                        amountPreview
-                                                    }
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <span
-                                            className={`
-                                                inline-flex
-                                                shrink-0
-                                                self-start
-                                                items-center
-                                                gap-1.5
-                                                rounded-full
-                                                px-3 py-1.5
-                                                text-xs
-                                                font-semibold
-                                                sm:self-auto
-
-                                                ${styles.badge}
-                                            `}
-                                        >
-                                            <HeaderIcon
-                                                size={14}
-                                                aria-hidden="true"
-                                            />
-
-                                            {styles.label}
-                                        </span>
-                                    </div>
-                                </motion.section>
-
-                                <section
-                                    className="
-                                        mt-5
-                                        rounded-3xl
-                                        border
-                                        border-border
-                                        bg-surface
-                                        p-4
-                                        sm:p-5
-                                    "
-                                >
-                                    <div
-                                        className="
-                                            mb-5
-                                            flex
-                                            items-center
-                                            gap-3
-                                        "
-                                    >
-                                        <span
-                                            className={`
-                                                flex size-9
-                                                shrink-0
-                                                items-center
-                                                justify-center
-                                                rounded-xl
-
-                                                ${styles.iconContainer}
-                                            `}
-                                        >
-                                            <RiInformationLine
-                                                size={17}
-                                                aria-hidden="true"
-                                            />
-                                        </span>
-
-                                        <div>
-                                            <h3
+                                <div className="space-y-6">
+                                    {!editing && (
+                                        <section>
+                                            <p
                                                 className="
-                                                    text-sm
+                                                    mb-2
+                                                    text-xs
                                                     font-semibold
                                                     text-foreground
                                                 "
                                             >
-                                                Informações principais
-                                            </h3>
+                                                Tipo de lançamento
+                                            </p>
 
-                                            <p
+                                            <div
                                                 className="
-                                                    mt-0.5
-                                                    text-xs
-                                                    text-muted-foreground
+                                                    grid
+                                                    grid-cols-2
+                                                    gap-2
+                                                    rounded-2xl
+                                                    border border-border
+                                                    bg-surface-muted/40
+                                                    p-1.5
                                                 "
                                             >
-                                                Preencha os dados essenciais da movimentação.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        className="
-                                            grid min-w-0
-                                            gap-x-4 gap-y-5
-                                            md:grid-cols-2
-                                        "
-                                    >
-                                        <div className="min-w-0">
-                                            <FieldLabel
-                                                htmlFor={`${fieldPrefix}-description`}
-                                            >
-                                                Descrição
-                                            </FieldLabel>
-
-                                            <div className="relative min-w-0">
-                                                <InputIcon
-                                                    icon={
-                                                        RiFileTextLine
-                                                    }
-                                                    styles={
-                                                        styles
-                                                    }
-                                                />
-
-                                                <input
-                                                    ref={
-                                                        firstInputReference
-                                                    }
-                                                    id={`${fieldPrefix}-description`}
-                                                    name="description"
-                                                    type="text"
-                                                    value={
-                                                        formData.description ??
-                                                        ""
-                                                    }
-                                                    onChange={
-                                                        onChange
-                                                    }
-                                                    required
-                                                    minLength={
-                                                        2
-                                                    }
-                                                    maxLength={
-                                                        150
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleKindChange(
+                                                            FORM_KINDS.SINGLE,
+                                                        )
                                                     }
                                                     disabled={
                                                         submitting
                                                     }
-                                                    autoComplete="off"
-                                                    placeholder={
-                                                        descriptionPlaceholder
+                                                    aria-pressed={
+                                                        !recurring
                                                     }
                                                     className={`
-                                                        h-12 w-full
-                                                        min-w-0
-                                                        rounded-2xl
+                                                        inline-flex
+                                                        min-h-11
+                                                        items-center
+                                                        justify-center
+                                                        gap-2
+                                                        rounded-xl
+                                                        px-3
+                                                        text-xs
+                                                        font-semibold
+                                                        transition
+                                                        sm:text-sm
+
+                                                        ${!recurring
+                                                            ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
+                                                            : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                                                        }
+                                                    `}
+                                                >
+                                                    <RiCalendarLine
+                                                        size={17}
+                                                        aria-hidden="true"
+                                                    />
+
+                                                    Única
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleKindChange(
+                                                            FORM_KINDS.RECURRING,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    aria-pressed={
+                                                        recurring
+                                                    }
+                                                    className={`
+                                                        inline-flex
+                                                        min-h-11
+                                                        items-center
+                                                        justify-center
+                                                        gap-2
+                                                        rounded-xl
+                                                        px-3
+                                                        text-xs
+                                                        font-semibold
+                                                        transition
+                                                        sm:text-sm
+
+                                                        ${recurring
+                                                            ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
+                                                            : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                                                        }
+                                                    `}
+                                                >
+                                                    <RiRepeat2Line
+                                                        size={17}
+                                                        aria-hidden="true"
+                                                    />
+
+                                                    Recorrente
+                                                </button>
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    <section
+                                        className="
+                                            grid gap-4
+                                            sm:grid-cols-2
+                                        "
+                                    >
+                                        <div className="sm:col-span-2">
+                                            <label
+                                                htmlFor="transaction-description"
+                                                className="
+                                                    mb-1.5
+                                                    block
+                                                    text-xs
+                                                    font-semibold
+                                                    text-foreground
+                                                "
+                                            >
+                                                Descrição
+                                            </label>
+
+                                            <div className="relative">
+                                                <RiFileTextLine
+                                                    size={17}
+                                                    aria-hidden="true"
+                                                    className="
+                                                        pointer-events-none
+                                                        absolute
+                                                        left-3.5 top-1/2
+                                                        -translate-y-1/2
+                                                        text-muted-foreground
+                                                    "
+                                                />
+
+                                                <input
+                                                    id="transaction-description"
+                                                    type="text"
+                                                    autoFocus
+                                                    maxLength={
+                                                        120
+                                                    }
+                                                    value={
+                                                        formData.description
+                                                    }
+                                                    onChange={(
+                                                        event,
+                                                    ) =>
+                                                        updateField(
+                                                            "description",
+                                                            event
+                                                                .target
+                                                                .value,
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        submitting
+                                                    }
+                                                    aria-invalid={
+                                                        Boolean(
+                                                            fieldErrors.description,
+                                                        )
+                                                    }
+                                                    placeholder={
+                                                        config.descriptionPlaceholder
+                                                    }
+                                                    className={`
+                                                        h-11
+                                                        w-full
+                                                        rounded-xl
                                                         border
-                                                        border-border
                                                         bg-background
-                                                        py-2
-                                                        pl-12 pr-4
+                                                        pl-10
+                                                        pr-3
                                                         text-sm
                                                         font-medium
                                                         text-foreground
                                                         outline-none
                                                         transition
                                                         placeholder:font-normal
-                                                        placeholder:text-muted-foreground/65
-                                                        hover:border-border-strong
+                                                        placeholder:text-muted-foreground/70
                                                         focus:ring-4
                                                         disabled:cursor-not-allowed
                                                         disabled:opacity-60
 
-                                                        ${styles.fieldFocus}
+                                                        ${fieldErrors.description
+                                                            ? "border-danger focus:border-danger focus:ring-danger/10"
+                                                            : "border-border hover:border-border-strong focus:border-primary/50 focus:ring-primary/10"
+                                                        }
                                                     `}
                                                 />
                                             </div>
+
+                                            <FieldError
+                                                message={
+                                                    fieldErrors.description
+                                                }
+                                            />
                                         </div>
 
-                                        <div className="min-w-0">
-                                            <FieldLabel
-                                                htmlFor={`${fieldPrefix}-amount`}
+                                        <div>
+                                            <label
+                                                htmlFor="transaction-amount"
+                                                className="
+                                                    mb-1.5
+                                                    block
+                                                    text-xs
+                                                    font-semibold
+                                                    text-foreground
+                                                "
                                             >
-                                                Valor
-                                            </FieldLabel>
+                                                {
+                                                    config.amountLabel
+                                                }
+                                            </label>
 
-                                            <div className="relative min-w-0">
-                                                <InputIcon
-                                                    icon={
-                                                        RiMoneyDollarCircleLine
-                                                    }
-                                                    styles={
-                                                        styles
-                                                    }
+                                            <div className="relative">
+                                                <RiMoneyDollarCircleLine
+                                                    size={18}
+                                                    aria-hidden="true"
+                                                    className="
+                                                        pointer-events-none
+                                                        absolute
+                                                        left-3.5 top-1/2
+                                                        -translate-y-1/2
+                                                        text-muted-foreground
+                                                    "
                                                 />
 
                                                 <input
-                                                    id={`${fieldPrefix}-amount`}
-                                                    name="amount"
+                                                    id="transaction-amount"
                                                     type="text"
                                                     inputMode="numeric"
-                                                    value={
-                                                        formattedAmount
-                                                    }
-                                                    onBeforeInput={
-                                                        handleAmountBeforeInput
-                                                    }
+                                                    value={formatCurrencyFromCents(
+                                                        formData.amountCents,
+                                                    )}
                                                     onChange={
                                                         handleAmountChange
                                                     }
-                                                    required
+                                                    onFocus={(
+                                                        event,
+                                                    ) =>
+                                                        event.target.select()
+                                                    }
                                                     disabled={
                                                         submitting
                                                     }
-                                                    autoComplete="off"
-                                                    placeholder="0,00"
-                                                    aria-label={`Valor da ${transactionName}`}
+                                                    aria-invalid={
+                                                        Boolean(
+                                                            fieldErrors.amountCents,
+                                                        )
+                                                    }
                                                     className={`
-                                                        h-12 w-full
-                                                        min-w-0
-                                                        rounded-2xl
+                                                        h-11
+                                                        w-full
+                                                        rounded-xl
                                                         border
-                                                        border-border
                                                         bg-background
-                                                        py-2
-                                                        pl-12 pr-4
+                                                        pl-10
+                                                        pr-3
                                                         text-sm
                                                         font-semibold
-                                                        tabular-nums
                                                         text-foreground
                                                         outline-none
                                                         transition
-                                                        placeholder:font-normal
-                                                        placeholder:text-muted-foreground/65
-                                                        hover:border-border-strong
                                                         focus:ring-4
                                                         disabled:cursor-not-allowed
                                                         disabled:opacity-60
 
-                                                        ${styles.fieldFocus}
+                                                        ${fieldErrors.amountCents
+                                                            ? "border-danger focus:border-danger focus:ring-danger/10"
+                                                            : "border-border hover:border-border-strong focus:border-primary/50 focus:ring-primary/10"
+                                                        }
                                                     `}
                                                 />
                                             </div>
+
+                                            <FieldError
+                                                message={
+                                                    fieldErrors.amountCents
+                                                }
+                                            />
                                         </div>
 
-                                        <div className="min-w-0">
-                                            <FieldLabel
-                                                htmlFor={`${fieldPrefix}-category`}
-                                            >
-                                                Categoria
-                                            </FieldLabel>
-
-                                            <div className="relative min-w-0">
-                                                <InputIcon
-                                                    icon={
-                                                        RiPriceTag3Line
-                                                    }
-                                                    styles={
-                                                        styles
-                                                    }
-                                                />
-
-                                                <input
-                                                    id={`${fieldPrefix}-category`}
-                                                    name="category"
-                                                    type="text"
-                                                    value={
-                                                        formData.category ??
-                                                        ""
-                                                    }
-                                                    onChange={
-                                                        onChange
-                                                    }
-                                                    required
-                                                    minLength={
-                                                        2
-                                                    }
-                                                    maxLength={
-                                                        80
-                                                    }
-                                                    disabled={
-                                                        submitting
-                                                    }
-                                                    autoComplete="off"
-                                                    placeholder={
-                                                        categoryPlaceholder
-                                                    }
-                                                    className={`
-                                                        h-12 w-full
-                                                        min-w-0
-                                                        rounded-2xl
-                                                        border
-                                                        border-border
-                                                        bg-background
-                                                        py-2
-                                                        pl-12 pr-4
-                                                        text-sm
-                                                        font-medium
+                                        {!recurring && (
+                                            <div>
+                                                <label
+                                                    htmlFor="transaction-date"
+                                                    className="
+                                                        mb-1.5
+                                                        block
+                                                        text-xs
+                                                        font-semibold
                                                         text-foreground
-                                                        outline-none
-                                                        transition
-                                                        placeholder:font-normal
-                                                        placeholder:text-muted-foreground/65
-                                                        hover:border-border-strong
-                                                        focus:ring-4
-                                                        disabled:cursor-not-allowed
-                                                        disabled:opacity-60
-
-                                                        ${styles.fieldFocus}
-                                                    `}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="min-w-0">
-                                            <FieldLabel
-                                                htmlFor={`${fieldPrefix}-date`}
-                                            >
-                                                Data
-                                            </FieldLabel>
-
-                                            <div className="relative min-w-0">
-                                                <InputIcon
-                                                    icon={
-                                                        RiCalendarLine
+                                                    "
+                                                >
+                                                    {
+                                                        config.dateLabel
                                                     }
-                                                    styles={
-                                                        styles
-                                                    }
-                                                />
+                                                </label>
 
                                                 <input
-                                                    id={`${fieldPrefix}-date`}
-                                                    name="date"
+                                                    id="transaction-date"
                                                     type="date"
                                                     value={
-                                                        formData.date ??
-                                                        ""
+                                                        formData.date
                                                     }
-                                                    onChange={
-                                                        onChange
+                                                    onChange={(
+                                                        event,
+                                                    ) =>
+                                                        updateField(
+                                                            "date",
+                                                            event
+                                                                .target
+                                                                .value,
+                                                        )
                                                     }
-                                                    required
                                                     disabled={
                                                         submitting
                                                     }
+                                                    aria-invalid={
+                                                        Boolean(
+                                                            fieldErrors.date,
+                                                        )
+                                                    }
                                                     className={`
-                                                        h-12 w-full
-                                                        min-w-0
-                                                        rounded-2xl
+                                                        h-11
+                                                        w-full
+                                                        rounded-xl
                                                         border
-                                                        border-border
                                                         bg-background
-                                                        py-2
-                                                        pl-12 pr-4
+                                                        px-3
                                                         text-sm
                                                         font-medium
                                                         text-foreground
                                                         outline-none
                                                         transition
-                                                        hover:border-border-strong
                                                         focus:ring-4
                                                         disabled:cursor-not-allowed
                                                         disabled:opacity-60
 
-                                                        ${styles.fieldFocus}
+                                                        ${fieldErrors.date
+                                                            ? "border-danger focus:border-danger focus:ring-danger/10"
+                                                            : "border-border hover:border-border-strong focus:border-primary/50 focus:ring-primary/10"
+                                                        }
                                                     `}
                                                 />
+
+                                                <FieldError
+                                                    message={
+                                                        fieldErrors.date
+                                                    }
+                                                />
                                             </div>
-                                        </div>
-                                    </div>
-                                </section>
+                                        )}
 
-                                <section
-                                    className="
-                                        mt-5
-                                        rounded-3xl
-                                        border
-                                        border-border
-                                        bg-surface
-                                        p-4
-                                        sm:p-5
-                                    "
-                                >
-                                    <div
-                                        className="
-                                            mb-4
-                                            flex
-                                            min-w-0
-                                            items-center
-                                            gap-3
-                                        "
-                                    >
-                                        <span
-                                            className={`
-                                                flex size-9
-                                                shrink-0
-                                                items-center
-                                                justify-center
-                                                rounded-xl
-
-                                                ${styles.iconContainer}
-                                            `}
+                                        <div
+                                            className={
+                                                recurring
+                                                    ? ""
+                                                    : "sm:col-span-2"
+                                            }
                                         >
-                                            <RiStickyNoteLine
-                                                size={17}
-                                                aria-hidden="true"
-                                            />
-                                        </span>
-
-                                        <div className="min-w-0 flex-1">
-                                            <h3
+                                            <label
+                                                htmlFor="transaction-notes"
                                                 className="
-                                                    text-sm
+                                                    mb-1.5
+                                                    block
+                                                    text-xs
                                                     font-semibold
                                                     text-foreground
                                                 "
                                             >
                                                 Observações
-                                            </h3>
+                                                <span
+                                                    className="
+                                                        ml-1
+                                                        font-normal
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    (opcional)
+                                                </span>
+                                            </label>
 
-                                            <p
+                                            <textarea
+                                                id="transaction-notes"
+                                                rows={3}
+                                                maxLength={
+                                                    500
+                                                }
+                                                value={
+                                                    formData.notes
+                                                }
+                                                onChange={(
+                                                    event,
+                                                ) =>
+                                                    updateField(
+                                                        "notes",
+                                                        event
+                                                            .target
+                                                            .value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    submitting
+                                                }
+                                                aria-invalid={
+                                                    Boolean(
+                                                        fieldErrors.notes,
+                                                    )
+                                                }
+                                                placeholder="Adicione uma observação sobre esta movimentação."
+                                                className={`
+                                                    min-h-24
+                                                    w-full
+                                                    resize-y
+                                                    rounded-xl
+                                                    border
+                                                    bg-background
+                                                    px-3 py-3
+                                                    text-sm
+                                                    font-medium
+                                                    text-foreground
+                                                    outline-none
+                                                    transition
+                                                    placeholder:font-normal
+                                                    placeholder:text-muted-foreground/70
+                                                    focus:ring-4
+                                                    disabled:cursor-not-allowed
+                                                    disabled:opacity-60
+
+                                                    ${fieldErrors.notes
+                                                        ? "border-danger focus:border-danger focus:ring-danger/10"
+                                                        : "border-border hover:border-border-strong focus:border-primary/50 focus:ring-primary/10"
+                                                    }
+                                                `}
+                                            />
+
+                                            <div
                                                 className="
-                                                    mt-0.5
-                                                    text-xs
-                                                    text-muted-foreground
+                                                    mt-1
+                                                    flex
+                                                    items-start
+                                                    justify-between
+                                                    gap-3
                                                 "
                                             >
-                                                Adicione detalhes que ajudem a identificar o lançamento.
-                                            </p>
+                                                <FieldError
+                                                    message={
+                                                        fieldErrors.notes
+                                                    }
+                                                />
+
+                                                <span
+                                                    className="
+                                                        ml-auto
+                                                        text-[11px]
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    {
+                                                        formData
+                                                            .notes
+                                                            .length
+                                                    }
+                                                    /500
+                                                </span>
+                                            </div>
                                         </div>
+                                    </section>
 
-                                        <span
-                                            className="
-                                                shrink-0
-                                                rounded-full
-                                                bg-surface-muted
-                                                px-2.5 py-1
-                                                text-[11px]
-                                                font-semibold
-                                                tabular-nums
-                                                text-muted-foreground
-                                            "
-                                        >
-                                            {notesLength}/500
-                                        </span>
-                                    </div>
-
-                                    <label
-                                        htmlFor={`${fieldPrefix}-notes`}
-                                        className="sr-only"
-                                    >
-                                        Observações
-                                    </label>
-
-                                    <textarea
-                                        id={`${fieldPrefix}-notes`}
-                                        name="notes"
+                                    <TagSelector
+                                        type={
+                                            normalizedType
+                                        }
                                         value={
-                                            formData.notes ??
-                                            ""
+                                            formData.tagIds
+                                        }
+                                        selectedTags={
+                                            formData.tags
                                         }
                                         onChange={
-                                            onChange
+                                            handleTagsChange
                                         }
-                                        maxLength={
-                                            500
+                                        onTagCreated={
+                                            handleTagCreated
                                         }
-                                        rows={4}
+                                        onError={
+                                            setRequestError
+                                        }
                                         disabled={
                                             submitting
                                         }
-                                        placeholder="Ex.: Pagamento referente ao mês atual..."
-                                        className={`
-                                            w-full min-w-0
-                                            resize-none
-                                            rounded-2xl
-                                            border
-                                            border-border
-                                            bg-background
-                                            px-4 py-3.5
-                                            text-sm
-                                            leading-6
-                                            text-foreground
-                                            outline-none
-                                            transition
-                                            placeholder:text-muted-foreground/65
-                                            hover:border-border-strong
-                                            focus:ring-4
-                                            disabled:cursor-not-allowed
-                                            disabled:opacity-60
-
-                                            ${styles.fieldFocus}
-                                        `}
                                     />
-                                </section>
+
+                                    {recurring && (
+                                        <RecurrenceFields
+                                            value={{
+                                                startDate:
+                                                    formData.startDate,
+
+                                                endDate:
+                                                    formData.endDate,
+
+                                                dayOfMonth:
+                                                    formData.dayOfMonth,
+
+                                                intervalMonths:
+                                                    formData.intervalMonths,
+                                            }}
+                                            onChange={
+                                                handleRecurrenceChange
+                                            }
+                                            errors={{
+                                                startDate:
+                                                    fieldErrors.startDate,
+
+                                                endDate:
+                                                    fieldErrors.endDate,
+
+                                                dayOfMonth:
+                                                    fieldErrors.dayOfMonth,
+
+                                                intervalMonths:
+                                                    fieldErrors.intervalMonths,
+                                            }}
+                                            disabled={
+                                                submitting
+                                            }
+                                        />
+                                    )}
+
+                                    {requestError && (
+                                        <div
+                                            role="alert"
+                                            className="
+                                                flex
+                                                items-start
+                                                gap-3
+                                                rounded-2xl
+                                                border
+                                                border-danger/20
+                                                bg-danger/5
+                                                px-4 py-3.5
+                                            "
+                                        >
+                                            <RiErrorWarningLine
+                                                size={19}
+                                                aria-hidden="true"
+                                                className="
+                                                    mt-0.5
+                                                    shrink-0
+                                                    text-danger
+                                                "
+                                            />
+
+                                            <div className="min-w-0">
+                                                <p
+                                                    className="
+                                                        text-xs
+                                                        font-semibold
+                                                        text-danger
+                                                    "
+                                                >
+                                                    Não foi possível salvar
+                                                </p>
+
+                                                <p
+                                                    className="
+                                                        mt-1
+                                                        text-xs
+                                                        leading-5
+                                                        text-muted-foreground
+                                                    "
+                                                >
+                                                    {
+                                                        requestError
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <footer
                                 className="
-                                    flex shrink-0
+                                    flex
+                                    shrink-0
                                     flex-col-reverse
-                                    gap-2.5
+                                    gap-2
                                     border-t border-border
                                     bg-surface
                                     px-4 py-4
                                     sm:flex-row
-                                    sm:items-center
                                     sm:justify-end
                                     sm:px-6
                                 "
@@ -1401,7 +1799,7 @@ function TransactionFormModal({
                                 <button
                                     type="button"
                                     onClick={
-                                        handleClose
+                                        onClose
                                     }
                                     disabled={
                                         submitting
@@ -1409,25 +1807,21 @@ function TransactionFormModal({
                                     className="
                                         inline-flex
                                         min-h-11
-                                        w-full min-w-0
                                         items-center
                                         justify-center
                                         rounded-xl
-                                        border
-                                        border-border
+                                        border border-border
                                         bg-surface
-                                        px-5
+                                        px-4
                                         text-sm
                                         font-semibold
                                         text-foreground
                                         transition
                                         hover:bg-surface-hover
-                                        focus-visible:outline-none
                                         focus-visible:ring-4
-                                        focus-visible:ring-ring/10
+                                        focus-visible:ring-primary/10
                                         disabled:pointer-events-none
                                         disabled:opacity-50
-                                        sm:w-auto
                                     "
                                 >
                                     Cancelar
@@ -1438,34 +1832,26 @@ function TransactionFormModal({
                                     disabled={
                                         submitting
                                     }
-                                    aria-busy={
-                                        submitting
-                                    }
-                                    className={`
+                                    className="
                                         inline-flex
                                         min-h-11
-                                        w-full min-w-0
+                                        min-w-40
                                         items-center
                                         justify-center
                                         gap-2
                                         rounded-xl
-                                        bg-gradient-to-r
+                                        bg-primary
                                         px-5
                                         text-sm
                                         font-semibold
-                                        text-white
-                                        shadow-lg
+                                        text-primary-foreground
                                         transition
-                                        hover:-translate-y-0.5
-                                        hover:shadow-xl
-                                        focus-visible:outline-none
+                                        hover:bg-primary-hover
                                         focus-visible:ring-4
+                                        focus-visible:ring-primary/20
                                         disabled:pointer-events-none
-                                        disabled:opacity-60
-                                        sm:w-auto
-
-                                        ${styles.submitButton}
-                                    `}
+                                        disabled:opacity-70
+                                    "
                                 >
                                     {submitting ? (
                                         <RiLoader4Line
@@ -1474,18 +1860,15 @@ function TransactionFormModal({
                                             className="animate-spin"
                                         />
                                     ) : (
-                                        <RiCheckLine
+                                        <RiSaveLine
                                             size={18}
                                             aria-hidden="true"
                                         />
                                     )}
 
-                                    <span className="truncate">
-                                        {submitting
-                                            ? "Salvando..."
-                                            : submitLabel
-                                        }
-                                    </span>
+                                    {
+                                        submitLabel
+                                    }
                                 </button>
                             </footer>
                         </form>
@@ -1493,7 +1876,7 @@ function TransactionFormModal({
                 </motion.div>
             )}
         </AnimatePresence>,
-        document.body
+        document.body,
     );
 }
 

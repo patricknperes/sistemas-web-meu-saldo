@@ -3,6 +3,7 @@ import {
 } from "react";
 
 import {
+    Link,
     useLocation,
     useNavigate,
 } from "react-router";
@@ -22,13 +23,7 @@ import {
     useAuth,
 } from "../../hooks/useAuth.js";
 
-const EMAIL_PATTERN =
-    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-function getErrorMessage(
-    error,
-    fallbackMessage,
-) {
+function getErrorMessage(error) {
     const responseData =
         error?.response?.data;
 
@@ -54,7 +49,7 @@ function getErrorMessage(
         return error.message;
     }
 
-    return fallbackMessage;
+    return "Não foi possível acessar sua conta.";
 }
 
 function Login() {
@@ -66,7 +61,6 @@ function Login() {
 
     const {
         login,
-        authenticateWithGoogle,
     } = useAuth();
 
     const [
@@ -90,15 +84,6 @@ function Login() {
         setSubmitting,
     ] = useState(false);
 
-    const [
-        googleSubmitting,
-        setGoogleSubmitting,
-    ] = useState(false);
-
-    const busy =
-        submitting ||
-        googleSubmitting;
-
     function showNotification(
         type,
         message,
@@ -116,14 +101,6 @@ function Login() {
         });
     }
 
-    function getDestinationPage() {
-        return (
-            location.state?.from
-                ?.pathname ??
-            "/dashboard"
-        );
-    }
-
     function handleChange(event) {
         const {
             name,
@@ -136,58 +113,23 @@ function Login() {
                 [name]: value,
             }),
         );
-    }
 
-    async function handleGoogleLogin(
-        credential,
-    ) {
-        if (busy) {
-            return;
-        }
-
-        clearNotification();
-        setGoogleSubmitting(true);
-
-        try {
-            await authenticateWithGoogle(
-                credential,
-            );
-
-            navigate(
-                getDestinationPage(),
-                {
-                    replace: true,
-                },
-            );
-        } catch (error) {
-            showNotification(
-                "error",
-                getErrorMessage(
-                    error,
-                    "Não foi possível acessar sua conta com o Google.",
-                ),
-            );
-        } finally {
-            setGoogleSubmitting(false);
+        if (
+            notification.message
+        ) {
+            clearNotification();
         }
     }
 
-    function handleGoogleError(error) {
+    function handleGoogleLogin() {
         showNotification(
-            "error",
-            getErrorMessage(
-                error,
-                "Não foi possível carregar a autenticação do Google.",
-            ),
+            "info",
+            "O acesso com Google será disponibilizado em breve.",
         );
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
-
-        if (busy) {
-            return;
-        }
 
         clearNotification();
 
@@ -196,34 +138,22 @@ function Login() {
                 .trim()
                 .toLowerCase();
 
-        const password =
-            formData.password;
-
-        if (
-            !EMAIL_PATTERN.test(
-                email,
-            )
-        ) {
+        if (!email) {
             showNotification(
                 "error",
-                "Informe um endereço de e-mail válido.",
+                "Informe seu endereço de e-mail.",
             );
 
             return;
         }
 
-        /*
-         * No login, não verificamos se a senha
-         * possui maiúscula, número ou caractere
-         * especial.
-         *
-         * Essas regras são aplicadas apenas no
-         * cadastro e na alteração de senha.
-         */
-        if (!password) {
+        if (
+            formData.password.length <
+            8
+        ) {
             showNotification(
                 "error",
-                "Informe sua senha de acesso.",
+                "A senha deve possuir pelo menos 8 caracteres.",
             );
 
             return;
@@ -234,11 +164,18 @@ function Login() {
         try {
             await login({
                 email,
-                password,
+
+                password:
+                    formData.password,
             });
 
+            const previousPage =
+                location.state?.from
+                    ?.pathname ??
+                "/dashboard";
+
             navigate(
-                getDestinationPage(),
+                previousPage,
                 {
                     replace: true,
                 },
@@ -248,7 +185,6 @@ function Login() {
                 "error",
                 getErrorMessage(
                     error,
-                    "Não foi possível acessar sua conta.",
                 ),
             );
         } finally {
@@ -288,7 +224,7 @@ function Login() {
                         />
                     </span>
 
-                    <h2
+                    <h1
                         className="
                             mt-4
                             text-2xl
@@ -298,7 +234,7 @@ function Login() {
                         "
                     >
                         Acesse sua conta
-                    </h2>
+                    </h1>
 
                     <p
                         className="
@@ -308,49 +244,18 @@ function Login() {
                             text-muted-foreground
                         "
                     >
-                        Informe seus dados ou continue com o Google para acompanhar suas finanças.
+                        Informe seus dados para continuar acompanhando suas finanças.
                     </p>
                 </header>
 
-                <div
-                    aria-busy={
-                        googleSubmitting
+                <GoogleAuthButton
+                    onClick={
+                        handleGoogleLogin
                     }
-                >
-                    <GoogleAuthButton
-                        onCredential={
-                            handleGoogleLogin
-                        }
-                        onError={
-                            handleGoogleError
-                        }
-                        disabled={busy}
-                        text="signin_with"
-                    />
-                </div>
-
-                {googleSubmitting && (
-                    <p
-                        aria-live="polite"
-                        className="
-                            mt-2
-                            flex items-center
-                            justify-center
-                            gap-2
-                            text-xs
-                            font-medium
-                            text-muted-foreground
-                        "
-                    >
-                        <RiLoader4Line
-                            size={15}
-                            className="animate-spin"
-                            aria-hidden="true"
-                        />
-
-                        Autenticando com o Google...
-                    </p>
-                )}
+                    disabled={
+                        submitting
+                    }
+                />
 
                 <div
                     className="
@@ -390,7 +295,8 @@ function Login() {
 
                 <form
                     className="
-                        min-w-0 space-y-5
+                        min-w-0
+                        space-y-5
                     "
                     onSubmit={
                         handleSubmit
@@ -402,7 +308,9 @@ function Login() {
                         name="email"
                         type="email"
                         label="Endereço de e-mail"
-                        icon={RiMailLine}
+                        icon={
+                            RiMailLine
+                        }
                         value={
                             formData.email
                         }
@@ -413,40 +321,83 @@ function Login() {
                         autoComplete="email"
                         inputMode="email"
                         placeholder="nome@exemplo.com"
-                        disabled={busy}
+                        disabled={
+                            submitting
+                        }
                     />
 
-                    <AuthInput
-                        id="login-password"
-                        name="password"
-                        type="password"
-                        label="Senha de acesso"
-                        icon={
-                            RiLockPasswordLine
-                        }
-                        value={
-                            formData.password
-                        }
-                        onChange={
-                            handleChange
-                        }
-                        required
-                        autoComplete="current-password"
-                        placeholder="Digite sua senha"
-                        disabled={busy}
-                    />
+                    <div className="min-w-0">
+                        <AuthInput
+                            id="login-password"
+                            name="password"
+                            type="password"
+                            label="Senha de acesso"
+                            icon={
+                                RiLockPasswordLine
+                            }
+                            value={
+                                formData.password
+                            }
+                            onChange={
+                                handleChange
+                            }
+                            required
+                            minLength={8}
+                            autoComplete="current-password"
+                            placeholder="Digite sua senha"
+                            disabled={
+                                submitting
+                            }
+                        />
+
+                        <div
+                            className="
+                                mt-2
+                                flex
+                                justify-end
+                            "
+                        >
+                            <Link
+                                to="/esqueci-senha"
+                                className="
+                                    inline-flex
+                                    min-h-8
+                                    items-center
+                                    justify-center
+                                    rounded-lg
+                                    px-2
+                                    text-xs
+                                    font-semibold
+                                    text-primary
+                                    transition-colors
+                                    hover:bg-primary/10
+                                    hover:text-primary-hover
+                                    focus-visible:outline-none
+                                    focus-visible:ring-2
+                                    focus-visible:ring-primary/20
+                                "
+                            >
+                                Esqueci minha senha
+                            </Link>
+                        </div>
+                    </div>
 
                     <button
                         type="submit"
-                        disabled={busy}
+                        disabled={
+                            submitting
+                        }
                         aria-busy={
                             submitting
                         }
                         className="
-                            inline-flex min-h-12
-                            w-full min-w-0
+                            inline-flex
+                            min-h-12
+                            w-full
+                            min-w-0
                             items-center
-                            justify-center gap-2
+                            justify-center
+                            gap-2
                             rounded-2xl
                             bg-primary
                             px-4
@@ -483,8 +434,7 @@ function Login() {
                         <span className="truncate">
                             {submitting
                                 ? "Acessando..."
-                                : "Entrar na conta"
-                            }
+                                : "Entrar na conta"}
                         </span>
                     </button>
                 </form>

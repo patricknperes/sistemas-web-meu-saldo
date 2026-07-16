@@ -1,7 +1,29 @@
 import { prisma } from "../lib/prisma.js";
 import { AppError } from "../errors/AppError.js";
 
-const MAX_AMOUNT_CENTS = 2_147_483_647;
+import {
+  materializeRecurringTransactions,
+} from "./recurrenceService.js";
+
+import {
+  validateTagIdsForUser,
+} from "./tagService.js";
+
+const MAX_AMOUNT_CENTS =
+  2_147_483_647;
+
+const DEFAULT_CATEGORY =
+  "Outros";
+
+const tagSelect = {
+  id: true,
+  name: true,
+  normalizedName: true,
+  color: true,
+  scope: true,
+  isDefault: true,
+  isActive: true,
+};
 
 const transactionSelect = {
   id: true,
@@ -12,14 +34,42 @@ const transactionSelect = {
   date: true,
   notes: true,
   userId: true,
+
+  recurringTransactionId: true,
+  occurrenceDate: true,
+
   createdAt: true,
   updatedAt: true,
+
+  tags: {
+    select: {
+      tag: {
+        select: tagSelect,
+      },
+    },
+  },
+
+  recurringTransaction: {
+    select: {
+      id: true,
+      description: true,
+      isActive: true,
+      dayOfMonth: true,
+      intervalMonths: true,
+    },
+  },
 };
 
-function validatePositiveId(value, entityName) {
+function validatePositiveId(
+  value,
+  entityName
+) {
   const id = Number(value);
 
-  if (!Number.isInteger(id) || id <= 0) {
+  if (
+    !Number.isInteger(id) ||
+    id <= 0
+  ) {
     throw new AppError(
       `Identificador de ${entityName} inválido.`,
       400
@@ -29,7 +79,10 @@ function validatePositiveId(value, entityName) {
   return id;
 }
 
-function validateAllowedFields(input, allowedFields) {
+function validateAllowedFields(
+  input,
+  allowedFields
+) {
   if (
     !input ||
     typeof input !== "object" ||
@@ -41,36 +94,49 @@ function validateAllowedFields(input, allowedFields) {
     );
   }
 
-  const invalidFields = Object.keys(input).filter(
-    (field) => !allowedFields.includes(field)
-  );
+  const invalidFields =
+    Object.keys(input).filter(
+      (field) =>
+        !allowedFields.includes(field)
+    );
 
-  if (invalidFields.length > 0) {
+  if (
+    invalidFields.length > 0
+  ) {
     throw new AppError(
-      `Campos não permitidos: ${invalidFields.join(", ")}.`,
+      `Campos não permitidos: ${invalidFields.join(
+        ", "
+      )}.`,
       422
     );
   }
 }
 
 function validateDescription(value) {
-  if (typeof value !== "string") {
+  if (
+    typeof value !== "string"
+  ) {
     throw new AppError(
       "A descrição é obrigatória.",
       422
     );
   }
 
-  const description = value.trim();
+  const description =
+    value.trim();
 
-  if (description.length < 2) {
+  if (
+    description.length < 2
+  ) {
     throw new AppError(
       "A descrição deve possuir pelo menos 2 caracteres.",
       422
     );
   }
 
-  if (description.length > 150) {
+  if (
+    description.length > 150
+  ) {
     throw new AppError(
       "A descrição deve possuir no máximo 150 caracteres.",
       422
@@ -81,9 +147,14 @@ function validateDescription(value) {
 }
 
 function validateAmountCents(value) {
-  const amountCents = Number(value);
+  const amountCents =
+    Number(value);
 
-  if (!Number.isInteger(amountCents)) {
+  if (
+    !Number.isInteger(
+      amountCents
+    )
+  ) {
     throw new AppError(
       "O valor deve ser informado em centavos e precisa ser um número inteiro.",
       422
@@ -97,7 +168,10 @@ function validateAmountCents(value) {
     );
   }
 
-  if (amountCents > MAX_AMOUNT_CENTS) {
+  if (
+    amountCents >
+    MAX_AMOUNT_CENTS
+  ) {
     throw new AppError(
       "O valor informado é muito alto.",
       422
@@ -107,17 +181,29 @@ function validateAmountCents(value) {
   return amountCents;
 }
 
-function validateTransactionType(value) {
-  if (typeof value !== "string") {
+function validateTransactionType(
+  value
+) {
+  if (
+    typeof value !== "string"
+  ) {
     throw new AppError(
       "O tipo da transação é obrigatório.",
       422
     );
   }
 
-  const type = value.trim().toUpperCase();
+  const type =
+    value
+      .trim()
+      .toUpperCase();
 
-  if (!["INCOME", "EXPENSE"].includes(type)) {
+  if (
+    ![
+      "INCOME",
+      "EXPENSE",
+    ].includes(type)
+  ) {
     throw new AppError(
       "O tipo da transação deve ser INCOME ou EXPENSE.",
       422
@@ -128,23 +214,30 @@ function validateTransactionType(value) {
 }
 
 function validateCategory(value) {
-  if (typeof value !== "string") {
+  if (
+    typeof value !== "string"
+  ) {
     throw new AppError(
-      "A categoria é obrigatória.",
+      "A categoria precisa ser um texto.",
       422
     );
   }
 
-  const category = value.trim();
+  const category =
+    value.trim();
 
-  if (category.length < 2) {
+  if (
+    category.length < 2
+  ) {
     throw new AppError(
       "A categoria deve possuir pelo menos 2 caracteres.",
       422
     );
   }
 
-  if (category.length > 80) {
+  if (
+    category.length > 80
+  ) {
     throw new AppError(
       "A categoria deve possuir no máximo 80 caracteres.",
       422
@@ -163,20 +256,25 @@ function validateNotes(value) {
     return null;
   }
 
-  if (typeof value !== "string") {
+  if (
+    typeof value !== "string"
+  ) {
     throw new AppError(
       "As observações precisam ser um texto.",
       422
     );
   }
 
-  const notes = value.trim();
+  const notes =
+    value.trim();
 
   if (!notes) {
     return null;
   }
 
-  if (notes.length > 500) {
+  if (
+    notes.length > 500
+  ) {
     throw new AppError(
       "As observações devem possuir no máximo 500 caracteres.",
       422
@@ -191,18 +289,22 @@ function parseDateOnly(
   fieldName,
   timeMode = "noon"
 ) {
-  if (typeof value !== "string") {
+  if (
+    typeof value !== "string"
+  ) {
     throw new AppError(
       `O campo ${fieldName} deve ser informado no formato YYYY-MM-DD.`,
       422
     );
   }
 
-  const normalizedValue = value.trim();
+  const normalizedValue =
+    value.trim();
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(
-    normalizedValue
-  );
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})$/.exec(
+      normalizedValue
+    );
 
   if (!match) {
     throw new AppError(
@@ -215,7 +317,10 @@ function parseDateOnly(
   const month = Number(match[2]);
   const day = Number(match[3]);
 
-  if (year < 1900 || year > 2100) {
+  if (
+    year < 1900 ||
+    year > 2100
+  ) {
     throw new AppError(
       `O campo ${fieldName} possui um ano inválido.`,
       422
@@ -251,9 +356,12 @@ function parseDateOnly(
   );
 
   const isValidDate =
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day;
+    date.getUTCFullYear() ===
+      year &&
+    date.getUTCMonth() ===
+      month - 1 &&
+    date.getUTCDate() ===
+      day;
 
   if (!isValidDate) {
     throw new AppError(
@@ -271,13 +379,19 @@ function validatePaginationValue(
   fieldName,
   maximumValue
 ) {
-  if (value === undefined) {
+  if (
+    value === undefined
+  ) {
     return defaultValue;
   }
 
-  const number = Number(value);
+  const number =
+    Number(value);
 
-  if (!Number.isInteger(number) || number <= 0) {
+  if (
+    !Number.isInteger(number) ||
+    number <= 0
+  ) {
     throw new AppError(
       `O parâmetro ${fieldName} deve ser um número inteiro positivo.`,
       400
@@ -285,7 +399,8 @@ function validatePaginationValue(
   }
 
   if (
-    maximumValue !== undefined &&
+    maximumValue !==
+      undefined &&
     number > maximumValue
   ) {
     throw new AppError(
@@ -331,14 +446,34 @@ function validateYear(value) {
   return year;
 }
 
-function getMonthDateRange(year, month) {
+function getMonthDateRange(
+  year,
+  month
+) {
   const startDate = new Date(
-    Date.UTC(year, month - 1, 1, 0, 0, 0, 0)
+    Date.UTC(
+      year,
+      month - 1,
+      1,
+      0,
+      0,
+      0,
+      0
+    )
   );
 
-  const nextMonthDate = new Date(
-    Date.UTC(year, month, 1, 0, 0, 0, 0)
-  );
+  const nextMonthDate =
+    new Date(
+      Date.UTC(
+        year,
+        month,
+        1,
+        0,
+        0,
+        0,
+        0
+      )
+    );
 
   return {
     startDate,
@@ -348,12 +483,29 @@ function getMonthDateRange(year, month) {
 
 function getYearDateRange(year) {
   const startDate = new Date(
-    Date.UTC(year, 0, 1, 0, 0, 0, 0)
+    Date.UTC(
+      year,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0
+    )
   );
 
-  const nextYearDate = new Date(
-    Date.UTC(year + 1, 0, 1, 0, 0, 0, 0)
-  );
+  const nextYearDate =
+    new Date(
+      Date.UTC(
+        year + 1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      )
+    );
 
   return {
     startDate,
@@ -361,66 +513,10 @@ function getYearDateRange(year) {
   };
 }
 
-function buildTransactionData(
-  input,
-  isUpdate = false
+function applyDateFilters(
+  where,
+  query
 ) {
-  const data = {};
-
-  if (
-    !isUpdate ||
-    input.description !== undefined
-  ) {
-    data.description = validateDescription(
-      input.description
-    );
-  }
-
-  if (
-    !isUpdate ||
-    input.amountCents !== undefined
-  ) {
-    data.amountCents = validateAmountCents(
-      input.amountCents
-    );
-  }
-
-  if (
-    !isUpdate ||
-    input.type !== undefined
-  ) {
-    data.type = validateTransactionType(
-      input.type
-    );
-  }
-
-  if (
-    !isUpdate ||
-    input.category !== undefined
-  ) {
-    data.category = validateCategory(
-      input.category
-    );
-  }
-
-  if (
-    !isUpdate ||
-    input.date !== undefined
-  ) {
-    data.date = parseDateOnly(
-      input.date,
-      "date"
-    );
-  }
-
-  if (input.notes !== undefined) {
-    data.notes = validateNotes(input.notes);
-  }
-
-  return data;
-}
-
-function applyDateFilters(where, query) {
   const hasMonthFilter =
     query.month !== undefined;
 
@@ -428,11 +524,15 @@ function applyDateFilters(where, query) {
     query.year !== undefined;
 
   const hasDateRangeFilter =
-    query.startDate !== undefined ||
+    query.startDate !==
+      undefined ||
     query.endDate !== undefined;
 
   if (
-    (hasMonthFilter || hasYearFilter) &&
+    (
+      hasMonthFilter ||
+      hasYearFilter
+    ) &&
     hasDateRangeFilter
   ) {
     throw new AppError(
@@ -441,21 +541,37 @@ function applyDateFilters(where, query) {
     );
   }
 
-  if (hasMonthFilter && !hasYearFilter) {
+  if (
+    hasMonthFilter &&
+    !hasYearFilter
+  ) {
     throw new AppError(
       "Para filtrar por mês, informe também o ano.",
       400
     );
   }
 
-  if (hasMonthFilter && hasYearFilter) {
-    const month = validateMonth(query.month);
-    const year = validateYear(query.year);
+  if (
+    hasMonthFilter &&
+    hasYearFilter
+  ) {
+    const month =
+      validateMonth(
+        query.month
+      );
+
+    const year =
+      validateYear(
+        query.year
+      );
 
     const {
       startDate,
       nextMonthDate,
-    } = getMonthDateRange(year, month);
+    } = getMonthDateRange(
+      year,
+      month
+    );
 
     where.date = {
       gte: startDate,
@@ -466,12 +582,17 @@ function applyDateFilters(where, query) {
   }
 
   if (hasYearFilter) {
-    const year = validateYear(query.year);
+    const year =
+      validateYear(
+        query.year
+      );
 
     const {
       startDate,
       nextYearDate,
-    } = getYearDateRange(year);
+    } = getYearDateRange(
+      year
+    );
 
     where.date = {
       gte: startDate,
@@ -483,7 +604,8 @@ function applyDateFilters(where, query) {
 
   if (hasDateRangeFilter) {
     const startDate =
-      query.startDate !== undefined
+      query.startDate !==
+      undefined
         ? parseDateOnly(
             query.startDate,
             "startDate",
@@ -492,7 +614,8 @@ function applyDateFilters(where, query) {
         : null;
 
     const endDate =
-      query.endDate !== undefined
+      query.endDate !==
+      undefined
         ? parseDateOnly(
             query.endDate,
             "endDate",
@@ -514,100 +637,325 @@ function applyDateFilters(where, query) {
     where.date = {};
 
     if (startDate) {
-      where.date.gte = startDate;
+      where.date.gte =
+        startDate;
     }
 
     if (endDate) {
-      where.date.lte = endDate;
+      where.date.lte =
+        endDate;
     }
   }
+}
 
-  /*
-    Se nenhum filtro de data for informado,
-    where.date não será definido.
+function serializeTransaction(
+  transaction
+) {
+  const {
+    tags: tagLinks,
+    recurringTransaction,
+    ...transactionData
+  } = transaction;
 
-    Nesse caso, a consulta retorna todo o histórico.
-  */
+  const tags =
+    (tagLinks ?? [])
+      .map(
+        (tagLink) =>
+          tagLink.tag
+      )
+      .sort(
+        (
+          firstTag,
+          secondTag
+        ) =>
+          firstTag.name.localeCompare(
+            secondTag.name,
+            "pt-BR"
+          )
+      );
+
+  return {
+    ...transactionData,
+
+    tags,
+
+    isRecurring:
+      Boolean(
+        transactionData
+          .recurringTransactionId
+      ),
+
+    recurringTransaction,
+  };
+}
+
+function validateExistingTagsForType(
+  tagLinks,
+  type
+) {
+  const incompatibleTag =
+    (tagLinks ?? [])
+      .map(
+        (tagLink) =>
+          tagLink.tag
+      )
+      .find(
+        (tag) =>
+          tag.scope !== "BOTH" &&
+          tag.scope !== type
+      );
+
+  if (!incompatibleTag) {
+    return;
+  }
+
+  const expectedType =
+    type === "INCOME"
+      ? "receitas"
+      : "despesas";
+
+  throw new AppError(
+    `A tag "${incompatibleTag.name}" não pode ser utilizada em ${expectedType}. Remova ou substitua essa tag antes de alterar o tipo da movimentação.`,
+    422
+  );
+}
+
+async function findOwnedTransaction(
+  userId,
+  transactionId
+) {
+  const transaction =
+    await prisma.transaction
+      .findFirst({
+        where: {
+          id: transactionId,
+          userId,
+        },
+
+        select:
+          transactionSelect,
+      });
+
+  if (!transaction) {
+    throw new AppError(
+      "Transação não encontrada.",
+      404
+    );
+  }
+
+  return transaction;
 }
 
 export async function createTransaction(
   userIdValue,
   input
 ) {
-  const userId = validatePositiveId(
-    userIdValue,
-    "usuário"
+  const userId =
+    validatePositiveId(
+      userIdValue,
+      "usuário"
+    );
+
+  validateAllowedFields(
+    input,
+    [
+      "description",
+      "amountCents",
+      "type",
+      "category",
+      "date",
+      "notes",
+      "tagIds",
+    ]
   );
 
-  validateAllowedFields(input, [
-    "description",
-    "amountCents",
-    "type",
-    "category",
-    "date",
-    "notes",
-  ]);
+  const description =
+    validateDescription(
+      input.description
+    );
 
-  const transactionData =
-    buildTransactionData(input);
+  const amountCents =
+    validateAmountCents(
+      input.amountCents
+    );
 
-  return prisma.transaction.create({
-    data: {
-      ...transactionData,
+  const type =
+    validateTransactionType(
+      input.type
+    );
+
+  const date =
+    parseDateOnly(
+      input.date,
+      "date"
+    );
+
+  const notes =
+    validateNotes(
+      input.notes
+    );
+
+  const tags =
+    await validateTagIdsForUser(
       userId,
-    },
+      input.tagIds,
+      type
+    );
 
-    select: transactionSelect,
-  });
+  /*
+   * O campo category ainda existe
+   * temporariamente no banco.
+   *
+   * Quando não for enviado, usamos
+   * a primeira tag selecionada.
+   */
+  const category =
+    input.category !== undefined
+      ? validateCategory(
+          input.category
+        )
+      : tags[0]?.name ??
+        DEFAULT_CATEGORY;
+
+  const transaction =
+    await prisma.transaction
+      .create({
+        data: {
+          description,
+          amountCents,
+          type,
+          category,
+          date,
+          notes,
+          userId,
+
+          ...(tags.length > 0
+            ? {
+                tags: {
+                  create:
+                    tags.map(
+                      (tag) => ({
+                        tag: {
+                          connect: {
+                            id: tag.id,
+                          },
+                        },
+                      })
+                    ),
+                },
+              }
+            : {}),
+        },
+
+        select:
+          transactionSelect,
+      });
+
+  return serializeTransaction(
+    transaction
+  );
 }
 
 export async function listTransactions(
   userIdValue,
   query = {}
 ) {
-  const userId = validatePositiveId(
-    userIdValue,
-    "usuário"
+  const userId =
+    validatePositiveId(
+      userIdValue,
+      "usuário"
+    );
+
+  /*
+   * Antes de carregar receitas ou
+   * despesas, registra apenas as
+   * ocorrências recorrentes cuja
+   * data já chegou.
+   *
+   * Nenhuma ocorrência futura será
+   * criada por esta função.
+   */
+  await materializeRecurringTransactions(
+    userId
   );
 
-  const page = validatePaginationValue(
-    query.page,
-    1,
-    "page"
-  );
+  const page =
+    validatePaginationValue(
+      query.page,
+      1,
+      "page"
+    );
 
-  const limit = validatePaginationValue(
-    query.limit,
-    20,
-    "limit",
-    100
-  );
+  const limit =
+    validatePaginationValue(
+      query.limit,
+      20,
+      "limit",
+      100
+    );
 
   const where = {
     userId,
   };
 
-  if (query.type !== undefined) {
-    where.type = validateTransactionType(
-      query.type
-    );
+  if (
+    query.type !== undefined
+  ) {
+    where.type =
+      validateTransactionType(
+        query.type
+      );
   }
 
-  if (query.category !== undefined) {
-    where.category = validateCategory(
-      query.category
-    );
+  /*
+   * Mantido para compatibilidade
+   * com o filtro antigo.
+   */
+  if (
+    query.category !==
+    undefined
+  ) {
+    where.category =
+      validateCategory(
+        query.category
+      );
   }
 
-  if (query.search !== undefined) {
-    if (typeof query.search !== "string") {
+  /*
+   * Novo filtro por tag.
+   */
+  if (
+    query.tagId !== undefined
+  ) {
+    const tagId =
+      validatePositiveId(
+        query.tagId,
+        "tag"
+      );
+
+    where.tags = {
+      some: {
+        tagId,
+      },
+    };
+  }
+
+  if (
+    query.search !==
+    undefined
+  ) {
+    if (
+      typeof query.search !==
+      "string"
+    ) {
       throw new AppError(
         "O parâmetro search precisa ser um texto.",
         400
       );
     }
 
-    const search = query.search.trim();
+    const search =
+      query.search.trim();
 
     if (search) {
       where.OR = [
@@ -626,61 +974,86 @@ export async function listTransactions(
             contains: search,
           },
         },
+        {
+          tags: {
+            some: {
+              tag: {
+                name: {
+                  contains:
+                    search,
+                },
+              },
+            },
+          },
+        },
       ];
     }
   }
 
-  applyDateFilters(where, query);
+  applyDateFilters(
+    where,
+    query
+  );
 
-  const skip = (page - 1) * limit;
+  const skip =
+    (page - 1) * limit;
 
   const [
     transactions,
     totalItems,
     amountSummary,
-  ] = await prisma.$transaction([
-    prisma.transaction.findMany({
-      where,
+  ] = await prisma.$transaction(
+    [
+      prisma.transaction.findMany({
+        where,
 
-      select: transactionSelect,
+        select:
+          transactionSelect,
 
-      orderBy: [
-        {
-          date: "desc",
+        orderBy: [
+          {
+            date: "desc",
+          },
+          {
+            id: "desc",
+          },
+        ],
+
+        skip,
+        take: limit,
+      }),
+
+      prisma.transaction.count({
+        where,
+      }),
+
+      prisma.transaction.aggregate({
+        where,
+
+        _sum: {
+          amountCents: true,
         },
-        {
-          id: "desc",
-        },
-      ],
-
-      skip,
-      take: limit,
-    }),
-
-    prisma.transaction.count({
-      where,
-    }),
-
-    prisma.transaction.aggregate({
-      where,
-
-      _sum: {
-        amountCents: true,
-      },
-    }),
-  ]);
+      }),
+    ]
+  );
 
   const totalPages =
     totalItems === 0
       ? 0
-      : Math.ceil(totalItems / limit);
+      : Math.ceil(
+          totalItems / limit
+        );
 
   return {
-    transactions,
+    transactions:
+      transactions.map(
+        serializeTransaction
+      ),
 
     summary: {
       totalAmountCents:
-        amountSummary._sum.amountCents ?? 0,
+        amountSummary._sum
+          .amountCents ?? 0,
     },
 
     pagination: {
@@ -696,34 +1069,31 @@ export async function getTransactionById(
   userIdValue,
   transactionIdValue
 ) {
-  const userId = validatePositiveId(
-    userIdValue,
-    "usuário"
-  );
+  const userId =
+    validatePositiveId(
+      userIdValue,
+      "usuário"
+    );
 
-  const transactionId = validatePositiveId(
-    transactionIdValue,
-    "transação"
+  const transactionId =
+    validatePositiveId(
+      transactionIdValue,
+      "transação"
+    );
+
+  await materializeRecurringTransactions(
+    userId
   );
 
   const transaction =
-    await prisma.transaction.findFirst({
-      where: {
-        id: transactionId,
-        userId,
-      },
-
-      select: transactionSelect,
-    });
-
-  if (!transaction) {
-    throw new AppError(
-      "Transação não encontrada.",
-      404
+    await findOwnedTransaction(
+      userId,
+      transactionId
     );
-  }
 
-  return transaction;
+  return serializeTransaction(
+    transaction
+  );
 }
 
 export async function updateTransaction(
@@ -731,62 +1101,221 @@ export async function updateTransaction(
   transactionIdValue,
   input
 ) {
-  const userId = validatePositiveId(
-    userIdValue,
-    "usuário"
+  const userId =
+    validatePositiveId(
+      userIdValue,
+      "usuário"
+    );
+
+  const transactionId =
+    validatePositiveId(
+      transactionIdValue,
+      "transação"
+    );
+
+  validateAllowedFields(
+    input,
+    [
+      "description",
+      "amountCents",
+      "type",
+      "category",
+      "date",
+      "notes",
+      "tagIds",
+    ]
   );
 
-  const transactionId = validatePositiveId(
-    transactionIdValue,
-    "transação"
-  );
-
-  validateAllowedFields(input, [
-    "description",
-    "amountCents",
-    "type",
-    "category",
-    "date",
-    "notes",
-  ]);
-
-  if (Object.keys(input).length === 0) {
+  if (
+    Object.keys(input)
+      .length === 0
+  ) {
     throw new AppError(
       "Informe pelo menos um campo para atualização.",
       422
     );
   }
 
-  const transactionData =
-    buildTransactionData(input, true);
+  const currentTransaction =
+    await findOwnedTransaction(
+      userId,
+      transactionId
+    );
 
-  return prisma.$transaction(
-    async (transactionClient) => {
-      const updateResult =
-        await transactionClient.transaction.updateMany({
-          where: {
-            id: transactionId,
-            userId,
-          },
+  const updateData = {};
 
-          data: transactionData,
-        });
+  if (
+    input.description !==
+    undefined
+  ) {
+    updateData.description =
+      validateDescription(
+        input.description
+      );
+  }
 
-      if (updateResult.count === 0) {
-        throw new AppError(
-          "Transação não encontrada.",
-          404
-        );
+  if (
+    input.amountCents !==
+    undefined
+  ) {
+    updateData.amountCents =
+      validateAmountCents(
+        input.amountCents
+      );
+  }
+
+  const effectiveType =
+    input.type !== undefined
+      ? validateTransactionType(
+          input.type
+        )
+      : currentTransaction.type;
+
+  if (
+    input.type !== undefined
+  ) {
+    updateData.type =
+      effectiveType;
+  }
+
+  if (
+    input.date !== undefined
+  ) {
+    updateData.date =
+      parseDateOnly(
+        input.date,
+        "date"
+      );
+  }
+
+  if (
+    input.notes !== undefined
+  ) {
+    updateData.notes =
+      validateNotes(
+        input.notes
+      );
+  }
+
+  let validatedTags = null;
+
+  if (
+    input.tagIds !== undefined
+  ) {
+    validatedTags =
+      await validateTagIdsForUser(
+        userId,
+        input.tagIds,
+        effectiveType
+      );
+  } else if (
+    input.type !==
+      undefined &&
+    effectiveType !==
+      currentTransaction.type
+  ) {
+    /*
+     * Se o tipo mudar sem enviar
+     * novas tags, conferimos se as
+     * tags atuais são compatíveis.
+     */
+    validateExistingTagsForType(
+      currentTransaction.tags,
+      effectiveType
+    );
+  }
+
+  if (
+    input.category !==
+    undefined
+  ) {
+    updateData.category =
+      validateCategory(
+        input.category
+      );
+  } else if (
+    validatedTags &&
+    validatedTags.length > 0
+  ) {
+    /*
+     * Enquanto category ainda existir,
+     * mantemos seu valor sincronizado
+     * com a primeira tag selecionada.
+     */
+    updateData.category =
+      validatedTags[0].name;
+  }
+
+  const newTagIds =
+    validatedTags?.map(
+      (tag) => tag.id
+    ) ?? null;
+
+  const updatedTransaction =
+    await prisma.$transaction(
+      async (
+        transactionClient
+      ) => {
+        if (
+          Object.keys(
+            updateData
+          ).length > 0
+        ) {
+          await transactionClient
+            .transaction
+            .update({
+              where: {
+                id:
+                  transactionId,
+              },
+
+              data: updateData,
+            });
+        }
+
+        if (
+          newTagIds !== null
+        ) {
+          await transactionClient
+            .transactionTag
+            .deleteMany({
+              where: {
+                transactionId,
+              },
+            });
+
+          if (
+            newTagIds.length > 0
+          ) {
+            await transactionClient
+              .transactionTag
+              .createMany({
+                data:
+                  newTagIds.map(
+                    (tagId) => ({
+                      transactionId,
+                      tagId,
+                    })
+                  ),
+              });
+          }
+        }
+
+        return transactionClient
+          .transaction
+          .findUnique({
+            where: {
+              id: transactionId,
+            },
+
+            select:
+              transactionSelect,
+          });
       }
+    );
 
-      return transactionClient.transaction.findUnique({
-        where: {
-          id: transactionId,
-        },
-
-        select: transactionSelect,
-      });
-    }
+  return serializeTransaction(
+    updatedTransaction
   );
 }
 
@@ -794,25 +1323,30 @@ export async function deleteTransaction(
   userIdValue,
   transactionIdValue
 ) {
-  const userId = validatePositiveId(
-    userIdValue,
-    "usuário"
-  );
+  const userId =
+    validatePositiveId(
+      userIdValue,
+      "usuário"
+    );
 
-  const transactionId = validatePositiveId(
-    transactionIdValue,
-    "transação"
-  );
+  const transactionId =
+    validatePositiveId(
+      transactionIdValue,
+      "transação"
+    );
 
   const deleteResult =
-    await prisma.transaction.deleteMany({
-      where: {
-        id: transactionId,
-        userId,
-      },
-    });
+    await prisma.transaction
+      .deleteMany({
+        where: {
+          id: transactionId,
+          userId,
+        },
+      });
 
-  if (deleteResult.count === 0) {
+  if (
+    deleteResult.count === 0
+  ) {
     throw new AppError(
       "Transação não encontrada.",
       404
