@@ -1,157 +1,447 @@
 @import "tailwindcss";
 
 /*
- * Permite controlar o dark mode adicionando a classe "dark"
- * no elemento <html>.
+ * O tema escuro é controlado pela classe "dark" no elemento <html>.
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Tokens semânticos do sistema.
+ * Design tokens expostos ao Tailwind CSS.
  *
- * Exemplos de classes geradas:
+ * Exemplos:
  * bg-background
  * bg-surface
  * text-foreground
  * text-muted-foreground
  * border-border
  * bg-primary
- * text-primary-foreground
- * text-danger
+ * bg-primary-muted
  * shadow-card
- * rounded-card
+ * rounded-control
+ * px-page
+ * gap-section
+ * text-page-title
  */
 @theme inline {
+  /* Tipografia */
   --font-sans: var(--app-font-sans);
 
+  --text-display: 2rem;
+  --text-display--line-height: 1.12;
+  --text-display--letter-spacing: -0.035em;
+
+  --text-page-title: 1.5rem;
+  --text-page-title--line-height: 1.25;
+  --text-page-title--letter-spacing: -0.025em;
+
+  --text-section-title: 1.0625rem;
+  --text-section-title--line-height: 1.4;
+  --text-section-title--letter-spacing: -0.015em;
+
+  --text-card-title: 0.9375rem;
+  --text-card-title--line-height: 1.4;
+
+  --text-body-lg: 1rem;
+  --text-body-lg--line-height: 1.6;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.6;
+
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.55;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+
+  --text-overline: 0.6875rem;
+  --text-overline--line-height: 1.4;
+  --text-overline--letter-spacing: 0.08em;
+
+  --tracking-display: -0.035em;
+  --tracking-heading: -0.02em;
+  --tracking-label: -0.005em;
+  --tracking-overline: 0.08em;
+
+  /* Pesos semânticos — evita bold/extrabold indiscriminado */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-label: 600;
+  --font-weight-title: 650;
+  --font-weight-heading: 700;
+
+  /* Superfícies */
   --color-background: var(--app-background);
   --color-surface: var(--app-surface);
+  --color-surface-elevated: var(--app-surface-elevated);
+  --color-surface-subtle: var(--app-surface-subtle);
   --color-surface-muted: var(--app-surface-muted);
   --color-surface-hover: var(--app-surface-hover);
+  --color-surface-active: var(--app-surface-active);
 
+  /* Texto */
   --color-foreground: var(--app-foreground);
+  --color-foreground-soft: var(--app-foreground-soft);
   --color-muted-foreground: var(--app-muted-foreground);
+  --color-subtle-foreground: var(--app-subtle-foreground);
+  --color-disabled-foreground: var(--app-disabled-foreground);
 
+  /* Bordas */
   --color-border: var(--app-border);
   --color-border-strong: var(--app-border-strong);
+  --color-border-subtle: var(--app-border-subtle);
 
+  /* Marca / ações */
   --color-primary: var(--app-primary);
   --color-primary-hover: var(--app-primary-hover);
+  --color-primary-active: var(--app-primary-active);
+  --color-primary-muted: var(--app-primary-muted);
+  --color-primary-muted-hover: var(--app-primary-muted-hover);
   --color-primary-foreground: var(--app-primary-foreground);
 
+  /* Estados semânticos */
   --color-success: var(--app-success);
+  --color-success-strong: var(--app-success-strong);
   --color-success-muted: var(--app-success-muted);
 
   --color-danger: var(--app-danger);
+  --color-danger-strong: var(--app-danger-strong);
   --color-danger-hover: var(--app-danger-hover);
   --color-danger-muted: var(--app-danger-muted);
 
   --color-warning: var(--app-warning);
+  --color-warning-strong: var(--app-warning-strong);
   --color-warning-muted: var(--app-warning-muted);
 
   --color-info: var(--app-info);
+  --color-info-strong: var(--app-info-strong);
   --color-info-muted: var(--app-info-muted);
 
+  /* Gráficos */
+  --color-chart-1: var(--app-chart-1);
+  --color-chart-2: var(--app-chart-2);
+  --color-chart-3: var(--app-chart-3);
+  --color-chart-4: var(--app-chart-4);
+  --color-chart-5: var(--app-chart-5);
+  --color-chart-grid: var(--app-chart-grid);
+  --color-chart-label: var(--app-chart-label);
+
+  /* Paleta segura para tags */
+  --color-tag-purple: var(--app-tag-purple);
+  --color-tag-purple-muted: var(--app-tag-purple-muted);
+  --color-tag-blue: var(--app-tag-blue);
+  --color-tag-blue-muted: var(--app-tag-blue-muted);
+  --color-tag-cyan: var(--app-tag-cyan);
+  --color-tag-cyan-muted: var(--app-tag-cyan-muted);
+  --color-tag-green: var(--app-tag-green);
+  --color-tag-green-muted: var(--app-tag-green-muted);
+  --color-tag-orange: var(--app-tag-orange);
+  --color-tag-orange-muted: var(--app-tag-orange-muted);
+  --color-tag-amber: var(--app-tag-amber);
+  --color-tag-amber-muted: var(--app-tag-amber-muted);
+  --color-tag-pink: var(--app-tag-pink);
+  --color-tag-pink-muted: var(--app-tag-pink-muted);
+  --color-tag-red: var(--app-tag-red);
+  --color-tag-red-muted: var(--app-tag-red-muted);
+  --color-tag-slate: var(--app-tag-slate);
+  --color-tag-slate-muted: var(--app-tag-slate-muted);
+
+  /* Elementos especiais */
   --color-overlay: var(--app-overlay);
   --color-ring: var(--app-ring);
 
-  --radius-card: 1rem;
-  --radius-control: 0.75rem;
+  /* Espaçamentos semânticos */
+  --spacing-page: var(--app-page-gutter);
+  --spacing-page-y: var(--app-page-padding-y);
+  --spacing-page-y-compact: var(--app-page-padding-y-compact);
+  --spacing-page-y-spacious: var(--app-page-padding-y-spacious);
+  --spacing-section: var(--app-section-gap);
+  --spacing-section-compact: var(--app-section-gap-compact);
+  --spacing-section-spacious: var(--app-section-gap-spacious);
+  --spacing-card: var(--app-card-padding);
+  --spacing-control-x: var(--app-control-padding-x);
+  --spacing-control-y: var(--app-control-padding-y);
+  --spacing-control-sm: var(--app-control-height-sm);
+  --spacing-control-md: var(--app-control-height-md);
+  --spacing-control-lg: var(--app-control-height-lg);
 
+  /* Raios */
+  --radius-xs: var(--app-radius-xs);
+  --radius-sm: var(--app-radius-sm);
+  --radius-md: var(--app-radius-md);
+  --radius-lg: var(--app-radius-lg);
+  --radius-xl: var(--app-radius-xl);
+  --radius-2xl: var(--app-radius-2xl);
+  --radius-3xl: var(--app-radius-3xl);
+  --radius-pill: 9999px;
+
+  /* Raios semânticos */
+  --radius-control: var(--app-radius-sm);
+  --radius-card: var(--app-radius-md);
+  --radius-overlay: var(--app-radius-lg);
+
+  /* Sombras */
+  --shadow-xs: var(--app-shadow-xs);
+  --shadow-sm: var(--app-shadow-sm);
   --shadow-card: var(--app-shadow-card);
+  --shadow-raised: var(--app-shadow-raised);
+  --shadow-dropdown: var(--app-shadow-dropdown);
   --shadow-dialog: var(--app-shadow-dialog);
 
+  /* Movimento */
   --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Tema claro */
+/*
+ * Tema claro — "Clareza Financeira".
+ */
 :root {
   color-scheme: light;
 
   --app-font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 
-  --app-background: #f8fafc;
+  --app-background: #f6f7fb;
   --app-surface: #ffffff;
-  --app-surface-muted: #f1f5f9;
-  --app-surface-hover: #e2e8f0;
+  --app-surface-elevated: #ffffff;
+  --app-surface-subtle: #fafbfc;
+  --app-surface-muted: #f0f2f7;
+  --app-surface-hover: #e9ecf3;
+  --app-surface-active: #e1e5ee;
 
-  --app-foreground: #0f172a;
-  --app-muted-foreground: #64748b;
+  --app-foreground: #171923;
+  --app-foreground-soft: #343846;
+  --app-muted-foreground: #596579;
+  --app-subtle-foreground: #667085;
+  --app-disabled-foreground: #98a2b3;
 
-  --app-border: #e2e8f0;
-  --app-border-strong: #cbd5e1;
+  --app-border: #e4e7ec;
+  --app-border-strong: #d0d5dd;
+  --app-border-subtle: #eef0f4;
 
-  --app-primary: #18181b;
-  --app-primary-hover: #27272a;
+  --app-primary: #635bff;
+  --app-primary-hover: #5148e5;
+  --app-primary-active: #4438ca;
+  --app-primary-muted: #efeeff;
+  --app-primary-muted-hover: #e5e2ff;
   --app-primary-foreground: #ffffff;
 
-  --app-success: #15803d;
-  --app-success-muted: #dcfce7;
+  --app-success: #17875f;
+  --app-success-strong: #116b4c;
+  --app-success-muted: #eaf8f2;
 
-  --app-danger: #dc2626;
-  --app-danger-hover: #b91c1c;
-  --app-danger-muted: #fee2e2;
+  --app-danger: #d6455d;
+  --app-danger-strong: #ad3047;
+  --app-danger-hover: #c43750;
+  --app-danger-muted: #fff0f3;
 
-  --app-warning: #b45309;
-  --app-warning-muted: #fef3c7;
+  --app-warning: #c96b12;
+  --app-warning-strong: #9a4e0a;
+  --app-warning-muted: #fff6e8;
 
-  --app-info: #0369a1;
-  --app-info-muted: #e0f2fe;
+  --app-info: #4169e1;
+  --app-info-strong: #3152bb;
+  --app-info-muted: #eef2ff;
 
-  --app-overlay: rgb(15 23 42 / 55%);
-  --app-ring: #71717a;
+  --app-chart-1: #635bff;
+  --app-chart-2: #8b5cf6;
+  --app-chart-3: #14a38b;
+  --app-chart-4: #f59e0b;
+  --app-chart-5: #e85d9e;
+  --app-chart-grid: #e9ecf3;
+  --app-chart-label: #667085;
+
+  --app-tag-purple: #7c3aed;
+  --app-tag-purple-muted: #f3e8ff;
+  --app-tag-blue: #2563eb;
+  --app-tag-blue-muted: #eff6ff;
+  --app-tag-cyan: #0891b2;
+  --app-tag-cyan-muted: #ecfeff;
+  --app-tag-green: #15803d;
+  --app-tag-green-muted: #f0fdf4;
+  --app-tag-orange: #c2410c;
+  --app-tag-orange-muted: #fff7ed;
+  --app-tag-amber: #b45309;
+  --app-tag-amber-muted: #fffbeb;
+  --app-tag-pink: #be185d;
+  --app-tag-pink-muted: #fdf2f8;
+  --app-tag-red: #b91c1c;
+  --app-tag-red-muted: #fef2f2;
+  --app-tag-slate: #475569;
+  --app-tag-slate-muted: #f1f5f9;
+
+  --app-overlay: rgb(17 24 39 / 58%);
+  --app-ring: #756dff;
+
+  /* Escala única: 6 / 8 / 10 / 12 / 14 / 16 px */
+  --app-radius-xs: 0.375rem;
+  --app-radius-sm: 0.5rem;
+  --app-radius-md: 0.625rem;
+  --app-radius-lg: 0.75rem;
+  --app-radius-xl: 0.75rem;
+  --app-radius-2xl: 0.875rem;
+  --app-radius-3xl: 1rem;
+
+  /* Sombras: controles, flutuantes e diálogo. Cards comuns ficam planos. */
+  --app-shadow-xs:
+    0 1px 2px rgb(16 24 40 / 5%);
+
+  --app-shadow-sm:
+    0 1px 2px rgb(16 24 40 / 6%);
 
   --app-shadow-card:
-    0 1px 2px rgb(15 23 42 / 4%),
-    0 8px 24px rgb(15 23 42 / 5%);
+    0 1px 2px rgb(16 24 40 / 4%);
+
+  --app-shadow-raised:
+    0 8px 24px rgb(16 24 40 / 9%);
+
+  --app-shadow-dropdown:
+    0 12px 32px rgb(16 24 40 / 14%),
+    0 2px 8px rgb(16 24 40 / 6%);
 
   --app-shadow-dialog:
-    0 24px 60px rgb(15 23 42 / 22%);
+    0 24px 64px rgb(16 24 40 / 20%),
+    0 6px 18px rgb(16 24 40 / 8%);
+
+  --app-page-gutter: 1rem;
+  --app-page-padding-y: 1.25rem;
+  --app-page-padding-y-compact: 1rem;
+  --app-page-padding-y-spacious: 1.5rem;
+  --app-section-gap: 1.25rem;
+  --app-section-gap-compact: 1rem;
+  --app-section-gap-spacious: 1.75rem;
+  --app-card-padding: 1rem;
+  --app-control-padding-x: 0.875rem;
+  --app-control-padding-y: 0.625rem;
+  --app-control-height-sm: 2rem;
+  --app-control-height-md: 2.5rem;
+  --app-control-height-lg: 2.75rem;
 }
 
-/* Tema escuro */
+/*
+ * Tema escuro.
+ */
 html.dark {
   color-scheme: dark;
 
-  --app-background: #09090b;
-  --app-surface: #111113;
-  --app-surface-muted: #18181b;
-  --app-surface-hover: #27272a;
+  --app-background: #0c0d12;
+  --app-surface: #13151d;
+  --app-surface-elevated: #1a1d27;
+  --app-surface-subtle: #171a23;
+  --app-surface-muted: #1e222d;
+  --app-surface-hover: #252a36;
+  --app-surface-active: #2c3240;
 
-  --app-foreground: #fafafa;
-  --app-muted-foreground: #a1a1aa;
+  --app-foreground: #f5f7fa;
+  --app-foreground-soft: #d0d5dd;
+  --app-muted-foreground: #aab2c0;
+  --app-subtle-foreground: #8f99aa;
+  --app-disabled-foreground: #667085;
 
-  --app-border: #27272a;
-  --app-border-strong: #3f3f46;
+  --app-border: #252a35;
+  --app-border-strong: #343a46;
+  --app-border-subtle: #1d2029;
 
-  --app-primary: #fafafa;
-  --app-primary-hover: #e4e4e7;
-  --app-primary-foreground: #09090b;
+  --app-primary: #8b83ff;
+  --app-primary-hover: #a098ff;
+  --app-primary-active: #766dff;
+  --app-primary-muted: #292641;
+  --app-primary-muted-hover: #353057;
+  --app-primary-foreground: #101117;
 
-  --app-success: #4ade80;
-  --app-success-muted: rgb(20 83 45 / 35%);
+  --app-success: #4acb98;
+  --app-success-strong: #73d9b2;
+  --app-success-muted: rgb(23 135 95 / 20%);
 
-  --app-danger: #f87171;
-  --app-danger-hover: #ef4444;
-  --app-danger-muted: rgb(127 29 29 / 35%);
+  --app-danger: #ff7c91;
+  --app-danger-strong: #ff9aaa;
+  --app-danger-hover: #ff667f;
+  --app-danger-muted: rgb(214 69 93 / 20%);
 
-  --app-warning: #fbbf24;
-  --app-warning-muted: rgb(120 53 15 / 35%);
+  --app-warning: #f5b45d;
+  --app-warning-strong: #f8c77f;
+  --app-warning-muted: rgb(201 107 18 / 20%);
 
-  --app-info: #38bdf8;
-  --app-info-muted: rgb(12 74 110 / 35%);
+  --app-info: #7d9cff;
+  --app-info-strong: #9eb3ff;
+  --app-info-muted: rgb(65 105 225 / 21%);
+
+  --app-chart-1: #8b83ff;
+  --app-chart-2: #a78bfa;
+  --app-chart-3: #4fd1b7;
+  --app-chart-4: #f7b955;
+  --app-chart-5: #f17eb4;
+  --app-chart-grid: #292e39;
+  --app-chart-label: #98a2b3;
+
+  --app-tag-purple: #c4b5fd;
+  --app-tag-purple-muted: rgb(124 58 237 / 22%);
+  --app-tag-blue: #93c5fd;
+  --app-tag-blue-muted: rgb(37 99 235 / 22%);
+  --app-tag-cyan: #67e8f9;
+  --app-tag-cyan-muted: rgb(8 145 178 / 22%);
+  --app-tag-green: #86efac;
+  --app-tag-green-muted: rgb(21 128 61 / 22%);
+  --app-tag-orange: #fdba74;
+  --app-tag-orange-muted: rgb(194 65 12 / 22%);
+  --app-tag-amber: #fcd34d;
+  --app-tag-amber-muted: rgb(180 83 9 / 22%);
+  --app-tag-pink: #f9a8d4;
+  --app-tag-pink-muted: rgb(190 24 93 / 22%);
+  --app-tag-red: #fca5a5;
+  --app-tag-red-muted: rgb(185 28 28 / 22%);
+  --app-tag-slate: #cbd5e1;
+  --app-tag-slate-muted: rgb(71 85 105 / 35%);
 
   --app-overlay: rgb(0 0 0 / 72%);
-  --app-ring: #a1a1aa;
+  --app-ring: #a49dff;
+
+  --app-shadow-xs:
+    0 1px 2px rgb(0 0 0 / 20%);
+
+  --app-shadow-sm:
+    0 1px 3px rgb(0 0 0 / 24%);
 
   --app-shadow-card:
-    0 1px 2px rgb(0 0 0 / 25%),
-    0 12px 30px rgb(0 0 0 / 20%);
+    0 1px 3px rgb(0 0 0 / 22%);
+
+  --app-shadow-raised:
+    0 10px 28px rgb(0 0 0 / 30%);
+
+  --app-shadow-dropdown:
+    0 14px 36px rgb(0 0 0 / 42%),
+    0 3px 10px rgb(0 0 0 / 22%);
 
   --app-shadow-dialog:
-    0 24px 70px rgb(0 0 0 / 55%);
+    0 28px 72px rgb(0 0 0 / 52%),
+    0 8px 22px rgb(0 0 0 / 30%);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --app-page-gutter: 1.5rem;
+    --app-page-padding-y: 1.5rem;
+    --app-page-padding-y-compact: 1.25rem;
+    --app-page-padding-y-spacious: 2rem;
+    --app-section-gap: 1.5rem;
+    --app-section-gap-compact: 1.25rem;
+    --app-section-gap-spacious: 2rem;
+    --app-card-padding: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --app-page-gutter: 2rem;
+    --app-page-padding-y: 2rem;
+    --app-page-padding-y-compact: 1.5rem;
+    --app-page-padding-y-spacious: 2.5rem;
+    --app-section-gap: 1.75rem;
+    --app-section-gap-compact: 1.5rem;
+    --app-section-gap-spacious: 2.25rem;
+    --app-card-padding: 1.5rem;
+  }
 }
 
 @layer base {
@@ -182,7 +472,9 @@ html.dark {
     color: var(--app-foreground);
 
     font-family: var(--app-font-sans);
-    line-height: 1.5;
+    font-size: 0.875rem;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    line-height: 1.6;
 
     transition:
       background-color 200ms ease,
@@ -194,6 +486,32 @@ html.dark {
     min-height: 100vh;
     min-height: 100dvh;
     isolation: isolate;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+    color: var(--app-foreground);
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  strong,
+  b {
+    font-weight: 650;
+  }
+
+  small {
+    font-size: 0.75rem;
   }
 
   button,
@@ -238,7 +556,14 @@ html.dark {
   input::placeholder,
   textarea::placeholder {
     color: var(--app-muted-foreground);
-    opacity: 0.8;
+    opacity: 0.78;
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    appearance: none;
   }
 
   img,
@@ -260,18 +585,12 @@ html.dark {
   }
 
   ::selection {
-    background-color: var(--app-primary);
-    color: var(--app-primary-foreground);
+    background-color: var(--app-primary-muted-hover);
+    color: var(--app-foreground);
   }
 }
 
 @layer utilities {
-  /*
-   * Truncamento em uma linha.
-   *
-   * Uso:
-   * className="truncate-text"
-   */
   .truncate-text {
     min-width: 0;
     overflow: hidden;
@@ -279,9 +598,6 @@ html.dark {
     white-space: nowrap;
   }
 
-  /*
-   * Truncamento em duas linhas.
-   */
   .truncate-text-2 {
     display: -webkit-box;
     min-width: 0;
@@ -290,9 +606,6 @@ html.dark {
     -webkit-line-clamp: 2;
   }
 
-  /*
-   * Truncamento em três linhas.
-   */
   .truncate-text-3 {
     display: -webkit-box;
     min-width: 0;
@@ -301,19 +614,25 @@ html.dark {
     -webkit-line-clamp: 3;
   }
 
-  /*
-   * Área mínima adequada para botões e itens clicáveis,
-   * principalmente no celular.
-   */
+  .numeric-value {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
   .clickable-area {
     min-width: 2.75rem;
     min-height: 2.75rem;
     touch-action: manipulation;
   }
 
-  /*
-   * Remove visualmente a barra mantendo a rolagem.
-   */
   .hide-scrollbar {
     scrollbar-width: none;
   }
@@ -322,9 +641,6 @@ html.dark {
     display: none;
   }
 
-  /*
-   * Barra de rolagem discreta.
-   */
   .scrollbar-subtle {
     scrollbar-color: var(--app-border-strong) transparent;
     scrollbar-width: thin;
@@ -344,42 +660,32 @@ html.dark {
     border-radius: 999px;
   }
 
-  /*
-   * Evita que conteúdos flex ou grid ultrapassem
-   * o espaço disponível.
-   */
   .content-min-width {
     min-width: 0;
   }
 
-  /*
-   * Container principal reutilizável das páginas.
-   */
   .page-container {
     width: 100%;
     max-width: 1600px;
     min-width: 0;
     margin-inline: auto;
-    padding: 1rem;
+    padding: var(--app-page-gutter);
   }
 
-  @media (min-width: 640px) {
-    .page-container {
-      padding: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .page-container {
-      padding: 2rem;
-    }
+  .surface-grid {
+    background-image:
+      linear-gradient(to right, var(--app-border-subtle) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--app-border-subtle) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
-/*
- * Reduz animações para usuários que ativaram
- * essa preferência no sistema operacional.
- */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

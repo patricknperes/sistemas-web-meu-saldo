@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon.svg"
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <meta
+      name="description"
+      content="Meu Saldo — sistema de gerenciamento financeiro pessoal."
+    />
+
+    <meta
+      id="theme-color"
+      name="theme-color"
+      content="#f6f7fb"
+    />
+
+    <meta
+      name="color-scheme"
+      content="light dark"
+    />
+
+    <title>Meu Saldo</title>
+
+    <script>
+      (() => {
+        try {
+          const savedTheme =
+            localStorage.getItem("theme");
+
+          const prefersDark =
+            window.matchMedia(
+              "(prefers-color-scheme: dark)",
+            ).matches;
+
+          const shouldUseDarkTheme =
+            savedTheme === "dark" ||
+            (
+              savedTheme !== "light" &&
+              prefersDark
+            );
+
+          document.documentElement.classList.toggle(
+            "dark",
+            shouldUseDarkTheme,
+          );
+
+          document
+            .querySelector("#theme-color")
+            ?.setAttribute(
+              "content",
+              shouldUseDarkTheme
+                ? "#0c0d12"
+                : "#f6f7fb",
+            );
+        } catch {
+          document.documentElement.classList.remove(
+            "dark",
+          );
+        }
+      })();
+    </script>
+
+    <script
+      src="https://accounts.google.com/gsi/client"
+      async
+      defer
+    ></script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script
+      type="module"
+      src="/src/main.jsx"
+    ></script>
+  </body>
+</html>

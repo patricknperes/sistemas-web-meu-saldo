@@ -1,0 +1,35 @@
+import {
+    useEffect,
+    useState,
+} from "react";
+
+function getMatches(query) {
+    if (typeof window === "undefined") {
+        return false;
+    }
+
+    return window.matchMedia(query).matches;
+}
+
+function useMediaQuery(query) {
+    const [matches, setMatches] = useState(() => getMatches(query));
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia(query);
+
+        function handleChange(event) {
+            setMatches(event.matches);
+        }
+
+        setMatches(mediaQuery.matches);
+        mediaQuery.addEventListener("change", handleChange);
+
+        return () => {
+            mediaQuery.removeEventListener("change", handleChange);
+        };
+    }, [query]);
+
+    return matches;
+}
+
+export default useMediaQuery;
