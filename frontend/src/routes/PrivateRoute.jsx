@@ -1,39 +1,18 @@
-import {
-    Navigate,
-    Outlet,
-    useLocation,
-} from "react-router";
+import { Navigate, Outlet, useLocation } from "react-router";
 
+import RouteFallback from "../components/system/RouteFallback.jsx";
 import { useAuth } from "../hooks/useAuth.js";
 
 function PrivateRoute() {
-    const {
-        isAuthenticated,
-        loading,
-    } = useAuth();
-
+    const { isAuthenticated, loading } = useAuth();
     const location = useLocation();
 
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <p className="text-slate-600">
-                    Carregando...
-                </p>
-            </div>
-        );
+        return <RouteFallback fullScreen label="Verificando sua sessão" />;
     }
 
     if (!isAuthenticated) {
-        return (
-            <Navigate
-                to="/login"
-                replace
-                state={{
-                    from: location,
-                }}
-            />
-        );
+        return <Navigate to="/login" replace state={{ from: location }} />;
     }
 
     return <Outlet />;

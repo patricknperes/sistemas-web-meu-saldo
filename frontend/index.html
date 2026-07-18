@@ -22,12 +22,19 @@
     <meta
       id="theme-color"
       name="theme-color"
-      content="#f8fafc"
+      content="#f4f7fa"
     />
 
     <meta
       name="color-scheme"
       content="light dark"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
     />
 
     <title>Meu Saldo</title>
@@ -60,8 +67,8 @@
             ?.setAttribute(
               "content",
               shouldUseDarkTheme
-                ? "#09090b"
-                : "#f8fafc",
+                ? "#07090d"
+                : "#f4f7fa",
             );
         } catch {
           document.documentElement.classList.remove(

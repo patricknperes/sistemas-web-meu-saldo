@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import { authRoutes } from "./authRoutes.js";
 import { dashboardRoutes } from "./dashboardRoutes.js";
+import { passwordResetRoutes } from "./passwordResetRoutes.js";
 import { recurringTransactionRoutes } from "./recurringTransactionRoutes.js";
 import { tagRoutes } from "./tagRoutes.js";
 import { transactionRoutes } from "./transactionRoutes.js";
@@ -12,6 +13,11 @@ const router = Router();
 router.use(
   "/auth",
   authRoutes
+);
+
+router.use(
+  "/auth",
+  passwordResetRoutes
 );
 
 router.use(

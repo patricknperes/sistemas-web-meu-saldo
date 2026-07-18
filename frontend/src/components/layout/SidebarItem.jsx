@@ -1,71 +1,22 @@
-import {
-    motion,
-} from "motion/react";
+import { motion } from "motion/react";
+import { NavLink } from "react-router";
 
-import {
-    NavLink,
-} from "react-router";
-
-function SidebarItem({
-    item,
-    collapsed = false,
-    onNavigate,
-    layoutId,
-}) {
+function SidebarItem({ item, collapsed = false, onNavigate, layoutId }) {
     const Icon = item.icon;
 
     return (
         <NavLink
             to={item.path}
-            end={
-                item.path ===
-                "/dashboard"
-            }
+            end={item.path === "/dashboard"}
             onClick={onNavigate}
-            title={
-                collapsed
-                    ? item.label
-                    : undefined
-            }
+            title={collapsed ? item.label : undefined}
             aria-label={item.label}
-            className={({
-                isActive,
-            }) => `
-                group
-                relative
-                grid h-11 min-w-0
-                items-center
-                overflow-hidden
-                rounded-xl
-                text-sm font-medium
-                outline-none
-                transition-all
-                duration-200
-                focus-visible:ring-2
-                focus-visible:ring-blue-500/20
-
-                ${collapsed
-                    ? `
-                            grid-cols-[20px]
-                            justify-center
-                            px-0
-                        `
-                    : `
-                            grid-cols-[20px_minmax(0,1fr)]
-                            gap-3
-                            px-3
-                        `
-                }
-
-                ${isActive
-                    ? "text-white"
-                    : `
-                            text-muted-foreground
-                            hover:bg-surface-hover
-                            hover:text-foreground
-                        `
-                }
-            `}
+            className={({ isActive }) => [
+                "group relative flex h-11 min-w-0 items-center overflow-hidden rounded-xl text-sm font-medium outline-none transition-colors duration-200",
+                "focus-visible:ring-2 focus-visible:ring-ring/30",
+                collapsed ? "justify-center px-0" : "gap-3 px-3",
+                isActive ? "text-primary" : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
+            ].join(" ")}
         >
             {({ isActive }) => (
                 <>
@@ -73,66 +24,18 @@ function SidebarItem({
                         <motion.span
                             layoutId={layoutId}
                             aria-hidden="true"
-                            transition={{
-                                type: "spring",
-                                stiffness: 460,
-                                damping: 38,
-                                mass: 0.72,
-                            }}
-                            className={`
-                                absolute z-0
-                                bg-gradient-to-r
-                                from-blue-600
-                                to-indigo-600
-                                shadow-md
-                                shadow-blue-500/20
-
-                                ${collapsed
-                                    ? `
-                                            left-1/2 top-1/2
-                                            size-10
-                                            -translate-x-1/2
-                                            -translate-y-1/2
-                                            rounded-xl
-                                        `
-                                    : `
-                                            inset-0
-                                            rounded-xl
-                                        `
-                                }
-                            `}
+                            transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.75 }}
+                            className={[
+                                "absolute bg-primary-soft",
+                                collapsed ? "inset-0.5 rounded-[11px]" : "inset-0 rounded-xl",
+                            ].join(" ")}
                         />
                     )}
-
-                    <motion.span
-                        aria-hidden="true"
-                        animate={{
-                            scale: isActive
-                                ? 1.05
-                                : 1,
-                        }}
-                        transition={{
-                            duration: 0.18,
-                        }}
-                        className="
-                            relative z-10
-                            flex size-5
-                            items-center justify-center
-                        "
-                    >
-                        <Icon size={20} />
-                    </motion.span>
-
-                    {!collapsed && (
-                        <span
-                            className="
-                                relative z-10
-                                min-w-0 truncate
-                            "
-                        >
-                            {item.label}
-                        </span>
-                    )}
+                    {isActive && !collapsed && <span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary" />}
+                    <span className="relative z-10 flex size-5 shrink-0 items-center justify-center">
+                        <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
+                    </span>
+                    {!collapsed && <span className="relative z-10 min-w-0 truncate">{item.label}</span>}
                 </>
             )}
         </NavLink>

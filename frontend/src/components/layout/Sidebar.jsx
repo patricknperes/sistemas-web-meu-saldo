@@ -1,429 +1,75 @@
-import {
-    LayoutGroup,
-} from "motion/react";
+import { LayoutGroup } from "motion/react";
+import { LogOut, X } from "lucide-react";
+import { Link, useNavigate } from "react-router";
 
-import {
-    RiArrowDownCircleLine,
-    RiArrowUpCircleLine,
-    RiCloseLine,
-    RiDashboardLine,
-    RiGroupLine,
-    RiHistoryLine,
-    RiLogoutBoxRLine,
-    RiUser3Line,
-    RiWallet3Line,
-} from "react-icons/ri";
-
-import {
-    Link,
-    useNavigate,
-} from "react-router";
-
-import {
-    useAuth,
-} from "../../hooks/useAuth.js";
-
+import { filterNavigation, primaryNavigation, secondaryNavigation } from "../../config/navigation.js";
+import { useAuth } from "../../hooks/useAuth.js";
+import BrandMark from "../ui/BrandMark.jsx";
 import UserAvatar from "../ui/UserAvatar.jsx";
 import SidebarItem from "./SidebarItem.jsx";
 
-const menuItems = [
-    {
-        label: "Dashboard",
-        path: "/dashboard",
-        icon: RiDashboardLine,
-    },
-    {
-        label: "Receitas",
-        path: "/receitas",
-        icon: RiArrowUpCircleLine,
-    },
-    {
-        label: "Despesas",
-        path: "/despesas",
-        icon: RiArrowDownCircleLine,
-    },
-    {
-        label: "Histórico",
-        path: "/historico",
-        icon: RiHistoryLine,
-    },
-    {
-        label: "Meu perfil",
-        path: "/perfil",
-        icon: RiUser3Line,
-    },
-    {
-        label: "Usuários",
-        path: "/usuarios",
-        icon: RiGroupLine,
-        adminOnly: true,
-    },
-];
-
-function getShortName(name) {
-    return (
-        name?.trim() ||
-        "Usuário"
-    )
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .join(" ");
-}
-
-function Sidebar({
-    mode = "desktop",
-    collapsed = false,
-    onClose,
-}) {
-    const navigate =
-        useNavigate();
-
-    const {
-        user,
-        logout,
-    } = useAuth();
-
-    const mobile =
-        mode === "mobile";
-
-    const labelsVisible =
-        mobile || !collapsed;
-
-    const fullName =
-        user?.name?.trim() ||
-        "Usuário";
-
-    const shortName =
-        getShortName(fullName);
-
-    const roleLabel =
-        user?.role === "ADMIN"
-            ? "Administrador"
-            : "Usuário";
-
-    const visibleMenuItems =
-        menuItems.filter(
-            (item) =>
-                !item.adminOnly ||
-                user?.role ===
-                "ADMIN"
-        );
+function Sidebar({ mode = "desktop", collapsed = false, onClose }) {
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
+    const mobile = mode === "mobile";
+    const labelsVisible = mobile || !collapsed;
+    const fullName = user?.name?.trim() || "Usuário";
+    const roleLabel = user?.role === "ADMIN" ? "Administrador" : "Usuário";
+    const mainItems = filterNavigation(primaryNavigation, user?.role);
+    const accountItems = filterNavigation(secondaryNavigation, user?.role);
 
     function handleLogout() {
         logout();
-        onClose?.();
-
-        navigate(
-            "/login",
-            {
-                replace: true,
-            }
-        );
-    }
-
-    function handleNavigation() {
-        if (mobile) {
-            onClose?.();
-        }
+        navigate("/login", { replace: true });
     }
 
     return (
         <aside
-            aria-label="Menu principal"
-            className={`
-                relative z-30
-                flex h-full shrink-0
-                flex-col overflow-hidden
-                border-r border-border
-                bg-surface
-                transition-[width]
-                duration-300
-                ease-smooth
-
-                ${mobile
-                    ? "w-full"
-                    : `
-                            hidden h-dvh
-                            lg:flex
-
-                            ${collapsed
-                        ? "w-[76px]"
-                        : "w-[272px]"
-                    }
-                        `
-                }
-            `}
+            className={[
+                "flex h-full shrink-0 flex-col border-r border-border bg-surface/95 backdrop-blur-xl",
+                mobile ? "w-full shadow-dialog" : "hidden transition-[width] duration-300 lg:flex",
+                !mobile && collapsed ? "w-[76px]" : "w-[252px]",
+            ].join(" ")}
         >
-            <header
-                className={`
-                    flex h-16 shrink-0
-                    items-center
-                    border-b border-border
-                    px-4
-
-                    ${labelsVisible
-                        ? "justify-between"
-                        : "justify-center"
-                    }
-                `}
-            >
-                <Link
-                    to="/dashboard"
-                    onClick={handleNavigation}
-                    aria-label="Ir para a Dashboard"
-                    title={
-                        collapsed
-                            ? "Meu Saldo"
-                            : undefined
-                    }
-                    className="
-                        flex min-w-0
-                        items-center gap-3
-                        overflow-hidden
-                        rounded-xl
-                        outline-none
-                        focus-visible:ring-2
-                        focus-visible:ring-blue-500/20
-                    "
-                >
-                    <span
-                        className="
-                            flex size-10 shrink-0
-                            items-center justify-center
-                            rounded-xl
-                            bg-gradient-to-br
-                            from-blue-600
-                            to-indigo-600
-                            text-white
-                            shadow-md
-                            shadow-blue-500/20
-                        "
-                    >
-                        <RiWallet3Line
-                            size={20}
-                            aria-hidden="true"
-                        />
-                    </span>
-
-                    {labelsVisible && (
-                        <span className="min-w-0">
-                            <strong
-                                className="
-                                    block truncate
-                                    text-sm font-semibold
-                                    text-foreground
-                                "
-                            >
-                                Meu Saldo
-                            </strong>
-
-                            <span
-                                className="
-                                    mt-0.5 block
-                                    truncate text-[11px]
-                                    text-muted-foreground
-                                "
-                            >
-                                Controle financeiro
-                            </span>
-                        </span>
-                    )}
+            <div className={labelsVisible ? "flex h-20 items-center justify-between px-5" : "flex h-20 items-center justify-center px-3"}>
+                <Link to="/dashboard" onClick={onClose} aria-label="Ir para o dashboard" className="min-w-0 outline-none focus-visible:ring-2 focus-visible:ring-ring/30 rounded-xl">
+                    <BrandMark compact={!labelsVisible} />
                 </Link>
-
                 {mobile && (
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label="Fechar menu lateral"
-                        className="
-                            inline-flex size-10
-                            shrink-0
-                            items-center justify-center
-                            rounded-xl
-                            border border-border
-                            bg-background/70
-                            text-muted-foreground
-                            outline-none
-                            transition
-                            hover:bg-surface-hover
-                            hover:text-foreground
-                            focus-visible:ring-2
-                            focus-visible:ring-ring/20
-                        "
-                    >
-                        <RiCloseLine
-                            size={20}
-                            aria-hidden="true"
-                        />
+                    <button type="button" onClick={onClose} aria-label="Fechar menu" className="flex size-10 items-center justify-center rounded-xl text-muted-foreground hover:bg-surface-hover hover:text-foreground">
+                        <X size={20} aria-hidden="true" />
                     </button>
                 )}
-            </header>
+            </div>
 
-            <LayoutGroup
-                id={`sidebar-${mode}`}
-            >
-                <nav
-                    className="
-                        flex min-h-0 flex-1
-                        flex-col
-                        overflow-x-hidden
-                        overflow-y-auto
-                        p-3
-                        scrollbar-subtle
-                    "
-                >
-                    {labelsVisible && (
-                        <p
-                            className="
-                                mb-2 px-3
-                                text-[10px]
-                                font-bold uppercase
-                                tracking-[0.12em]
-                                text-muted-foreground
-                            "
-                        >
-                            Navegação
-                        </p>
-                    )}
-
+            <nav aria-label="Navegação principal" className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 scrollbar-subtle">
+                <LayoutGroup id={mobile ? "mobile-navigation" : "desktop-navigation"}>
+                    {labelsVisible && <p className="mb-2 mt-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-subtle-foreground">Finanças</p>}
                     <div className="space-y-1">
-                        {visibleMenuItems.map(
-                            (item) => (
-                                <SidebarItem
-                                    key={item.path}
-                                    item={item}
-                                    collapsed={
-                                        !mobile &&
-                                        collapsed
-                                    }
-                                    onNavigate={
-                                        handleNavigation
-                                    }
-                                    layoutId={`sidebar-active-${mode}`}
-                                />
-                            )
-                        )}
+                        {mainItems.map((item) => <SidebarItem key={item.path} item={item} collapsed={!labelsVisible} onNavigate={onClose} layoutId={`${mode}-active-nav`} />)}
                     </div>
-                </nav>
-            </LayoutGroup>
 
-            <footer
-                className="
-                    shrink-0
-                    border-t border-border
-                    p-3
-                "
-            >
-                {labelsVisible ? (
-                    <div
-                        className="
-                            flex min-w-0
-                            items-center gap-2
-                            rounded-2xl
-                            border border-border
-                            bg-background/60
-                            p-2
-                        "
-                    >
-                        <Link
-                            to="/perfil"
-                            onClick={handleNavigation}
-                            title={fullName}
-                            aria-label={`Abrir perfil de ${fullName}`}
-                            className="
-                                flex min-w-0 flex-1
-                                items-center gap-3
-                                overflow-hidden
-                                rounded-xl p-1
-                                outline-none
-                                transition
-                                hover:bg-surface-hover
-                                focus-visible:ring-2
-                                focus-visible:ring-ring/20
-                            "
-                        >
-                            <UserAvatar
-                                name={fullName}
-                                size="md"
-                                showTitle={false}
-                            />
-
-                            <span className="min-w-0 flex-1">
-                                <strong
-                                    className="
-                                        block truncate
-                                        text-sm font-medium
-                                        text-foreground
-                                    "
-                                >
-                                    {shortName}
-                                </strong>
-
-                                <span
-                                    className="
-                                        mt-0.5 block
-                                        truncate text-[11px]
-                                        text-muted-foreground
-                                    "
-                                >
-                                    {roleLabel}
-                                </span>
-                            </span>
-                        </Link>
-
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            aria-label="Sair da conta"
-                            title="Sair"
-                            className="
-                                inline-flex size-9
-                                shrink-0
-                                items-center justify-center
-                                rounded-xl
-                                text-muted-foreground
-                                outline-none
-                                transition
-                                hover:bg-danger-muted
-                                hover:text-danger
-                                focus-visible:ring-2
-                                focus-visible:ring-danger/20
-                            "
-                        >
-                            <RiLogoutBoxRLine
-                                size={18}
-                                aria-hidden="true"
-                            />
-                        </button>
+                    <div className="my-5 h-px bg-border" />
+                    {labelsVisible && <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-subtle-foreground">Conta</p>}
+                    <div className="space-y-1">
+                        {accountItems.map((item) => <SidebarItem key={item.path} item={item} collapsed={!labelsVisible} onNavigate={onClose} layoutId={`${mode}-active-nav`} />)}
                     </div>
-                ) : (
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        aria-label="Sair da conta"
-                        title="Sair"
-                        className="
-                            mx-auto
-                            flex size-10
-                            items-center justify-center
-                            rounded-xl
-                            text-muted-foreground
-                            outline-none
-                            transition
-                            hover:bg-danger-muted
-                            hover:text-danger
-                            focus-visible:ring-2
-                            focus-visible:ring-danger/20
-                        "
-                    >
-                        <RiLogoutBoxRLine
-                            size={19}
-                            aria-hidden="true"
-                        />
-                    </button>
-                )}
-            </footer>
+                </LayoutGroup>
+            </nav>
+
+            <div className="border-t border-border p-3">
+                <div className={labelsVisible ? "mb-2 flex items-center gap-3 rounded-xl bg-surface-muted/70 p-2.5" : "mb-2 flex justify-center py-1"}>
+                    <UserAvatar name={fullName} src={user?.avatarUrl} size="md" showTitle={false} />
+                    {labelsVisible && <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-foreground">{fullName}</p><p className="truncate text-xs text-muted-foreground">{roleLabel}</p></div>}
+                </div>
+                <button type="button" onClick={handleLogout} title={!labelsVisible ? "Sair" : undefined} className={[
+                    "flex h-10 w-full items-center rounded-xl text-sm font-medium text-muted-foreground transition hover:bg-danger-muted hover:text-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/25",
+                    labelsVisible ? "gap-3 px-3" : "justify-center",
+                ].join(" ")}>
+                    <LogOut size={18} strokeWidth={1.8} aria-hidden="true" />
+                    {labelsVisible && <span>Sair da conta</span>}
+                </button>
+            </div>
         </aside>
     );
 }

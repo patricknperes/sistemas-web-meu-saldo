@@ -1,16 +1,49 @@
-# React + Vite
+# Meu Saldo — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend React + Vite + Tailwind CSS do sistema Meu Saldo.
 
-Currently, two official plugins are available:
+## Etapa atual
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Rewrite Visual concluído — Etapa 9.**
 
-## React Compiler
+A aplicação utiliza:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Design System Aqua Graphite;
+- Radix UI e CMDK;
+- TanStack Query e Table;
+- React Hook Form e Zod;
+- Recharts;
+- Lucide React;
+- Motion;
+- Vitest, Testing Library e Playwright.
 
-## Expanding the Oxlint configuration
+## Requisitos
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+O React Router 8 usado pelo projeto requer Node.js 22.22.0 ou superior. O repositório inclui `.nvmrc`.
+
+```bash
+nvm use
+npm install
+npm run dev
+```
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run test:unit
+npm run audit:ui
+npm run build:report
+npm run validate
+npm run test:e2e
+npm run test:e2e:ui
+npm run preview
+```
+
+Para o primeiro teste end-to-end:
+
+```bash
+npx playwright install chromium
+```

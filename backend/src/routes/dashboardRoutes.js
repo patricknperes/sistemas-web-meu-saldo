@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
   dashboardSummaryController,
+  historyAnalyticsController,
   monthlyHistoryController,
 } from "../controllers/dashboardController.js";
 
@@ -21,6 +22,11 @@ dashboardRoutes.get(
 dashboardRoutes.get(
   "/history",
   monthlyHistoryController
+);
+
+dashboardRoutes.get(
+  "/history/analytics",
+  historyAnalyticsController
 );
 
 export { dashboardRoutes };

@@ -107,7 +107,45 @@ async function getHistory(year) {
     return response.data;
 }
 
+function buildHistoryAnalyticsParams(filters = {}) {
+    const params = {};
+
+    for (const field of [
+        "month",
+        "year",
+        "startDate",
+        "endDate",
+        "type",
+        "tagId",
+        "search",
+    ]) {
+        const value = filters[field];
+
+        if (
+            value !== undefined &&
+            value !== null &&
+            value !== ""
+        ) {
+            params[field] = value;
+        }
+    }
+
+    return params;
+}
+
+async function getHistoryAnalytics(filters = {}) {
+    const response = await api.get(
+        "/dashboard/history/analytics",
+        {
+            params: buildHistoryAnalyticsParams(filters),
+        },
+    );
+
+    return response.data;
+}
+
 export const dashboardService = {
     getSummary,
     getHistory,
+    getHistoryAnalytics,
 };

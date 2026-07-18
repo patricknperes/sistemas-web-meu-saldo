@@ -1,174 +1,30 @@
-import {
-    RiMenuFoldLine,
-    RiMenuLine,
-    RiMenuUnfoldLine,
-} from "react-icons/ri";
-
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useLocation } from "react-router";
+import { routeMetadata } from "../../config/navigation.js";
 import ThemeToggle from "../theme/ThemeToggle.jsx";
 import UserMenu from "./UserMenu.jsx";
 
-function AppBar({
-    sidebarCollapsed,
-    mobileSidebarOpen,
-    onOpenMobileSidebar,
-    onToggleDesktopSidebar,
-}) {
+function AppBar({ sidebarCollapsed, onToggleDesktopSidebar }) {
+    const { pathname } = useLocation();
+    const meta = routeMetadata[pathname] || routeMetadata["/dashboard"];
+
     return (
-        <header
-            className="
-                sticky top-0 z-20
-                flex h-16 shrink-0
-                items-center justify-between
-                border-b border-border
-                bg-surface/90
-                px-3
-                backdrop-blur-xl
-                supports-[backdrop-filter]:bg-surface/80
-                sm:px-5
-            "
-        >
-            <div
-                className="
-                    flex min-w-0
-                    items-center gap-3
-                "
-            >
-                <button
-                    type="button"
-                    onClick={
-                        onOpenMobileSidebar
-                    }
-                    aria-label="Abrir menu lateral"
-                    aria-expanded={
-                        mobileSidebarOpen
-                    }
-                    title="Abrir menu"
-                    className="
-                        flex size-10
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-xl
-                        text-muted-foreground
-                        outline-none
-                        transition
-                        hover:bg-surface-hover
-                        hover:text-foreground
-                        focus-visible:ring-2
-                        focus-visible:ring-ring/20
-                        active:scale-95
-                        lg:hidden
-                    "
-                >
-                    <RiMenuLine
-                        size={21}
-                        aria-hidden="true"
-                    />
-                </button>
-
-                <button
-                    type="button"
-                    onClick={
-                        onToggleDesktopSidebar
-                    }
-                    aria-label={
-                        sidebarCollapsed
-                            ? "Expandir menu lateral"
-                            : "Recolher menu lateral"
-                    }
-                    aria-expanded={
-                        !sidebarCollapsed
-                    }
-                    title={
-                        sidebarCollapsed
-                            ? "Expandir menu"
-                            : "Recolher menu"
-                    }
-                    className="
-                        hidden size-10
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-xl
-                        text-muted-foreground
-                        outline-none
-                        transition
-                        hover:bg-surface-hover
-                        hover:text-foreground
-                        focus-visible:ring-2
-                        focus-visible:ring-ring/20
-                        active:scale-95
-                        lg:flex
-                    "
-                >
-                    {sidebarCollapsed ? (
-                        <RiMenuUnfoldLine
-                            size={20}
-                            aria-hidden="true"
-                        />
-                    ) : (
-                        <RiMenuFoldLine
-                            size={20}
-                            aria-hidden="true"
-                        />
-                    )}
-                </button>
-
-                <div
-                    aria-hidden="true"
-                    className="
-                        hidden h-5 w-px
-                        bg-border
-                        lg:block
-                    "
-                />
-
-                <div
-                    className="
-                        hidden min-w-0
-                        lg:block
-                    "
-                >
-                    <p
-                        className="
-                            truncate
-                            text-sm
-                            font-semibold
-                            text-foreground
-                        "
-                    >
-                        Meu Saldo
-                    </p>
-
-                    <p
-                        className="
-                            mt-0.5 truncate
-                            text-[11px]
-                            text-muted-foreground
-                        "
-                    >
-                        Controle financeiro
-                    </p>
+        <header className="sticky top-0 z-20 shrink-0 border-b border-border bg-background/88 backdrop-blur-xl supports-[backdrop-filter]:bg-background/72">
+            <div className="mx-auto flex h-[72px] w-full max-w-[1520px] items-center justify-between gap-4 px-4 sm:px-6 xl:px-8">
+                <div className="flex min-w-0 items-center gap-3">
+                    <button type="button" onClick={onToggleDesktopSidebar} aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"} aria-expanded={!sidebarCollapsed} className="hidden size-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground outline-none transition hover:bg-surface-hover hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30 lg:flex">
+                        {sidebarCollapsed ? <PanelLeftOpen size={20} aria-hidden="true" /> : <PanelLeftClose size={20} aria-hidden="true" />}
+                    </button>
+                    <div className="min-w-0">
+                        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">{meta.eyebrow}</p>
+                        <h1 className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground sm:text-xl">{meta.title}</h1>
+                    </div>
                 </div>
-            </div>
-
-            <div
-                className="
-                    flex min-w-0
-                    items-center gap-1
-                "
-            >
-                <ThemeToggle />
-
-                <div
-                    aria-hidden="true"
-                    className="
-                        mx-1 h-5 w-px
-                        bg-border
-                    "
-                />
-
-                <UserMenu />
+                <div className="flex min-w-0 items-center gap-1.5">
+                    <ThemeToggle />
+                    <div aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
+                    <UserMenu />
+                </div>
             </div>
         </header>
     );

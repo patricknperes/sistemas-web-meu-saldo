@@ -1,402 +1,80 @@
-import {
-    useEffect,
-    useRef,
-    useState,
-} from "react";
+import { ChevronDown, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
+import { Link, useNavigate } from "react-router";
 
-import {
-    AnimatePresence,
-    motion,
-} from "motion/react";
-
-import {
-    RiArrowDownSLine,
-    RiLogoutBoxRLine,
-    RiSettings3Line,
-    RiShieldUserLine,
-} from "react-icons/ri";
-
-import {
-    Link,
-    useNavigate,
-} from "react-router";
-
-import {
-    useAuth,
-} from "../../hooks/useAuth.js";
-
+import { useAuth } from "../../hooks/useAuth.js";
 import UserAvatar from "../ui/UserAvatar.jsx";
 
 function getShortName(name) {
-    const normalizedName =
-        name?.trim() ||
-        "Usuário";
-
-    return normalizedName
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .join(" ");
-}
-
-function getUserInformation(user) {
-    const fullName =
-        user?.name?.trim() ||
-        "Usuário";
-
-    return {
-        fullName,
-        shortName:
-            getShortName(
-                fullName
-            ),
-
-        roleLabel:
-            user?.role === "ADMIN"
-                ? "Administrador"
-                : "Usuário",
-    };
+    return String(name ?? "Usuário").trim().split(/\s+/).filter(Boolean).slice(0, 2).join(" ");
 }
 
 function UserMenu() {
-    const navigate =
-        useNavigate();
-
-    const menuReference =
-        useRef(null);
-
-    const {
-        user,
-        logout,
-    } = useAuth();
-
-    const [
-        menuOpen,
-        setMenuOpen,
-    ] = useState(false);
-
-    const {
-        fullName,
-        shortName,
-        roleLabel,
-    } = getUserInformation(user);
-
-    useEffect(() => {
-        function handlePointerDown(
-            event
-        ) {
-            if (
-                menuReference.current &&
-                !menuReference.current
-                    .contains(
-                        event.target
-                    )
-            ) {
-                setMenuOpen(false);
-            }
-        }
-
-        function handleKeyDown(
-            event
-        ) {
-            if (
-                event.key ===
-                "Escape"
-            ) {
-                setMenuOpen(false);
-            }
-        }
-
-        document.addEventListener(
-            "pointerdown",
-            handlePointerDown
-        );
-
-        window.addEventListener(
-            "keydown",
-            handleKeyDown
-        );
-
-        return () => {
-            document.removeEventListener(
-                "pointerdown",
-                handlePointerDown
-            );
-
-            window.removeEventListener(
-                "keydown",
-                handleKeyDown
-            );
-        };
-    }, []);
-
-    function toggleMenu() {
-        setMenuOpen(
-            (currentState) =>
-                !currentState
-        );
-    }
-
-    function closeMenu() {
-        setMenuOpen(false);
-    }
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
+    const fullName = String(user?.name ?? "Usuário").trim() || "Usuário";
+    const shortName = getShortName(fullName);
+    const roleLabel = user?.role === "ADMIN" ? "Administrador" : "Usuário";
 
     function handleLogout() {
-        closeMenu();
         logout();
-
-        navigate(
-            "/login",
-            {
-                replace: true,
-            }
-        );
+        navigate("/login", { replace: true });
     }
 
     return (
-        <div
-            ref={menuReference}
-            className="
-                relative shrink-0
-            "
-        >
-            <button
-                type="button"
-                onClick={toggleMenu}
-                aria-label="Abrir menu do usuário"
-                aria-expanded={menuOpen}
-                aria-haspopup="menu"
-                title={fullName}
-                className={`
-                    group
-                    flex h-11 min-w-0
-                    items-center gap-2
-                    rounded-xl
-                    px-1.5
-                    outline-none
-                    transition
-                    hover:bg-surface-hover
-                    focus-visible:ring-2
-                    focus-visible:ring-ring/20
-
-                    ${menuOpen
-                        ? "bg-surface-hover"
-                        : ""
-                    }
-                `}
-            >
-                <UserAvatar
-                    name={fullName}
-                    size="md"
-                    showTitle={false}
-                />
-
-                <span
-                    className="
-                        hidden min-w-0
-                        max-w-32 truncate
-                        text-sm
-                        font-medium
-                        text-foreground
-                        md:block
-                    "
+        <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+                <button
+                    type="button"
+                    aria-label="Abrir menu do usuário"
+                    title={fullName}
+                    className="group flex h-11 min-w-0 items-center gap-2 rounded-control px-1.5 outline-none transition hover:bg-surface-hover focus-visible:ring-4 focus-visible:ring-primary/10 data-[state=open]:bg-surface-hover"
                 >
-                    {shortName}
-                </span>
+                    <UserAvatar name={fullName} src={user?.avatarUrl} size="md" showTitle={false} />
+                    <span className="hidden min-w-0 max-w-32 truncate text-sm font-semibold text-foreground md:block">{shortName}</span>
+                    <ChevronDown className="hidden size-4 shrink-0 text-subtle-foreground transition-transform group-data-[state=open]:rotate-180 md:block" aria-hidden="true" />
+                </button>
+            </DropdownMenu.Trigger>
 
-                <RiArrowDownSLine
-                    size={16}
-                    aria-hidden="true"
-                    className={`
-                        hidden shrink-0
-                        text-muted-foreground
-                        transition-transform
-                        duration-200
-                        md:block
-
-                        ${menuOpen
-                            ? "rotate-180"
-                            : ""
-                        }
-                    `}
-                />
-            </button>
-
-            <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        role="menu"
-                        initial={{
-                            opacity: 0,
-                            y: -8,
-                            scale: 0.98,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                            scale: 1,
-                        }}
-                        exit={{
-                            opacity: 0,
-                            y: -6,
-                            scale: 0.98,
-                        }}
-                        transition={{
-                            duration: 0.18,
-                            ease: [
-                                0.22,
-                                1,
-                                0.36,
-                                1,
-                            ],
-                        }}
-                        className="
-                            absolute right-0
-                            top-full z-50
-                            mt-2
-                            w-72
-                            max-w-[calc(100vw-1.5rem)]
-                            overflow-hidden
-                            rounded-2xl
-                            border border-border
-                            bg-surface
-                            p-2
-                            shadow-2xl
-                            shadow-slate-950/10
-                        "
-                    >
-                        <div
-                            className="
-                                flex min-w-0
-                                items-center gap-3
-                                rounded-xl
-                                bg-background/60
-                                p-3
-                            "
-                        >
-                            <UserAvatar
-                                name={fullName}
-                                size="lg"
-                                showTitle={false}
-                            />
-
-                            <div
-                                className="
-                                    min-w-0 flex-1
-                                "
-                            >
-                                <strong
-                                    title={fullName}
-                                    className="
-                                        block truncate
-                                        text-sm
-                                        font-semibold
-                                        text-foreground
-                                    "
-                                >
-                                    {shortName}
-                                </strong>
-
-                                <span
-                                    className="
-                                        mt-1
-                                        inline-flex
-                                        items-center gap-1.5
-                                        text-xs
-                                        text-muted-foreground
-                                    "
-                                >
-                                    <RiShieldUserLine
-                                        size={14}
-                                        aria-hidden="true"
-                                    />
-
-                                    {roleLabel}
-                                </span>
-                            </div>
+            <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                    align="end"
+                    sideOffset={8}
+                    className="z-[120] w-72 max-w-[calc(100vw-1.5rem)] rounded-card-sm border border-border bg-surface-raised p-2 text-foreground shadow-popover outline-none"
+                >
+                    <div className="flex min-w-0 items-center gap-3 rounded-control bg-surface-muted/70 p-3">
+                        <UserAvatar name={fullName} src={user?.avatarUrl} size="lg" showTitle={false} />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-foreground" title={fullName}>{shortName}</p>
+                            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <ShieldCheck className="size-3.5" aria-hidden="true" />
+                                {roleLabel}
+                            </p>
                         </div>
+                    </div>
 
-                        <div
-                            aria-hidden="true"
-                            className="
-                                my-2 h-px
-                                bg-border
-                            "
-                        />
+                    <DropdownMenu.Separator className="my-2 h-px bg-border" />
 
+                    <DropdownMenu.Item asChild>
                         <Link
                             to="/perfil"
-                            role="menuitem"
-                            onClick={
-                                closeMenu
-                            }
-                            className="
-                                flex min-h-11
-                                min-w-0
-                                items-center gap-3
-                                rounded-xl
-                                px-3
-                                text-sm
-                                font-medium
-                                text-foreground
-                                outline-none
-                                transition
-                                hover:bg-surface-hover
-                                focus-visible:ring-2
-                                focus-visible:ring-ring/20
-                            "
+                            className="flex min-h-10 items-center gap-3 rounded-control px-3 text-sm font-semibold text-muted-foreground outline-none transition hover:bg-surface-hover hover:text-foreground focus:bg-surface-hover focus:text-foreground"
                         >
-                            <RiSettings3Line
-                                size={19}
-                                aria-hidden="true"
-                                className="
-                                    shrink-0
-                                    text-muted-foreground
-                                "
-                            />
-
-                            <span className="truncate">
-                                Configurações do perfil
-                            </span>
+                            <UserRound className="size-4" aria-hidden="true" />
+                            Meu perfil
                         </Link>
+                    </DropdownMenu.Item>
 
-                        <button
-                            type="button"
-                            role="menuitem"
-                            onClick={
-                                handleLogout
-                            }
-                            className="
-                                flex min-h-11
-                                w-full min-w-0
-                                items-center gap-3
-                                rounded-xl
-                                px-3
-                                text-sm
-                                font-medium
-                                text-muted-foreground
-                                outline-none
-                                transition
-                                hover:bg-danger-muted
-                                hover:text-danger
-                                focus-visible:ring-2
-                                focus-visible:ring-danger/20
-                            "
-                        >
-                            <RiLogoutBoxRLine
-                                size={19}
-                                aria-hidden="true"
-                                className="shrink-0"
-                            />
-
-                            <span className="truncate">
-                                Sair da conta
-                            </span>
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+                    <DropdownMenu.Item
+                        onSelect={handleLogout}
+                        className="flex min-h-10 cursor-default items-center gap-3 rounded-control px-3 text-sm font-semibold text-danger outline-none transition hover:bg-danger-muted focus:bg-danger-muted"
+                    >
+                        <LogOut className="size-4" aria-hidden="true" />
+                        Sair da conta
+                    </DropdownMenu.Item>
+                </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+        </DropdownMenu.Root>
     );
 }
 

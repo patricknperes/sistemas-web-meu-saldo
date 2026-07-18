@@ -4,10 +4,7 @@ import {
     useState,
 } from "react";
 
-import {
-    RiErrorWarningLine,
-    RiLoader4Line,
-} from "react-icons/ri";
+import { LoaderCircle, TriangleAlert } from "lucide-react";
 
 const GOOGLE_SCRIPT_URL =
     "https://accounts.google.com/gsi/client";
@@ -437,7 +434,7 @@ function GoogleAuthButton({
                         text-muted-foreground
                     "
                 >
-                    <RiLoader4Line
+                    <LoaderCircle
                         className="animate-spin"
                         size={18}
                         aria-hidden="true"
@@ -458,18 +455,15 @@ function GoogleAuthButton({
                         items-center
                         justify-center gap-2
                         rounded-full
-                        border border-rose-200
-                        bg-rose-50
+                        border border-danger/25
+                        bg-danger-muted
                         px-4
                         text-sm
                         font-medium
-                        text-rose-700
-                        dark:border-rose-900/60
-                        dark:bg-rose-950/30
-                        dark:text-rose-300
+                        text-danger
                     "
                 >
-                    <RiErrorWarningLine
+                    <TriangleAlert
                         size={18}
                         aria-hidden="true"
                     />

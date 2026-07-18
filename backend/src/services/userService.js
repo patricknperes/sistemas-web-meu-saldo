@@ -28,6 +28,19 @@ const ownProfileSelect = {
   googleId: true,
 };
 
+const adminUserSelect = {
+  ...publicUserSelect,
+  passwordHash: true,
+  googleId: true,
+  _count: {
+    select: {
+      transactions: true,
+      recurringTransactions: true,
+      tags: true,
+    },
+  },
+};
+
 function serializeOwnProfile(user) {
   const {
     passwordHash,
@@ -43,6 +56,73 @@ function serializeOwnProfile(user) {
       google: Boolean(googleId),
     },
   };
+}
+
+function serializeAdminUser(user) {
+  const {
+    passwordHash,
+    googleId,
+    _count,
+    ...publicUser
+  } = user;
+
+  return {
+    ...publicUser,
+    authMethods: {
+      password: Boolean(passwordHash),
+      google: Boolean(googleId),
+    },
+    activity: {
+      transactions: _count?.transactions ?? 0,
+      recurringTransactions:
+        _count?.recurringTransactions ?? 0,
+      tags: _count?.tags ?? 0,
+    },
+  };
+}
+
+function parsePositiveInteger(value, fallback, maximum) {
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return fallback;
+  }
+
+  return Math.min(parsedValue, maximum);
+}
+
+function buildUserListFilters(input = {}) {
+  const search =
+    typeof input.search === "string"
+      ? input.search.trim().slice(0, 120)
+      : "";
+
+  const role = ["USER", "ADMIN"].includes(input.role)
+    ? input.role
+    : null;
+
+  const status = ["ACTIVE", "INACTIVE"].includes(input.status)
+    ? input.status
+    : null;
+
+  const where = {};
+
+  if (search) {
+    where.OR = [
+      { name: { contains: search } },
+      { email: { contains: search } },
+    ];
+  }
+
+  if (role) {
+    where.role = role;
+  }
+
+  if (status) {
+    where.isActive = status === "ACTIVE";
+  }
+
+  return where;
 }
 
 function validateUserId(value) {
@@ -421,14 +501,53 @@ export async function deleteOwnAccount(
   });
 }
 
-export async function listAllUsers() {
-  return prisma.user.findMany({
-    select: publicUserSelect,
+export async function listAllUsers(input = {}) {
+  const page = parsePositiveInteger(input.page, 1, 1000000);
+  const pageSize = parsePositiveInteger(
+    input.pageSize ?? input.limit,
+    10,
+    50
+  );
+  const where = buildUserListFilters(input);
 
-    orderBy: {
-      createdAt: "desc",
+  const [users, totalItems, totalUsers, activeUsers, inactiveUsers, adminUsers] =
+    await prisma.$transaction([
+      prisma.user.findMany({
+        where,
+        select: adminUserSelect,
+        orderBy: [
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.user.count({ where }),
+      prisma.user.count(),
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.user.count({ where: { isActive: false } }),
+      prisma.user.count({ where: { role: "ADMIN" } }),
+    ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+  return {
+    users: users.map(serializeAdminUser),
+    pagination: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
     },
-  });
+    summary: {
+      total: totalUsers,
+      active: activeUsers,
+      inactive: inactiveUsers,
+      admins: adminUsers,
+    },
+  };
 }
 
 export async function getUserById(
@@ -443,7 +562,7 @@ export async function getUserById(
         id: userId,
       },
 
-      select: publicUserSelect,
+      select: adminUserSelect,
     });
 
   if (!user) {
@@ -453,7 +572,7 @@ export async function getUserById(
     );
   }
 
-  return user;
+  return serializeAdminUser(user);
 }
 
 export async function updateUserByAdmin(
@@ -620,17 +739,17 @@ export async function updateUserByAdmin(
           }
         }
 
-        return transaction.user.update(
-          {
+        const updatedUser =
+          await transaction.user.update({
             where: {
               id: targetUserId,
             },
 
             data: updateData,
-            select:
-              publicUserSelect,
-          }
-        );
+            select: adminUserSelect,
+          });
+
+        return serializeAdminUser(updatedUser);
       }
     );
   } catch (error) {

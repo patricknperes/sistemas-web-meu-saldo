@@ -1,312 +1,71 @@
-import {
-    motion,
-} from "motion/react";
+import { ArrowLeft, Compass, LayoutDashboard, LogIn } from "lucide-react";
+import { motion } from "motion/react";
+import { Link, useNavigate } from "react-router";
 
-import {
-    FiAlertCircle,
-    FiArrowLeft,
-    FiHome,
-} from "react-icons/fi";
-
-import {
-    Link,
-} from "react-router";
+import BrandMark from "../../components/ui/BrandMark.jsx";
+import Button from "../../components/ui/Button.jsx";
+import { useAuth } from "../../hooks/useAuth.js";
 
 function NotFound() {
+    const navigate = useNavigate();
+    const { isAuthenticated } = useAuth();
+    const destination = isAuthenticated ? "/dashboard" : "/login";
+    const DestinationIcon = isAuthenticated ? LayoutDashboard : LogIn;
+    const destinationLabel = isAuthenticated ? "Ir para a Dashboard" : "Ir para o login";
+
     return (
         <main
-            className="
-                relative
-                flex min-h-screen
-                items-center
-                justify-center
-                overflow-hidden
-                bg-background
-                px-4 py-10
-                text-foreground
-                sm:px-6
-            "
+            data-route-focus
+            tabIndex={-1}
+            className="relative flex min-h-screen min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-10 text-foreground outline-none sm:px-6"
         >
-            <div
-                aria-hidden="true"
-                className="
-                    pointer-events-none
-                    absolute inset-0
-                    overflow-hidden
-                "
-            >
-                <div
-                    className="
-                        absolute
-                        -right-32 -top-40
-                        size-[360px]
-                        rounded-full
-                        bg-primary/[0.06]
-                        blur-3xl
-                    "
-                />
-
-                <div
-                    className="
-                        absolute
-                        -bottom-44 -left-28
-                        size-[340px]
-                        rounded-full
-                        bg-sky-500/[0.05]
-                        blur-3xl
-                    "
-                />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -right-40 -top-52 size-[520px] rounded-full bg-primary/[0.08] blur-3xl" />
+                <div className="absolute -bottom-56 -left-40 size-[500px] rounded-full bg-accent/[0.06] blur-3xl" />
+                <div className="page-grid-background absolute inset-0 opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent_92%)]" />
             </div>
 
             <motion.section
-                initial={{
-                    opacity: 0,
-                    y: 18,
-                    scale: 0.98,
-                }}
-                animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                }}
-                transition={{
-                    duration: 0.35,
-                    ease: [
-                        0.22,
-                        1,
-                        0.36,
-                        1,
-                    ],
-                }}
-                className="
-                    relative
-                    w-full max-w-lg
-                    overflow-hidden
-                    rounded-[30px]
-                    border border-border
-                    bg-surface
-                    shadow-2xl
-                    shadow-slate-950/10
-                "
+                initial={{ opacity: 0, y: 16, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                className="glass-panel relative w-full max-w-xl overflow-hidden rounded-dialog p-6 text-center sm:p-9"
             >
-                <div
-                    aria-hidden="true"
-                    className="
-                        h-1.5 w-full
-                        bg-gradient-to-r
-                        from-sky-500
-                        via-blue-600
-                        to-indigo-600
-                    "
-                />
-
-                <div
-                    className="
-                        relative
-                        px-5 py-8
-                        text-center
-                        sm:px-8
-                        sm:py-10
-                    "
-                >
-                    <span
-                        aria-hidden="true"
-                        className="
-                            pointer-events-none
-                            absolute
-                            left-1/2 top-5
-                            -translate-x-1/2
-                            select-none
-                            text-[108px]
-                            font-black
-                            leading-none
-                            tracking-tighter
-                            text-primary/[0.045]
-                            sm:text-[132px]
-                        "
-                    >
-                        404
-                    </span>
-
-                    <motion.div
-                        initial={{
-                            rotate: -8,
-                            scale: 0.85,
-                        }}
-                        animate={{
-                            rotate: 0,
-                            scale: 1,
-                        }}
-                        transition={{
-                            delay: 0.08,
-                            type: "spring",
-                            stiffness: 280,
-                            damping: 18,
-                        }}
-                        className="
-                            relative
-                            mx-auto
-                            flex size-16
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            bg-gradient-to-br
-                            from-sky-500
-                            via-blue-600
-                            to-indigo-700
-                            text-white
-                            shadow-lg
-                            shadow-blue-500/25
-                        "
-                    >
-                        <FiAlertCircle
-                            size={28}
-                            aria-hidden="true"
-                        />
-                    </motion.div>
-
-                    <span
-                        className="
-                            mt-6
-                            inline-flex
-                            items-center
-                            rounded-full
-                            bg-primary-muted
-                            px-3 py-1.5
-                            text-[11px]
-                            font-bold
-                            uppercase
-                            tracking-[0.12em]
-                            text-primary
-                        "
-                    >
-                        Erro 404
-                    </span>
-
-                    <h1
-                        className="
-                            mt-4
-                            text-2xl
-                            font-semibold
-                            tracking-tight
-                            text-foreground
-                            sm:text-3xl
-                        "
-                    >
-                        Página não encontrada
-                    </h1>
-
-                    <p
-                        className="
-                            mx-auto mt-3
-                            max-w-md
-                            text-sm
-                            leading-6
-                            text-muted-foreground
-                        "
-                    >
-                        O endereço acessado não existe, foi alterado ou não está mais disponível.
-                    </p>
-
-                    <div
-                        className="
-                            mt-7
-                            flex flex-col
-                            gap-2.5
-                            sm:flex-row
-                            sm:justify-center
-                        "
-                    >
-                        <Link
-                            to="/dashboard"
-                            className="
-                                inline-flex
-                                min-h-11
-                                w-full
-                                items-center
-                                justify-center
-                                gap-2
-                                rounded-xl
-                                bg-gradient-to-r
-                                from-sky-500
-                                via-blue-600
-                                to-indigo-700
-                                px-5
-                                text-sm
-                                font-semibold
-                                text-white
-                                shadow-lg
-                                shadow-blue-500/20
-                                transition
-                                hover:-translate-y-0.5
-                                hover:shadow-xl
-                                hover:shadow-blue-500/25
-                                focus-visible:outline-none
-                                focus-visible:ring-4
-                                focus-visible:ring-blue-500/20
-                                sm:w-auto
-                            "
-                        >
-                            <FiHome
-                                size={17}
-                                aria-hidden="true"
-                            />
-
-                            Ir para a Dashboard
-                        </Link>
-
-                        <Link
-                            to="/"
-                            className="
-                                inline-flex
-                                min-h-11
-                                w-full
-                                items-center
-                                justify-center
-                                gap-2
-                                rounded-xl
-                                border border-border
-                                bg-surface
-                                px-5
-                                text-sm
-                                font-semibold
-                                text-foreground
-                                transition
-                                hover:border-border-strong
-                                hover:bg-surface-hover
-                                focus-visible:outline-none
-                                focus-visible:ring-4
-                                focus-visible:ring-ring/10
-                                sm:w-auto
-                            "
-                        >
-                            <FiArrowLeft
-                                size={17}
-                                aria-hidden="true"
-                            />
-
-                            Voltar ao início
-                        </Link>
-                    </div>
+                <div className="flex justify-center">
+                    <BrandMark />
                 </div>
 
-                <footer
-                    className="
-                        border-t border-border
-                        bg-surface-muted/35
-                        px-5 py-4
-                        text-center
-                    "
-                >
-                    <p
-                        className="
-                            text-xs
-                            text-muted-foreground
-                        "
-                    >
-                        Verifique o endereço informado ou retorne à área principal do sistema.
-                    </p>
-                </footer>
+                <div className="relative mx-auto mt-8 flex size-20 items-center justify-center rounded-[24px] border border-primary/15 bg-primary-soft text-primary shadow-card">
+                    <Compass size={34} strokeWidth={1.7} aria-hidden="true" />
+                    <span className="absolute -right-2 -top-2 rounded-full border border-border bg-surface px-2 py-1 text-[10px] font-black tracking-[0.12em] text-muted-foreground shadow-xs">
+                        404
+                    </span>
+                </div>
+
+                <p className="mt-7 text-xs font-bold uppercase tracking-[0.17em] text-primary">Rota não encontrada</p>
+                <h1 className="mt-2 text-balance text-3xl font-bold tracking-[-0.045em] text-foreground sm:text-4xl">
+                    Esta página saiu do mapa.
+                </h1>
+                <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-muted-foreground sm:text-base">
+                    O endereço pode ter sido alterado, removido ou digitado incorretamente. Use uma das opções abaixo para continuar com segurança.
+                </p>
+
+                <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                    <Button asChild size="lg">
+                        <Link to={destination}>
+                            <DestinationIcon size={18} aria-hidden="true" />
+                            {destinationLabel}
+                        </Link>
+                    </Button>
+                    <Button variant="secondary" size="lg" onClick={() => navigate(-1)}>
+                        <ArrowLeft size={18} aria-hidden="true" />
+                        Voltar à página anterior
+                    </Button>
+                </div>
+
+                <p className="mt-7 border-t border-border pt-5 text-xs leading-5 text-subtle-foreground">
+                    Nenhuma informação financeira foi alterada.
+                </p>
             </motion.section>
         </main>
     );

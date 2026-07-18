@@ -1,445 +1,84 @@
-import {
-    useState,
-} from "react";
-
-import {
-    Link,
-    useLocation,
-    useNavigate,
-} from "react-router";
-
-import {
-    RiLoader4Line,
-    RiLockPasswordLine,
-    RiLoginBoxLine,
-    RiMailLine,
-} from "react-icons/ri";
-
-import AuthInput from "../../components/auth/AuthInput.jsx";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, LogIn, Mail } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useLocation, useNavigate } from "react-router";
 import GoogleAuthButton from "../../components/auth/GoogleAuthButton.jsx";
-import Snackbar from "../../components/feedback/Snackbar.jsx";
-
-import {
-    useAuth,
-} from "../../hooks/useAuth.js";
+import Button from "../../components/ui/Button.jsx";
+import Input from "../../components/ui/Input.jsx";
+import AuthNotice from "../../features/auth/components/AuthNotice.jsx";
+import AuthPanelHeader from "../../features/auth/components/AuthPanelHeader.jsx";
+import PasswordInput from "../../features/auth/components/PasswordInput.jsx";
+import { loginSchema } from "../../features/auth/schemas/authSchemas.js";
+import { useAuth } from "../../hooks/useAuth.js";
 
 function getErrorMessage(error) {
-    const responseData =
-        error?.response?.data;
-
-    if (
-        typeof responseData?.error ===
-        "string"
-    ) {
-        return responseData.error;
-    }
-
-    if (
-        typeof responseData?.message ===
-        "string"
-    ) {
-        return responseData.message;
-    }
-
-    if (
-        typeof error?.message ===
-        "string" &&
-        error.message
-    ) {
-        return error.message;
-    }
-
-    return "Não foi possível acessar sua conta.";
+    return error?.response?.data?.error ?? error?.response?.data?.message ?? error?.message ?? "Não foi possível acessar sua conta.";
 }
 
 function Login() {
-    const navigate =
-        useNavigate();
-
-    const location =
-        useLocation();
-
-    const {
-        login,
-    } = useAuth();
-
-    const [
-        formData,
-        setFormData,
-    ] = useState({
-        email: "",
-        password: "",
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { login, authenticateWithGoogle } = useAuth();
+    const [notice, setNotice] = useState("");
+    const [googleLoading, setGoogleLoading] = useState(false);
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+        resolver: zodResolver(loginSchema),
+        defaultValues: { email: "", password: "" },
     });
 
-    const [
-        notification,
-        setNotification,
-    ] = useState({
-        type: "info",
-        message: "",
-    });
+    const redirectAfterLogin = () => navigate(location.state?.from?.pathname ?? "/dashboard", { replace: true });
 
-    const [
-        submitting,
-        setSubmitting,
-    ] = useState(false);
-
-    function showNotification(
-        type,
-        message,
-    ) {
-        setNotification({
-            type,
-            message,
-        });
-    }
-
-    function clearNotification() {
-        setNotification({
-            type: "info",
-            message: "",
-        });
-    }
-
-    function handleChange(event) {
-        const {
-            name,
-            value,
-        } = event.target;
-
-        setFormData(
-            (currentData) => ({
-                ...currentData,
-                [name]: value,
-            }),
-        );
-
-        if (
-            notification.message
-        ) {
-            clearNotification();
-        }
-    }
-
-    function handleGoogleLogin() {
-        showNotification(
-            "info",
-            "O acesso com Google será disponibilizado em breve.",
-        );
-    }
-
-    async function handleSubmit(event) {
-        event.preventDefault();
-
-        clearNotification();
-
-        const email =
-            formData.email
-                .trim()
-                .toLowerCase();
-
-        if (!email) {
-            showNotification(
-                "error",
-                "Informe seu endereço de e-mail.",
-            );
-
-            return;
-        }
-
-        if (
-            formData.password.length <
-            8
-        ) {
-            showNotification(
-                "error",
-                "A senha deve possuir pelo menos 8 caracteres.",
-            );
-
-            return;
-        }
-
-        setSubmitting(true);
-
+    async function onSubmit(values) {
+        setNotice("");
         try {
-            await login({
-                email,
-
-                password:
-                    formData.password,
-            });
-
-            const previousPage =
-                location.state?.from
-                    ?.pathname ??
-                "/dashboard";
-
-            navigate(
-                previousPage,
-                {
-                    replace: true,
-                },
-            );
+            await login(values);
+            redirectAfterLogin();
         } catch (error) {
-            showNotification(
-                "error",
-                getErrorMessage(
-                    error,
-                ),
-            );
-        } finally {
-            setSubmitting(false);
+            setNotice(getErrorMessage(error));
         }
     }
+
+    async function handleGoogleCredential(credential) {
+        setGoogleLoading(true);
+        setNotice("");
+        try {
+            await authenticateWithGoogle(credential);
+            redirectAfterLogin();
+        } catch (error) {
+            setNotice(getErrorMessage(error));
+        } finally {
+            setGoogleLoading(false);
+        }
+    }
+
+    const busy = isSubmitting || googleLoading;
 
     return (
-        <>
-            <Snackbar
-                type={
-                    notification.type
-                }
-                message={
-                    notification.message
-                }
-                onClose={
-                    clearNotification
-                }
-            />
+        <div className="mx-auto w-full max-w-md">
+            <AuthPanelHeader eyebrow="Bem-vindo de volta" title="Acesse sua conta" description="Entre para acompanhar seu saldo, suas movimentações e tudo o que importa nas suas finanças." icon={LogIn} />
 
-            <div className="min-w-0">
-                <header className="mb-6">
-                    <span
-                        className="
-                            flex size-10
-                            items-center
-                            justify-center
-                            rounded-2xl
-                            bg-primary-muted
-                            text-primary
-                        "
-                    >
-                        <RiLoginBoxLine
-                            size={19}
-                            aria-hidden="true"
-                        />
-                    </span>
+            <div className="space-y-5">
+                <GoogleAuthButton onCredential={handleGoogleCredential} onError={(error) => setNotice(getErrorMessage(error))} disabled={busy} text="signin_with" />
 
-                    <h1
-                        className="
-                            mt-4
-                            text-2xl
-                            font-semibold
-                            tracking-tight
-                            text-foreground
-                        "
-                    >
-                        Acesse sua conta
-                    </h1>
+                <div className="flex items-center gap-3"><span className="h-px flex-1 bg-border" /><span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-subtle-foreground">ou use seu e-mail</span><span className="h-px flex-1 bg-border" /></div>
 
-                    <p
-                        className="
-                            mt-1.5
-                            text-sm
-                            leading-6
-                            text-muted-foreground
-                        "
-                    >
-                        Informe seus dados para continuar acompanhando suas finanças.
-                    </p>
-                </header>
+                <AuthNotice type="error">{notice}</AuthNotice>
 
-                <GoogleAuthButton
-                    onClick={
-                        handleGoogleLogin
-                    }
-                    disabled={
-                        submitting
-                    }
-                />
-
-                <div
-                    className="
-                        my-5
-                        flex items-center
-                        gap-3
-                    "
-                >
-                    <span
-                        aria-hidden="true"
-                        className="
-                            h-px flex-1
-                            bg-border
-                        "
-                    />
-
-                    <span
-                        className="
-                            text-[10px]
-                            font-bold
-                            uppercase
-                            tracking-[0.12em]
-                            text-muted-foreground
-                        "
-                    >
-                        ou use seu e-mail
-                    </span>
-
-                    <span
-                        aria-hidden="true"
-                        className="
-                            h-px flex-1
-                            bg-border
-                        "
-                    />
-                </div>
-
-                <form
-                    className="
-                        min-w-0
-                        space-y-5
-                    "
-                    onSubmit={
-                        handleSubmit
-                    }
-                    noValidate
-                >
-                    <AuthInput
-                        id="login-email"
-                        name="email"
-                        type="email"
-                        label="Endereço de e-mail"
-                        icon={
-                            RiMailLine
-                        }
-                        value={
-                            formData.email
-                        }
-                        onChange={
-                            handleChange
-                        }
-                        required
-                        autoComplete="email"
-                        inputMode="email"
-                        placeholder="nome@exemplo.com"
-                        disabled={
-                            submitting
-                        }
-                    />
-
-                    <div className="min-w-0">
-                        <AuthInput
-                            id="login-password"
-                            name="password"
-                            type="password"
-                            label="Senha de acesso"
-                            icon={
-                                RiLockPasswordLine
-                            }
-                            value={
-                                formData.password
-                            }
-                            onChange={
-                                handleChange
-                            }
-                            required
-                            minLength={8}
-                            autoComplete="current-password"
-                            placeholder="Digite sua senha"
-                            disabled={
-                                submitting
-                            }
-                        />
-
-                        <div
-                            className="
-                                mt-2
-                                flex
-                                justify-end
-                            "
-                        >
-                            <Link
-                                to="/esqueci-senha"
-                                className="
-                                    inline-flex
-                                    min-h-8
-                                    items-center
-                                    justify-center
-                                    rounded-lg
-                                    px-2
-                                    text-xs
-                                    font-semibold
-                                    text-primary
-                                    transition-colors
-                                    hover:bg-primary/10
-                                    hover:text-primary-hover
-                                    focus-visible:outline-none
-                                    focus-visible:ring-2
-                                    focus-visible:ring-primary/20
-                                "
-                            >
-                                Esqueci minha senha
-                            </Link>
-                        </div>
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+                    <Input label="E-mail" type="email" autoComplete="email" placeholder="voce@exemplo.com" leadingIcon={Mail} error={errors.email?.message} disabled={busy} {...register("email")} />
+                    <div>
+                        <PasswordInput label="Senha" autoComplete="current-password" placeholder="Digite sua senha" error={errors.password?.message} disabled={busy} {...register("password")} />
+                        <div className="mt-2 flex justify-end"><Link to="/esqueci-senha" className="text-xs font-semibold text-primary transition hover:text-primary-hover">Esqueci minha senha</Link></div>
                     </div>
-
-                    <button
-                        type="submit"
-                        disabled={
-                            submitting
-                        }
-                        aria-busy={
-                            submitting
-                        }
-                        className="
-                            inline-flex
-                            min-h-12
-                            w-full
-                            min-w-0
-                            items-center
-                            justify-center
-                            gap-2
-                            rounded-2xl
-                            bg-primary
-                            px-4
-                            text-sm
-                            font-semibold
-                            text-primary-foreground
-                            shadow-md
-                            shadow-primary/20
-                            transition-all
-                            hover:-translate-y-0.5
-                            hover:bg-primary-hover
-                            hover:shadow-lg
-                            focus-visible:outline-none
-                            focus-visible:ring-4
-                            focus-visible:ring-primary/20
-                            active:scale-[0.99]
-                            disabled:pointer-events-none
-                            disabled:opacity-60
-                        "
-                    >
-                        {submitting ? (
-                            <RiLoader4Line
-                                size={19}
-                                aria-hidden="true"
-                                className="animate-spin"
-                            />
-                        ) : (
-                            <RiLoginBoxLine
-                                size={18}
-                                aria-hidden="true"
-                            />
-                        )}
-
-                        <span className="truncate">
-                            {submitting
-                                ? "Acessando..."
-                                : "Entrar na conta"}
-                        </span>
-                    </button>
+                    <Button type="submit" size="lg" className="w-full gap-2" disabled={busy}>
+                        {isSubmitting ? "Entrando..." : "Entrar"}<ArrowRight size={17} aria-hidden="true" />
+                    </Button>
                 </form>
+
+                <p className="text-center text-sm text-muted-foreground">Ainda não possui uma conta? <Link to="/cadastro" className="font-semibold text-primary hover:text-primary-hover">Criar conta</Link></p>
             </div>
-        </>
+        </div>
     );
 }
 

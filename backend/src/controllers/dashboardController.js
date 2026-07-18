@@ -1,5 +1,6 @@
 import {
   getDashboardSummary,
+  getHistoryAnalytics,
   getMonthlyHistory,
 } from "../services/dashboardService.js";
 
@@ -33,5 +34,20 @@ export async function monthlyHistoryController(
 
   return res.status(200).json({
     history,
+  });
+}
+
+export async function historyAnalyticsController(
+  req,
+  res
+) {
+  const analytics =
+    await getHistoryAnalytics(
+      req.user.id,
+      req.query
+    );
+
+  return res.status(200).json({
+    analytics,
   });
 }

@@ -8,10 +8,7 @@ import {
     motion,
 } from "motion/react";
 
-import {
-    RiMoonClearLine,
-    RiSunLine,
-} from "react-icons/ri";
+import { Moon, Sun } from "lucide-react";
 
 function getInitialTheme() {
     if (
@@ -86,8 +83,8 @@ function ThemeToggle() {
             ?.setAttribute(
                 "content",
                 darkTheme
-                    ? "#09090b"
-                    : "#f8fafc"
+                    ? "#07090d"
+                    : "#f4f7fa"
             );
     }, [darkTheme]);
 
@@ -170,15 +167,13 @@ function ThemeToggle() {
                     "
                 >
                     {darkTheme ? (
-                        <RiSunLine
+                        <Sun
                             size={20}
                             aria-hidden="true"
-                            className="
-                                text-amber-500
-                            "
+                            className="text-warning"
                         />
                     ) : (
-                        <RiMoonClearLine
+                        <Moon
                             size={20}
                             aria-hidden="true"
                         />

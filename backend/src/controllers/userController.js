@@ -37,11 +37,9 @@ export async function deleteOwnAccountController(req, res) {
 }
 
 export async function listUsersController(req, res) {
-  const users = await listAllUsers();
+  const result = await listAllUsers(req.query);
 
-  return res.status(200).json({
-    users,
-  });
+  return res.status(200).json(result);
 }
 
 export async function showUserController(req, res) {
