@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownLeft, ArrowUpRight, RefreshCw, ReceiptText } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Download, RefreshCw, ReceiptText } from "lucide-react";
 
 import Button from "../../components/ui/Button.jsx";
 import PageContainer from "../../components/layout/PageContainer.jsx";
@@ -9,6 +9,7 @@ import PageHeader from "../../components/layout/PageHeader.jsx";
 import { useAuth } from "../../hooks/useAuth.js";
 import {
     dashboardKeys,
+    exportDashboardCsv,
     fetchDashboardHistory,
     fetchDashboardSummary,
 } from "../../features/dashboard/api/dashboardQueries.js";
@@ -45,21 +46,52 @@ function getFirstName(name) {
     return String(name ?? "").trim().split(/\s+/)[0] || "você";
 }
 
+function keepPreviousDataForUser(previousData, previousQuery, userKey) {
+    const previousQueryKey = previousQuery?.queryKey ?? [];
+    const previousUserKey = previousQueryKey[previousQueryKey.length - 1];
+
+    return previousUserKey === userKey ? previousData : undefined;
+}
+
+function getCsvFilename(filters) {
+    if (filters.filterMode === "MONTH") {
+        return `meu-saldo-dashboard-${filters.year}-${String(filters.month).padStart(2, "0")}.csv`;
+    }
+
+    if (filters.filterMode === "YEAR") {
+        return `meu-saldo-dashboard-${filters.year}.csv`;
+    }
+
+    return "meu-saldo-dashboard-todo-periodo.csv";
+}
+
 function Dashboard() {
     const { user } = useAuth();
     const { filters, updateFilters } = useDashboardFilters();
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState("");
     const historyYear = getDashboardHistoryYear(filters);
+    const authenticatedUserKey = user?.id ?? "anonymous";
+    const queryEnabled = Boolean(user?.id);
 
     const summaryQuery = useQuery({
-        queryKey: dashboardKeys.summary(filters),
+        queryKey: [...dashboardKeys.summary(filters), authenticatedUserKey],
         queryFn: () => fetchDashboardSummary(filters),
-        placeholderData: (previousData) => previousData,
+        enabled: queryEnabled,
+        refetchOnMount: "always",
+        placeholderData: (previousData, previousQuery) => (
+            keepPreviousDataForUser(previousData, previousQuery, authenticatedUserKey)
+        ),
     });
 
     const historyQuery = useQuery({
-        queryKey: dashboardKeys.history(historyYear),
+        queryKey: [...dashboardKeys.history(historyYear), authenticatedUserKey],
         queryFn: () => fetchDashboardHistory(historyYear),
-        placeholderData: (previousData) => previousData,
+        enabled: queryEnabled,
+        refetchOnMount: "always",
+        placeholderData: (previousData, previousQuery) => (
+            keepPreviousDataForUser(previousData, previousQuery, authenticatedUserKey)
+        ),
     });
 
     const summary = summaryQuery.data ?? EMPTY_SUMMARY;
@@ -74,6 +106,29 @@ function Dashboard() {
 
     async function refreshDashboard() {
         await Promise.all([summaryQuery.refetch(), historyQuery.refetch()]);
+    }
+
+    async function handleExportCsv() {
+        try {
+            setIsExporting(true);
+            setExportError("");
+
+            const csvFile = await exportDashboardCsv(filters);
+            const downloadUrl = URL.createObjectURL(csvFile);
+            const link = document.createElement("a");
+
+            link.href = downloadUrl;
+            link.download = getCsvFilename(filters);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        } catch (error) {
+            setExportError(getApiErrorMessage(error, "Não foi possível exportar os dados do Dashboard."));
+        } finally {
+            setIsExporting(false);
+        }
     }
 
     if (isInitialLoading) {
@@ -99,25 +154,80 @@ function Dashboard() {
                 title={`Olá, ${getFirstName(user?.name)}`}
                 description={`Acompanhe seu dinheiro com uma leitura clara de ${periodLabel.toLowerCase()}.`}
                 actions={(
-                    <Button
-                        variant="secondary"
-                        size="icon"
-                        onClick={refreshDashboard}
-                        disabled={isRefreshing}
-                        aria-label="Atualizar dados do Dashboard"
-                        title="Atualizar dados"
-                    >
-                        <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
-                    </Button>
+                    <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start">
+                        <DashboardPeriodFilter
+                            filters={filters}
+                            onChange={updateFilters}
+                            disabled={isRefreshing || isExporting}
+                        />
+
+                        <div className="flex items-center">
+                            <span
+                                aria-hidden="true"
+                                className="mx-1.5 hidden h-5 w-px shrink-0 bg-border sm:block"
+                            />
+
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleExportCsv}
+                                disabled={isExporting}
+                                aria-label="Exportar dados do Dashboard para CSV"
+                                title="Exportar CSV"
+                                className="
+                bg-transparent
+                text-primary
+                shadow-none
+                hover:bg-transparent
+                hover:text-primary-hover
+                focus-visible:bg-transparent
+                disabled:bg-transparent
+            "
+                            >
+                                <Download
+                                    aria-hidden="true"
+                                    className={`size-5 ${isExporting ? "animate-pulse" : ""}`}
+                                />
+                            </Button>
+
+                            <span
+                                aria-hidden="true"
+                                className="mx-1.5 h-5 w-px shrink-0 bg-border"
+                            />
+
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={refreshDashboard}
+                                disabled={isRefreshing}
+                                aria-label="Atualizar dados do Dashboard"
+                                title="Atualizar dados"
+                                className="
+                bg-transparent
+                text-primary
+                shadow-none
+                hover:bg-transparent
+                hover:text-primary-hover
+                focus-visible:bg-transparent
+                disabled:bg-transparent
+            "
+                            >
+                                <RefreshCw
+                                    aria-hidden="true"
+                                    className={`size-5 ${isRefreshing ? "animate-spin" : ""}`}
+                                />
+                            </Button>
+                        </div>
+                    </div>
                 )}
             />
 
-            <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                <DashboardPeriodFilter filters={filters} onChange={updateFilters} disabled={isRefreshing} />
-                <p className="px-1 text-xs leading-5 text-subtle-foreground">
-                    Os totais e lançamentos abaixo respeitam o período selecionado.
-                </p>
-            </div>
+
+            {exportError && (
+                <div role="alert" className="rounded-card-sm border border-danger/20 bg-danger-muted px-4 py-3 text-sm text-danger">
+                    {exportError}
+                </div>
+            )}
 
             {pageError && summaryQuery.data && (
                 <div role="status" className="flex items-center justify-between gap-4 rounded-card-sm border border-warning/20 bg-warning-muted px-4 py-3 text-sm text-warning">

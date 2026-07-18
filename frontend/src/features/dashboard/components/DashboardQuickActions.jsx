@@ -28,10 +28,7 @@ const actions = [
 function DashboardQuickActions() {
     return (
         <section aria-labelledby="dashboard-quick-actions-title">
-            <header className="mb-3 flex items-center justify-between gap-4">
-                <h2 id="dashboard-quick-actions-title" className="text-sm font-bold text-foreground">Acessos rápidos</h2>
-                <span className="text-xs text-subtle-foreground">Gerencie seus dados</span>
-            </header>
+
             <div className="grid gap-3 sm:grid-cols-3">
                 {actions.map(({ to, title, description, icon: Icon, iconClassName }) => (
                     <Link

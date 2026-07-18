@@ -969,6 +969,355 @@ export async function getMonthlyHistory(
     );
 }
 
+
+const CSV_DELIMITER = ";";
+const CSV_LINE_BREAK = "\r\n";
+const CSV_MONTHS = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+function sanitizeSpreadsheetValue(value) {
+  const text = String(
+    value ?? ""
+  );
+
+  const isFormattedNumber =
+    /^-?\d+,\d{2}$/.test(
+      text
+    );
+
+  if (
+    !isFormattedNumber &&
+    /^[=+\-@]/.test(
+      text.trimStart()
+    )
+  ) {
+    return `'${text}`;
+  }
+
+  return text;
+}
+
+function escapeCsvField(value) {
+  const text =
+    sanitizeSpreadsheetValue(
+      value
+    );
+
+  if (
+    /[;"\r\n]/.test(text) ||
+    text !== text.trim()
+  ) {
+    return `"${text.replace(
+      /"/g,
+      '""'
+    )}"`;
+  }
+
+  return text;
+}
+
+function createCsvRow(values = []) {
+  return values
+    .map(escapeCsvField)
+    .join(CSV_DELIMITER);
+}
+
+function formatCsvDate(value) {
+  const date = new Date(value);
+
+  const day = String(
+    date.getUTCDate()
+  ).padStart(2, "0");
+
+  const month = String(
+    date.getUTCMonth() + 1
+  ).padStart(2, "0");
+
+  const year =
+    date.getUTCFullYear();
+
+  return `${day}/${month}/${year}`;
+}
+
+function formatCsvAmount(value) {
+  const amountCents =
+    Number(value) || 0;
+
+  return (
+    amountCents / 100
+  ).toLocaleString(
+    "pt-BR",
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: false,
+    }
+  );
+}
+
+function getDashboardPeriodDescription(
+  filters = {}
+) {
+  const hasMonth =
+    filters.month !== undefined &&
+    filters.month !== null &&
+    filters.month !== "";
+
+  const hasYear =
+    filters.year !== undefined &&
+    filters.year !== null &&
+    filters.year !== "";
+
+  if (hasMonth && hasYear) {
+    const month =
+      validateDashboardMonth(
+        filters.month
+      );
+
+    const year =
+      validateDashboardYear(
+        filters.year
+      );
+
+    return `${CSV_MONTHS[month - 1]} de ${year}`;
+  }
+
+  if (hasYear) {
+    const year =
+      validateDashboardYear(
+        filters.year
+      );
+
+    return `Ano de ${year}`;
+  }
+
+  return "Todo o histórico";
+}
+
+function getDashboardCsvFileName(
+  filters = {}
+) {
+  const hasMonth =
+    filters.month !== undefined &&
+    filters.month !== null &&
+    filters.month !== "";
+
+  const hasYear =
+    filters.year !== undefined &&
+    filters.year !== null &&
+    filters.year !== "";
+
+  if (hasMonth && hasYear) {
+    const month =
+      validateDashboardMonth(
+        filters.month
+      );
+
+    const year =
+      validateDashboardYear(
+        filters.year
+      );
+
+    return `meu-saldo-dashboard-${year}-${String(
+      month
+    ).padStart(2, "0")}.csv`;
+  }
+
+  if (hasYear) {
+    const year =
+      validateDashboardYear(
+        filters.year
+      );
+
+    return `meu-saldo-dashboard-${year}.csv`;
+  }
+
+  return "meu-saldo-dashboard-todo-periodo.csv";
+}
+
+function getTransactionTypeLabel(type) {
+  return type === "INCOME"
+    ? "Receita"
+    : "Despesa";
+}
+
+function getTransactionOriginLabel(
+  transaction
+) {
+  return transaction
+    .recurringTransactionId
+    ? "Recorrente"
+    : "Manual";
+}
+
+function getTransactionTagsLabel(
+  transaction
+) {
+  return (transaction.tags ?? [])
+    .map(
+      (tagLink) =>
+        tagLink.tag?.name
+    )
+    .filter(Boolean)
+    .sort(
+      (firstTag, secondTag) =>
+        firstTag.localeCompare(
+          secondTag,
+          "pt-BR"
+        )
+    )
+    .join(" | ");
+}
+
+function buildDashboardCsv({
+  user,
+  filters,
+  transactions,
+}) {
+  const rows = [
+    createCsvRow([
+      "Relatório",
+      "Dashboard - Meu Saldo",
+    ]),
+    createCsvRow([
+      "Usuário",
+      user?.name ?? "Usuário",
+    ]),
+    createCsvRow([
+      "E-mail",
+      user?.email ?? "",
+    ]),
+    createCsvRow([
+      "Período",
+      getDashboardPeriodDescription(
+        filters
+      ),
+    ]),
+    "",
+    createCsvRow([
+      "Data",
+      "Descrição",
+      "Tipo",
+      "Categoria",
+      "Tags",
+      "Origem",
+      "Valor (R$)",
+      "Observações",
+    ]),
+  ];
+
+  let totalIncomeCents = 0;
+  let totalExpenseCents = 0;
+  let incomeCount = 0;
+  let expenseCount = 0;
+
+  for (
+    const transaction of
+    transactions
+  ) {
+    if (
+      transaction.type ===
+      "INCOME"
+    ) {
+      totalIncomeCents +=
+        transaction.amountCents;
+      incomeCount += 1;
+    } else {
+      totalExpenseCents +=
+        transaction.amountCents;
+      expenseCount += 1;
+    }
+
+    rows.push(
+      createCsvRow([
+        formatCsvDate(
+          transaction.date
+        ),
+        transaction.description,
+        getTransactionTypeLabel(
+          transaction.type
+        ),
+        transaction.category,
+        getTransactionTagsLabel(
+          transaction
+        ),
+        getTransactionOriginLabel(
+          transaction
+        ),
+        formatCsvAmount(
+          transaction.amountCents
+        ),
+        transaction.notes ?? "",
+      ])
+    );
+  }
+
+  const balanceCents =
+    totalIncomeCents -
+    totalExpenseCents;
+
+  const transactionCount =
+    incomeCount +
+    expenseCount;
+
+  const movedAmountCents =
+    totalIncomeCents +
+    totalExpenseCents;
+
+  rows.push(
+    "",
+    createCsvRow([
+      "Resumo",
+      "Quantidade",
+      "Valor (R$)",
+    ]),
+    createCsvRow([
+      "Total de receitas",
+      incomeCount,
+      formatCsvAmount(
+        totalIncomeCents
+      ),
+    ]),
+    createCsvRow([
+      "Total de despesas",
+      expenseCount,
+      formatCsvAmount(
+        totalExpenseCents
+      ),
+    ]),
+    createCsvRow([
+      "Saldo do período",
+      "",
+      formatCsvAmount(
+        balanceCents
+      ),
+    ]),
+    createCsvRow([
+      "Volume movimentado",
+      transactionCount,
+      formatCsvAmount(
+        movedAmountCents
+      ),
+    ])
+  );
+
+  return `\uFEFF${rows.join(
+    CSV_LINE_BREAK
+  )}${CSV_LINE_BREAK}`;
+}
+
 export async function getDashboardSummary(
   userIdValue,
   filters = {}
@@ -1089,3 +1438,72 @@ export async function getDashboardSummary(
       ),
   };
 }
+
+export async function exportDashboardCsv(
+  userIdValue,
+  user,
+  filters = {}
+) {
+  const userId =
+    validateUserId(userIdValue);
+
+  await materializeRecurringTransactions(
+    userId
+  );
+
+  const where =
+    buildDashboardWhere(
+      userId,
+      filters
+    );
+
+  const transactions =
+    await prisma.transaction.findMany({
+      where,
+
+      select: {
+        id: true,
+        description: true,
+        amountCents: true,
+        type: true,
+        category: true,
+        date: true,
+        notes: true,
+        recurringTransactionId: true,
+
+        tags: {
+          select: {
+            tag: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+
+      orderBy: [
+        {
+          date: "desc",
+        },
+        {
+          id: "desc",
+        },
+      ],
+    });
+
+  return {
+    content:
+      buildDashboardCsv({
+        user,
+        filters,
+        transactions,
+      }),
+
+    fileName:
+      getDashboardCsvFileName(
+        filters
+      ),
+  };
+}
+

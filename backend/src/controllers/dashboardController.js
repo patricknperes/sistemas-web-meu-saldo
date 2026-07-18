@@ -1,4 +1,5 @@
 import {
+  exportDashboardCsv,
   getDashboardSummary,
   getHistoryAnalytics,
   getMonthlyHistory,
@@ -20,6 +21,36 @@ export async function dashboardSummaryController(
   return res.status(200).json({
     summary,
   });
+}
+
+export async function dashboardCsvController(
+  req,
+  res
+) {
+  const {
+    content,
+    fileName,
+  } = await exportDashboardCsv(
+    req.user.id,
+    req.user,
+    {
+      month: req.query.month,
+      year: req.query.year,
+    }
+  );
+
+  res.set({
+    "Content-Type":
+      "text/csv; charset=utf-8",
+    "Content-Disposition":
+      `attachment; filename="${fileName}"`,
+    "Cache-Control":
+      "no-store",
+  });
+
+  return res.status(200).send(
+    content
+  );
 }
 
 export async function monthlyHistoryController(

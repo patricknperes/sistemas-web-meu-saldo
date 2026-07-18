@@ -130,14 +130,23 @@ function Users() {
                 description="Gerencie contas, permissões e acessos sem comprometer a segurança administrativa do sistema."
                 actions={(
                     <Button
-                        variant="secondary"
+                        variant="ghost"
                         size="icon"
                         onClick={() => usersQuery.refetch()}
                         disabled={isRefreshing}
+                        className="
+                            bg-transparent
+                            text-primary
+                            shadow-none
+                            hover:bg-transparent
+                            hover:text-primary-hover
+                            focus-visible:bg-transparent
+                            disabled:bg-transparent
+                        "
                         aria-label="Atualizar usuários"
                         title="Atualizar usuários"
                     >
-                        <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+                        <RefreshCw className={`size-5 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
                     </Button>
                 )}
             />

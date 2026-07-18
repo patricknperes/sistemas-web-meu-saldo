@@ -1,171 +1,247 @@
 /*
- * Meu Saldo — Design System Aqua Graphite
+ * Meu Saldo — Design System Midnight Blue
  *
- * Este arquivo concentra os tokens semânticos da interface. As páginas devem
- * consumir nomes como background, surface, primary e danger em vez de cores
- * Tailwind específicas. Isso permite trocar toda a identidade visual sem
- * reescrever os componentes.
+ * O azul-marinho representa a identidade principal do sistema.
+ *
+ * Verde permanece reservado para receitas e estados de sucesso.
+ * Vermelho permanece reservado para despesas e estados de erro.
+ * Amarelo permanece reservado para avisos.
+ * Azul-claro permanece reservado para informações.
  */
 @theme inline {
-  --font-sans: var(--app-font-sans);
+    --font-sans: var(--app-font-sans);
 
-  --color-background: var(--app-background);
-  --color-canvas: var(--app-background);
-  --color-surface: var(--app-surface);
-  --color-surface-raised: var(--app-surface-raised);
-  --color-surface-muted: var(--app-surface-muted);
-  --color-surface-hover: var(--app-surface-hover);
+    --color-background: var(--app-background);
+    --color-canvas: var(--app-background);
+    --color-surface: var(--app-surface);
+    --color-surface-raised: var(--app-surface-raised);
+    --color-surface-muted: var(--app-surface-muted);
+    --color-surface-hover: var(--app-surface-hover);
 
-  --color-foreground: var(--app-foreground);
-  --color-muted-foreground: var(--app-muted-foreground);
-  --color-subtle-foreground: var(--app-subtle-foreground);
+    --color-foreground: var(--app-foreground);
+    --color-muted-foreground: var(--app-muted-foreground);
+    --color-subtle-foreground: var(--app-subtle-foreground);
 
-  --color-border: var(--app-border);
-  --color-border-strong: var(--app-border-strong);
+    --color-border: var(--app-border);
+    --color-border-strong: var(--app-border-strong);
 
-  --color-primary: var(--app-primary);
-  --color-primary-hover: var(--app-primary-hover);
-  --color-primary-soft: var(--app-primary-soft);
-  --color-primary-foreground: var(--app-primary-foreground);
+    --color-primary: var(--app-primary);
+    --color-primary-hover: var(--app-primary-hover);
+    --color-primary-active: var(--app-primary-active);
+    --color-primary-soft: var(--app-primary-soft);
+    --color-primary-muted: var(--app-primary-muted);
+    --color-primary-foreground: var(--app-primary-foreground);
 
-  --color-accent: var(--app-accent);
-  --color-accent-soft: var(--app-accent-soft);
-  --color-secondary: var(--app-secondary);
-  --color-secondary-soft: var(--app-secondary-soft);
+    --color-accent: var(--app-accent);
+    --color-accent-soft: var(--app-accent-soft);
+    --color-secondary: var(--app-secondary);
+    --color-secondary-soft: var(--app-secondary-soft);
 
-  --color-success: var(--app-success);
-  --color-success-muted: var(--app-success-muted);
-  --color-danger: var(--app-danger);
-  --color-danger-hover: var(--app-danger-hover);
-  --color-danger-muted: var(--app-danger-muted);
-  --color-warning: var(--app-warning);
-  --color-warning-muted: var(--app-warning-muted);
-  --color-info: var(--app-info);
-  --color-info-muted: var(--app-info-muted);
+    --color-success: var(--app-success);
+    --color-success-muted: var(--app-success-muted);
+    --color-danger: var(--app-danger);
+    --color-danger-hover: var(--app-danger-hover);
+    --color-danger-muted: var(--app-danger-muted);
+    --color-warning: var(--app-warning);
+    --color-warning-muted: var(--app-warning-muted);
+    --color-info: var(--app-info);
+    --color-info-muted: var(--app-info-muted);
 
-  --color-overlay: var(--app-overlay);
-  --color-ring: var(--app-ring);
+    --color-overlay: var(--app-overlay);
+    --color-ring: var(--app-ring);
 
-  --radius-control-sm: 0.625rem;
-  --radius-control: 0.75rem;
-  --radius-card-sm: 1rem;
-  --radius-card: 1.25rem;
-  --radius-dialog: 1.5rem;
+    --radius-control-sm: 0.625rem;
+    --radius-control: 0.75rem;
+    --radius-card-sm: 1rem;
+    --radius-card: 1.25rem;
+    --radius-dialog: 1.5rem;
 
-  --shadow-xs: var(--app-shadow-xs);
-  --shadow-card: var(--app-shadow-card);
-  --shadow-popover: var(--app-shadow-popover);
-  --shadow-dialog: var(--app-shadow-dialog);
+    --shadow-xs: var(--app-shadow-xs);
+    --shadow-card: var(--app-shadow-card);
+    --shadow-popover: var(--app-shadow-popover);
+    --shadow-dialog: var(--app-shadow-dialog);
 
-  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root {
-  color-scheme: light;
+    color-scheme: light;
 
-  --app-font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --app-font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui,
+        -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  --app-background: #f4f7fa;
-  --app-surface: #ffffff;
-  --app-surface-raised: #f8fafc;
-  --app-surface-muted: #eef2f6;
-  --app-surface-hover: #e7edf3;
+    /*
+     * Superfícies
+     */
+    --app-background: #f5f7fb;
+    --app-surface: #ffffff;
+    --app-surface-raised: #f9fafc;
+    --app-surface-muted: #eef2f7;
+    --app-surface-hover: #e7ecf3;
 
-  --app-foreground: #0b1220;
-  --app-muted-foreground: #475467;
-  --app-subtle-foreground: #667085;
+    /*
+     * Textos
+     */
+    --app-foreground: #111827;
+    --app-muted-foreground: #475467;
+    --app-subtle-foreground: #667085;
 
-  --app-border: #dde3ea;
-  --app-border-strong: #c7d0da;
+    /*
+     * Bordas
+     */
+    --app-border: #dde3ec;
+    --app-border-strong: #c7d0de;
 
-  --app-primary: #0f766e;
-  --app-primary-hover: #115e59;
-  --app-primary-soft: #ccfbf1;
-  --app-primary-foreground: #ffffff;
+    /*
+     * Identidade principal
+     */
+    --app-primary: #1e3a8a;
+    --app-primary-hover: #1e40af;
+    --app-primary-active: #172554;
+    --app-primary-soft: #e8eeff;
+    --app-primary-muted: #cfdbff;
+    --app-primary-foreground: #ffffff;
 
-  --app-accent: #0891b2;
-  --app-accent-soft: #cffafe;
-  --app-secondary: #6d5dfb;
-  --app-secondary-soft: #ede9fe;
+    /*
+     * Cores auxiliares da identidade
+     */
+    --app-accent: #2563eb;
+    --app-accent-soft: #dbeafe;
+    --app-secondary: #0f4c81;
+    --app-secondary-soft: #e2edf7;
 
-  --app-success: #179b62;
-  --app-success-muted: #dcfae6;
-  --app-danger: #d92d20;
-  --app-danger-hover: #b42318;
-  --app-danger-muted: #fee4e2;
-  --app-warning: #dc6803;
-  --app-warning-muted: #fef0c7;
-  --app-info: #1570ef;
-  --app-info-muted: #d1e9ff;
+    /*
+     * Estados semânticos
+     */
+    --app-success: #179b62;
+    --app-success-muted: #dcfae6;
 
-  --app-overlay: rgb(11 18 32 / 58%);
-  --app-ring: #0f766e;
+    --app-danger: #d92d20;
+    --app-danger-hover: #b42318;
+    --app-danger-muted: #fee4e2;
 
-  --app-shadow-xs: 0 1px 2px rgb(15 23 42 / 5%);
-  --app-shadow-card:
-    0 1px 2px rgb(15 23 42 / 4%),
-    0 10px 30px rgb(15 23 42 / 6%);
-  --app-shadow-popover:
-    0 12px 24px rgb(15 23 42 / 10%),
-    0 2px 6px rgb(15 23 42 / 5%);
-  --app-shadow-dialog: 0 28px 80px rgb(15 23 42 / 24%);
+    --app-warning: #dc6803;
+    --app-warning-muted: #fef0c7;
 
-  --app-grid-line: rgb(15 23 42 / 4%);
-  --app-glow-primary: rgb(45 212 191 / 20%);
-  --app-glow-secondary: rgb(109 93 251 / 14%);
+    --app-info: #1570ef;
+    --app-info-muted: #d1e9ff;
+
+    /*
+     * Overlays e foco
+     */
+    --app-overlay: rgb(15 23 42 / 58%);
+    --app-ring: #2563eb;
+
+    /*
+     * Sombras
+     */
+    --app-shadow-xs: 0 1px 2px rgb(15 23 42 / 5%);
+
+    --app-shadow-card:
+        0 1px 2px rgb(15 23 42 / 4%),
+        0 10px 30px rgb(15 23 42 / 7%);
+
+    --app-shadow-popover:
+        0 14px 30px rgb(15 23 42 / 12%),
+        0 2px 6px rgb(15 23 42 / 6%);
+
+    --app-shadow-dialog:
+        0 28px 80px rgb(15 23 42 / 26%);
+
+    /*
+     * Fundos decorativos e brilhos
+     */
+    --app-grid-line: rgb(30 58 138 / 4%);
+    --app-glow-primary: rgb(37 99 235 / 22%);
+    --app-glow-secondary: rgb(15 76 129 / 16%);
 }
 
 html.dark {
-  color-scheme: dark;
+    color-scheme: dark;
 
-  --app-background: #07090d;
-  --app-surface: #10141b;
-  --app-surface-raised: #151a23;
-  --app-surface-muted: #1b222d;
-  --app-surface-hover: #222b37;
+    /*
+     * Superfícies
+     */
+    --app-background: #070b14;
+    --app-surface: #0d1422;
+    --app-surface-raised: #121b2c;
+    --app-surface-muted: #182337;
+    --app-surface-hover: #202e45;
 
-  --app-foreground: #f5f7fa;
-  --app-muted-foreground: #c0c7d1;
-  --app-subtle-foreground: #98a2b3;
+    /*
+     * Textos
+     */
+    --app-foreground: #f5f7fb;
+    --app-muted-foreground: #c1cad8;
+    --app-subtle-foreground: #94a3b8;
 
-  --app-border: rgb(255 255 255 / 8%);
-  --app-border-strong: rgb(255 255 255 / 14%);
+    /*
+     * Bordas
+     */
+    --app-border: rgb(255 255 255 / 8%);
+    --app-border-strong: rgb(255 255 255 / 14%);
 
-  --app-primary: #2dd4bf;
-  --app-primary-hover: #5eead4;
-  --app-primary-soft: rgb(45 212 191 / 12%);
-  --app-primary-foreground: #04110f;
+    /*
+     * Identidade principal
+     */
+    --app-primary: #6ea8ff;
+    --app-primary-hover: #8db9ff;
+    --app-primary-active: #4d8df7;
+    --app-primary-soft: rgb(78 141 247 / 14%);
+    --app-primary-muted: rgb(78 141 247 / 22%);
+    --app-primary-foreground: #071326;
 
-  --app-accent: #22d3ee;
-  --app-accent-soft: rgb(34 211 238 / 12%);
-  --app-secondary: #8b7cff;
-  --app-secondary-soft: rgb(139 124 255 / 13%);
+    /*
+     * Cores auxiliares da identidade
+     */
+    --app-accent: #60a5fa;
+    --app-accent-soft: rgb(96 165 250 / 14%);
+    --app-secondary: #38bdf8;
+    --app-secondary-soft: rgb(56 189 248 / 12%);
 
-  --app-success: #4ade80;
-  --app-success-muted: rgb(34 197 94 / 13%);
-  --app-danger: #ff6b6b;
-  --app-danger-hover: #ff8787;
-  --app-danger-muted: rgb(255 107 107 / 12%);
-  --app-warning: #fdb022;
-  --app-warning-muted: rgb(253 176 34 / 13%);
-  --app-info: #53b1fd;
-  --app-info-muted: rgb(83 177 253 / 13%);
+    /*
+     * Estados semânticos
+     */
+    --app-success: #4ade80;
+    --app-success-muted: rgb(34 197 94 / 13%);
 
-  --app-overlay: rgb(0 0 0 / 74%);
-  --app-ring: #2dd4bf;
+    --app-danger: #ff6b6b;
+    --app-danger-hover: #ff8787;
+    --app-danger-muted: rgb(255 107 107 / 12%);
 
-  --app-shadow-xs: 0 1px 2px rgb(0 0 0 / 28%);
-  --app-shadow-card:
-    0 1px 2px rgb(0 0 0 / 26%),
-    0 14px 36px rgb(0 0 0 / 22%);
-  --app-shadow-popover:
-    0 20px 45px rgb(0 0 0 / 38%),
-    0 2px 8px rgb(0 0 0 / 28%);
-  --app-shadow-dialog: 0 32px 90px rgb(0 0 0 / 58%);
+    --app-warning: #fdb022;
+    --app-warning-muted: rgb(253 176 34 / 13%);
 
-  --app-grid-line: rgb(255 255 255 / 3.5%);
-  --app-glow-primary: rgb(45 212 191 / 14%);
-  --app-glow-secondary: rgb(139 124 255 / 12%);
+    --app-info: #53b1fd;
+    --app-info-muted: rgb(83 177 253 / 13%);
+
+    /*
+     * Overlays e foco
+     */
+    --app-overlay: rgb(0 0 0 / 76%);
+    --app-ring: #6ea8ff;
+
+    /*
+     * Sombras
+     */
+    --app-shadow-xs: 0 1px 2px rgb(0 0 0 / 30%);
+
+    --app-shadow-card:
+        0 1px 2px rgb(0 0 0 / 28%),
+        0 14px 38px rgb(0 0 0 / 24%);
+
+    --app-shadow-popover:
+        0 20px 48px rgb(0 0 0 / 42%),
+        0 2px 8px rgb(0 0 0 / 30%);
+
+    --app-shadow-dialog:
+        0 32px 90px rgb(0 0 0 / 62%);
+
+    /*
+     * Fundos decorativos e brilhos
+     */
+    --app-grid-line: rgb(255 255 255 / 3.5%);
+    --app-glow-primary: rgb(78 141 247 / 18%);
+    --app-glow-secondary: rgb(56 189 248 / 12%);
 }

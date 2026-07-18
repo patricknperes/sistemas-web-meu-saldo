@@ -26,7 +26,7 @@ function TransactionHero({ config, totalAmountCents, totalItems, periodLabel, lo
                 <div className="grid grid-cols-2 gap-2 sm:min-w-72">
                     <div className="rounded-card-sm border border-border bg-surface/75 p-3 backdrop-blur-sm">
                         <span className="flex items-center gap-1.5 text-xs font-semibold text-subtle-foreground"><Hash className="size-3.5" aria-hidden="true" />Lançamentos</span>
-                        <p className="money-nums mt-1 text-xl font-bold text-foreground">{loading ? "—" : totalItems}</p>
+                        <p className="money-nums mt-1 text-sm font-bold text-foreground">{loading ? "—" : totalItems}</p>
                     </div>
                     <div className="min-w-0 rounded-card-sm border border-border bg-surface/75 p-3 backdrop-blur-sm">
                         <span className="flex items-center gap-1.5 text-xs font-semibold text-subtle-foreground"><CalendarRange className="size-3.5" aria-hidden="true" />Período</span>

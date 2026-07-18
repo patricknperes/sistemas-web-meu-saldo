@@ -1,29 +1,68 @@
-import { ChartNoAxesCombined, WalletCards } from "lucide-react";
+import logoTemaClaro from "../../assets/images/logo-completa-tema-claro.svg";
+import logoTemaEscuro from "../../assets/images/logo-completa-tema-escuro.svg";
 
 import { cn } from "../../lib/cn.js";
 
-function BrandMark({ className, compact = false }) {
+function BrandMark({
+    className,
+    compact = false,
+}) {
     return (
-        <div className={cn("flex min-w-0 items-center gap-3", className)}>
-            <span className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-primary text-primary-foreground shadow-card">
-                <WalletCards size={21} aria-hidden="true" />
-                <ChartNoAxesCombined
-                    size={12}
-                    aria-hidden="true"
-                    className="absolute bottom-1 right-1 opacity-80"
-                />
-            </span>
-
-            {!compact && (
-                <span className="min-w-0">
-                    <strong className="block truncate text-sm font-bold tracking-[-0.01em] text-foreground">
-                        Meu Saldo
-                    </strong>
-                    <span className="block truncate text-[11px] text-subtle-foreground">
-                        Finanças com clareza
-                    </span>
-                </span>
+        <div
+            className={cn(
+                `
+                    flex w-full
+                    items-center justify-center
+                `,
+                className,
             )}
+        >
+            <div
+                className={cn(
+                    `
+                        relative
+                        shrink-0
+                        overflow-hidden
+                    `,
+                    compact
+                        ? "size-10"
+                        : "h-12 w-[187px]",
+                )}
+            >
+                <img
+                    src={logoTemaClaro}
+                    alt="Meu Saldo"
+                    className={cn(
+                        `
+                            absolute left-0 top-0
+                            h-full
+                            max-w-none
+                            object-left
+                            dark:hidden
+                        `,
+                        compact
+                            ? "w-auto"
+                            : "w-full object-contain",
+                    )}
+                />
+
+                <img
+                    src={logoTemaEscuro}
+                    alt="Meu Saldo"
+                    className={cn(
+                        `
+                            absolute left-0 top-0
+                            hidden h-full
+                            max-w-none
+                            object-left
+                            dark:block
+                        `,
+                        compact
+                            ? "w-auto"
+                            : "w-full object-contain",
+                    )}
+                />
+            </div>
         </div>
     );
 }

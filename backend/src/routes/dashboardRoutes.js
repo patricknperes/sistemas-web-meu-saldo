@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  dashboardCsvController,
   dashboardSummaryController,
   historyAnalyticsController,
   monthlyHistoryController,
@@ -17,6 +18,11 @@ dashboardRoutes.use(authMiddleware);
 dashboardRoutes.get(
   "/summary",
   dashboardSummaryController
+);
+
+dashboardRoutes.get(
+  "/export/csv",
+  dashboardCsvController
 );
 
 dashboardRoutes.get(

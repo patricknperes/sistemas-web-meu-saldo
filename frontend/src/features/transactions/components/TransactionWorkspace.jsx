@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/Tabs.jsx";
 import { getTransactionTypeConfig } from "../../../config/transactionTypeConfig.js";
 import { recurringTransactionService } from "../../../services/recurringTransactionService.js";
 import { transactionService } from "../../../services/transactionService.js";
+import { dashboardKeys } from "../../dashboard/api/dashboardQueries.js";
+import { historyKeys } from "../../history/api/historyQueries.js";
 import { useTransactionFilters } from "../hooks/useTransactionFilters.js";
 import {
     fetchRecurringTransactions,
@@ -107,8 +109,18 @@ function TransactionWorkspace({ type }) {
 
     async function invalidateFinancialData() {
         await Promise.all([
-            queryClient.invalidateQueries({ queryKey: transactionKeys.all }),
-            queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+            queryClient.invalidateQueries({
+                queryKey: transactionKeys.all,
+                refetchType: "active",
+            }),
+            queryClient.invalidateQueries({
+                queryKey: dashboardKeys.all,
+                refetchType: "active",
+            }),
+            queryClient.invalidateQueries({
+                queryKey: historyKeys.all,
+                refetchType: "active",
+            }),
         ]);
     }
 

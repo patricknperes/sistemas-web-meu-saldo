@@ -15,3 +15,7 @@ export async function fetchDashboardHistory(year) {
     const response = await dashboardService.getHistory(year);
     return response?.history ?? response ?? [];
 }
+
+export async function exportDashboardCsv(filters) {
+    return dashboardService.exportCsv(filters);
+}

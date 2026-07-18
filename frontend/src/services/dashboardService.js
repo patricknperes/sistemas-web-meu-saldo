@@ -144,8 +144,24 @@ async function getHistoryAnalytics(filters = {}) {
     return response.data;
 }
 
+async function exportCsv(filters = {}) {
+    const params = buildSummaryParams(filters);
+
+    const response = await api.get(
+        "/dashboard/export/csv",
+        {
+            params,
+            responseType: "blob",
+            timeout: 30000,
+        },
+    );
+
+    return response.data;
+}
+
 export const dashboardService = {
     getSummary,
     getHistory,
     getHistoryAnalytics,
+    exportCsv,
 };

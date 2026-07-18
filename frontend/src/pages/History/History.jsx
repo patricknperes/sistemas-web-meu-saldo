@@ -122,14 +122,28 @@ function History() {
                 description="Explore sua evolução financeira, compare entradas e saídas e encontre qualquer movimentação com precisão."
                 actions={(
                     <Button
-                        variant="secondary"
+                        variant="ghost"
                         size="icon"
                         onClick={refreshHistory}
                         disabled={isRefreshing}
+                        className="
+        hidden
+        bg-transparent
+        text-primary
+        shadow-none
+        hover:bg-transparent
+        hover:text-primary-hover
+        focus-visible:bg-transparent
+        disabled:bg-transparent
+        sm:inline-flex
+    "
                         aria-label="Atualizar histórico"
                         title="Atualizar histórico"
                     >
-                        <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} aria-hidden="true" />
+                        <RefreshCw
+                            className={`size-5 ${isRefreshing ? "animate-spin" : ""}`}
+                            aria-hidden="true"
+                        />
                     </Button>
                 )}
             />
