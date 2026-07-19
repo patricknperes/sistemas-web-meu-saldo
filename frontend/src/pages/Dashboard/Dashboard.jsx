@@ -274,7 +274,7 @@ function Dashboard() {
 
             <section className="grid gap-4 lg:grid-cols-12" aria-label="Atividade financeira recente">
                 <RecentTransactions transactions={summary.recentTransactions} loading={summaryQuery.isPending} />
-                <DashboardSummaryPanel summary={summary} />
+                <DashboardSummaryPanel summary={summary} chartData={chartData} />
             </section>
         </PageContainer>
     );

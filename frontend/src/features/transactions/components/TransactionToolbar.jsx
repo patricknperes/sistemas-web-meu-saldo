@@ -56,7 +56,12 @@ function TransactionToolbar({
     onRefresh,
     refreshing,
 }) {
-    const hasActiveFilters = activeFilterCount > 0;
+    const normalizedActiveFilterCount = Math.max(
+        Number(activeFilterCount) || 0,
+        0,
+    );
+
+    const hasActiveFilters = normalizedActiveFilterCount > 0;
 
     const compactPeriodLabel = getCompactPeriodLabel(
         periodLabel,
@@ -149,21 +154,32 @@ function TransactionToolbar({
 
                     {hasActiveFilters && (
                         <Badge
+                            aria-label={`${normalizedActiveFilterCount} filtros ativos`}
                             className="
+                                !grid
                                 h-5 min-w-5
                                 shrink-0
+                                place-items-center
+                                rounded-full
                                 border-0
                                 bg-white
-                                px-1.5
-                                text-[11px]
+                                px-1
+                                py-0
+                                text-center
+                                font-mono
+                                text-[10px]
                                 font-bold
                                 leading-none
+                                tabular-nums
                                 text-primary
+                                shadow-none
                                 dark:bg-primary-foreground
                                 dark:text-primary
                             "
                         >
-                            {activeFilterCount}
+                            <span className="block leading-none">
+                                {normalizedActiveFilterCount}
+                            </span>
                         </Badge>
                     )}
                 </Button>

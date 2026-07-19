@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import {
     ArrowDownLeft,
     ArrowUpRight,
@@ -7,91 +9,227 @@ import {
     Line,
     LineChart,
     ResponsiveContainer,
+    YAxis,
 } from "recharts";
 
 import { formatCurrency } from "../../../utils/formatCurrency.js";
 
-const SIMULATED_CHART_DATA = {
-    success: [
-        { value: 45 },
-        { value: 12 },
-        { value: 89 },
-        { value: 34 },
-        { value: 76 },
-        { value: 23 },
-        { value: 91 },
-        { value: 55 },
-        { value: 67 },
-        { value: 19 },
-        { value: 82 },
-        { value: 40 },
-        { value: 95 },
-        { value: 28 },
-        { value: 63 },
-        { value: 71 },
-    ],
-
-    danger: [
-        { value: 14 },
-        { value: 88 },
-        { value: 32 },
-        { value: 65 },
-        { value: 41 },
-        { value: 99 },
-        { value: 21 },
-        { value: 53 },
-        { value: 77 },
-        { value: 18 },
-        { value: 92 },
-        { value: 38 },
-        { value: 70 },
-        { value: 25 },
-        { value: 84 },
-        { value: 49 },
-    ],
-
-    primary: [
-        { value: 61 },
-        { value: 29 },
-        { value: 83 },
-        { value: 15 },
-        { value: 94 },
-        { value: 37 },
-        { value: 68 },
-        { value: 44 },
-        { value: 11 },
-        { value: 79 },
-        { value: 52 },
-        { value: 97 },
-        { value: 24 },
-        { value: 86 },
-        { value: 31 },
-        { value: 58 },
-    ],
+const SERIES_CONFIG = {
+    success: {
+        dataKey: "income",
+        fallbackDataKey: "totalIncomeCents",
+        divideFallbackBy: 100,
+    },
+    danger: {
+        dataKey: "expense",
+        fallbackDataKey: "totalExpenseCents",
+        divideFallbackBy: 100,
+    },
+    primary: {
+        dataKey: "transactionCount",
+        fallbackDataKey: null,
+        divideFallbackBy: 1,
+    },
 };
+
+function normalizeNumber(value) {
+    const normalizedValue = Number(value);
+
+    return Number.isFinite(normalizedValue)
+        ? normalizedValue
+        : 0;
+}
+
+function getPointValue(
+    point,
+    tone,
+) {
+    const config =
+        SERIES_CONFIG[tone]
+        ?? SERIES_CONFIG.primary;
+
+    const directValue = Number(
+        point?.[config.dataKey],
+    );
+
+    if (Number.isFinite(directValue)) {
+        return directValue;
+    }
+
+    if (!config.fallbackDataKey) {
+        return 0;
+    }
+
+    const fallbackValue = Number(
+        point?.[config.fallbackDataKey],
+    );
+
+    if (!Number.isFinite(fallbackValue)) {
+        return 0;
+    }
+
+    return fallbackValue
+        / config.divideFallbackBy;
+}
+
+function getPointKey(
+    point,
+    index,
+) {
+    return (
+        point?.key
+        ?? point?.label
+        ?? `${point?.year ?? "period"}-${point?.month ?? index}`
+    );
+}
+
+function normalizeSeriesData(
+    chartData,
+    tone,
+) {
+    const sourceData = Array.isArray(
+        chartData,
+    )
+        ? chartData
+        : [];
+
+    const normalizedData = sourceData.map(
+        (point, index) => ({
+            key: getPointKey(
+                point,
+                index,
+            ),
+            value: getPointValue(
+                point,
+                tone,
+            ),
+        }),
+    );
+
+    if (normalizedData.length === 0) {
+        return [
+            {
+                key: "empty-start",
+                value: 0,
+            },
+            {
+                key: "empty-end",
+                value: 0,
+            },
+        ];
+    }
+
+    if (normalizedData.length === 1) {
+        const onlyPoint =
+            normalizedData[0];
+
+        return [
+            {
+                ...onlyPoint,
+                key: `${onlyPoint.key}-start`,
+            },
+            {
+                ...onlyPoint,
+                key: `${onlyPoint.key}-end`,
+            },
+        ];
+    }
+
+    return normalizedData;
+}
+
+function getSeriesDomain(data) {
+    const values = data.map(
+        (point) =>
+            normalizeNumber(point.value),
+    );
+
+    const minimumValue = Math.min(
+        ...values,
+    );
+
+    const maximumValue = Math.max(
+        ...values,
+    );
+
+    if (
+        minimumValue === 0
+        && maximumValue === 0
+    ) {
+        return [-1, 1];
+    }
+
+    if (
+        minimumValue === maximumValue
+    ) {
+        const padding = Math.max(
+            Math.abs(maximumValue) * 0.15,
+            1,
+        );
+
+        return [
+            Math.min(
+                0,
+                minimumValue - padding,
+            ),
+            maximumValue + padding,
+        ];
+    }
+
+    const difference =
+        maximumValue - minimumValue;
+
+    const padding = Math.max(
+        difference * 0.12,
+        1,
+    );
+
+    return [
+        Math.min(
+            0,
+            minimumValue - padding,
+        ),
+        maximumValue + padding,
+    ];
+}
 
 function SummarySparkline({
     tone,
+    chartData,
 }) {
-    const data = SIMULATED_CHART_DATA[tone];
+    const data = useMemo(
+        () =>
+            normalizeSeriesData(
+                chartData,
+                tone,
+            ),
+        [
+            chartData,
+            tone,
+        ],
+    );
 
-    if (!data) {
-        return null;
-    }
+    const domain = useMemo(
+        () =>
+            getSeriesDomain(data),
+        [data],
+    );
 
-    const toneClassName = tone === "success"
-        ? "text-success"
-        : tone === "danger"
-            ? "text-danger"
-            : "text-primary";
+    const toneClassName =
+        tone === "success"
+            ? "text-success"
+            : tone === "danger"
+                ? "text-danger"
+                : "text-primary";
 
     return (
         <div
             aria-hidden="true"
             className={`
                 mt-3
-                hidden h-10
-                w-full
+                hidden
+                h-10 min-h-10
+                w-full min-w-0
                 overflow-hidden
                 lg:block
                 ${toneClassName}
@@ -99,7 +237,8 @@ function SummarySparkline({
         >
             <ResponsiveContainer
                 width="100%"
-                height="100%"
+                height={40}
+                minWidth={0}
             >
                 <LineChart
                     data={data}
@@ -110,8 +249,15 @@ function SummarySparkline({
                         left: 3,
                     }}
                 >
+                    <YAxis
+                        hide
+                        type="number"
+                        domain={domain}
+                        allowDataOverflow={false}
+                    />
+
                     <Line
-                        type="natural"
+                        type="monotone"
                         dataKey="value"
                         stroke="currentColor"
                         strokeWidth={2}
@@ -119,6 +265,7 @@ function SummarySparkline({
                         strokeLinejoin="round"
                         dot={false}
                         activeDot={false}
+                        connectNulls
                         isAnimationActive={false}
                     />
                 </LineChart>
@@ -133,12 +280,14 @@ function SummaryLine({
     valueCents,
     detail,
     tone,
+    chartData,
 }) {
-    const toneClassName = tone === "success"
-        ? "bg-success-muted text-success"
-        : tone === "danger"
-            ? "bg-danger-muted text-danger"
-            : "bg-primary-soft text-primary";
+    const toneClassName =
+        tone === "success"
+            ? "bg-success-muted text-success"
+            : tone === "danger"
+                ? "bg-danger-muted text-danger"
+                : "bg-primary-soft text-primary";
 
     return (
         <div
@@ -146,6 +295,7 @@ function SummaryLine({
                 flex min-w-0
                 items-center gap-3
                 py-3
+
                 lg:flex-1
                 lg:items-start
                 lg:py-4
@@ -161,33 +311,68 @@ function SummaryLine({
                 `}
             >
                 <Icon
-                    className="size-4"
                     aria-hidden="true"
+                    className="size-4"
                 />
             </span>
 
             <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-start justify-between gap-3">
+                <div
+                    className="
+                        flex min-w-0
+                        items-start
+                        justify-between
+                        gap-3
+                    "
+                >
                     <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs text-muted-foreground">
+                        <p
+                            className="
+                                truncate
+                                text-xs
+                                text-muted-foreground
+                            "
+                        >
                             {label}
                         </p>
 
-                        <p className="mt-0.5 truncate font-mono text-sm font-bold text-foreground">
+                        <p
+                            className="
+                                mt-0.5
+                                truncate
+                                font-mono
+                                text-sm font-bold
+                                text-foreground
+                            "
+                        >
                             {valueCents == null
                                 ? detail
-                                : formatCurrency(valueCents)}
+                                : formatCurrency(
+                                    valueCents,
+                                )}
                         </p>
                     </div>
 
-                    {detail && valueCents != null && (
-                        <span className="shrink-0 text-xs text-subtle-foreground">
-                            {detail}
-                        </span>
-                    )}
+                    {detail
+                        && valueCents != null
+                        && (
+                            <span
+                                className="
+                                    shrink-0
+                                    whitespace-nowrap
+                                    text-xs
+                                    text-subtle-foreground
+                                "
+                            >
+                                {detail}
+                            </span>
+                        )}
                 </div>
 
-                <SummarySparkline tone={tone} />
+                <SummarySparkline
+                    tone={tone}
+                    chartData={chartData}
+                />
             </div>
         </div>
     );
@@ -195,6 +380,7 @@ function SummaryLine({
 
 function DashboardSummaryPanel({
     summary,
+    chartData = [],
 }) {
     return (
         <aside
@@ -205,6 +391,7 @@ function DashboardSummaryPanel({
                 bg-surface
                 p-5
                 shadow-card
+
                 lg:col-span-4
                 lg:flex
                 lg:flex-col
@@ -224,6 +411,7 @@ function DashboardSummaryPanel({
                 className="
                     mt-4
                     divide-y divide-border
+
                     lg:flex
                     lg:flex-1
                     lg:flex-col
@@ -232,24 +420,33 @@ function DashboardSummaryPanel({
                 <SummaryLine
                     icon={ArrowUpRight}
                     label="Receitas"
-                    valueCents={summary.totalIncomeCents}
-                    detail={`${summary.incomeCount ?? 0} itens`}
+                    valueCents={
+                        summary?.totalIncomeCents
+                        ?? 0
+                    }
+                    detail={`${summary?.incomeCount ?? 0} itens`}
                     tone="success"
+                    chartData={chartData}
                 />
 
                 <SummaryLine
                     icon={ArrowDownLeft}
                     label="Despesas"
-                    valueCents={summary.totalExpenseCents}
-                    detail={`${summary.expenseCount ?? 0} itens`}
+                    valueCents={
+                        summary?.totalExpenseCents
+                        ?? 0
+                    }
+                    detail={`${summary?.expenseCount ?? 0} itens`}
                     tone="danger"
+                    chartData={chartData}
                 />
 
                 <SummaryLine
                     icon={ReceiptText}
                     label="Movimentações"
-                    detail={`${summary.transactionCount ?? 0} lançamentos`}
+                    detail={`${summary?.transactionCount ?? 0} lançamentos`}
                     tone="primary"
+                    chartData={chartData}
                 />
             </div>
         </aside>
