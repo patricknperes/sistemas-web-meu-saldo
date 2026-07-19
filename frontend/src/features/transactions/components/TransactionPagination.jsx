@@ -1,64 +1,216 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+} from "lucide-react";
 
 import Button from "../../../components/ui/Button.jsx";
-import { buildPaginationItems } from "../utils/transactionFormatters.js";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../../components/ui/Select.jsx";
 
-function TransactionPagination({ pagination, onPageChange, disabled = false }) {
-    const currentPage = Number(pagination?.page) || 1;
-    const totalPages = Number(pagination?.totalPages) || 0;
-    const totalItems = Number(pagination?.totalItems) || 0;
-    const pages = buildPaginationItems(currentPage, totalPages);
+const DEFAULT_PAGE_SIZE = 10;
 
-    if (totalPages <= 1) {
-        return totalItems > 0 ? (
-            <p className="border-t border-border px-4 py-3 text-center text-xs text-subtle-foreground sm:px-5">
-                {totalItems} {totalItems === 1 ? "item encontrado" : "itens encontrados"}
-            </p>
-        ) : null;
+function TransactionPagination({
+    pagination,
+    onPageChange,
+    disabled = false,
+}) {
+    const totalItems = Math.max(
+        Number(
+            pagination?.totalItems
+            ?? pagination?.total
+            ?? 0,
+        ) || 0,
+        0,
+    );
+
+    const pageSize = Math.max(
+        Number(
+            pagination?.pageSize
+            ?? pagination?.limit
+            ?? pagination?.size
+            ?? DEFAULT_PAGE_SIZE,
+        ) || DEFAULT_PAGE_SIZE,
+        1,
+    );
+
+    const calculatedTotalPages = Math.ceil(
+        totalItems / pageSize,
+    );
+
+    const totalPages = Math.max(
+        Number(pagination?.totalPages) || 0,
+        calculatedTotalPages,
+        1,
+    );
+
+    const requestedPage = Number(
+        pagination?.page,
+    ) || 1;
+
+    const currentPage = Math.min(
+        Math.max(requestedPage, 1),
+        totalPages,
+    );
+
+    const firstItem = totalItems > 0
+        ? ((currentPage - 1) * pageSize) + 1
+        : 0;
+
+    const lastItem = Math.min(
+        currentPage * pageSize,
+        totalItems,
+    );
+
+    const pages = Array.from(
+        { length: totalPages },
+        (_, index) => index + 1,
+    );
+
+    function handlePageChange(nextPage) {
+        const normalizedPage = Number(nextPage);
+
+        if (
+            disabled
+            || !Number.isFinite(normalizedPage)
+            || normalizedPage < 1
+            || normalizedPage > totalPages
+            || normalizedPage === currentPage
+        ) {
+            return;
+        }
+
+        onPageChange?.(normalizedPage);
+    }
+
+    if (totalItems <= 0) {
+        return null;
     }
 
     return (
-        <footer className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-xs text-subtle-foreground">
-                Página {currentPage} de {totalPages} · {totalItems} itens
-            </p>
-            <nav className="flex items-center gap-1" aria-label="Paginação">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={disabled || currentPage <= 1}
-                    onClick={() => onPageChange(currentPage - 1)}
-                    aria-label="Página anterior"
+        <footer
+            className="
+                overflow-x-auto
+                overscroll-x-contain
+                border-t border-border
+                px-4 py-3
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
+                sm:px-5
+            "
+        >
+            <div
+                className="
+                    flex min-w-max
+                    flex-nowrap
+                    items-center justify-between
+                    gap-5
+                    whitespace-nowrap
+                "
+            >
+                <p className="shrink-0 text-xs text-subtle-foreground">
+                    <span className="sm:hidden">
+                        {firstItem}–{lastItem} de {totalItems}
+                    </span>
+
+                    <span className="hidden sm:inline">
+                        Exibindo {firstItem}–{lastItem} de {totalItems} itens
+                    </span>
+                </p>
+
+                <nav
+                    aria-label="Paginação de movimentações"
+                    className="
+                        ml-auto
+                        flex shrink-0
+                        flex-nowrap
+                        items-center
+                        gap-2
+                    "
                 >
-                    <ChevronLeft className="size-4" aria-hidden="true" />
-                </Button>
-                {pages.map((page, index) => {
-                    const previous = pages[index - 1];
-                    return (
-                        <span key={page} className="contents">
-                            {previous && page - previous > 1 && <span className="px-1 text-subtle-foreground">…</span>}
-                            <button
-                                type="button"
-                                disabled={disabled}
-                                onClick={() => onPageChange(page)}
-                                aria-current={page === currentPage ? "page" : undefined}
-                                className="inline-flex size-9 items-center justify-center rounded-control-sm text-sm font-semibold text-muted-foreground transition hover:bg-surface-muted hover:text-foreground aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"
-                            >
-                                {page}
-                            </button>
-                        </span>
-                    );
-                })}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={disabled || currentPage >= totalPages}
-                    onClick={() => onPageChange(currentPage + 1)}
-                    aria-label="Próxima página"
-                >
-                    <ChevronRight className="size-4" aria-hidden="true" />
-                </Button>
-            </nav>
+                    <span className="hidden text-xs text-subtle-foreground sm:inline">
+                        Página
+                    </span>
+
+                    <Select
+                        value={String(currentPage)}
+                        disabled={disabled || totalPages <= 1}
+                        onValueChange={handlePageChange}
+                    >
+                        <SelectTrigger
+                            aria-label="Selecionar página de movimentações"
+                            className="
+                                h-9 w-[70px]
+                                shrink-0
+                                px-2.5
+                                text-sm
+                            "
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent align="end">
+                            {pages.map((page) => (
+                                <SelectItem
+                                    key={page}
+                                    value={String(page)}
+                                >
+                                    {page}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
+                    <span className="text-xs text-subtle-foreground">
+                        de {totalPages}
+                    </span>
+
+                    <span
+                        aria-hidden="true"
+                        className="mx-1 h-6 w-px shrink-0 bg-border"
+                    />
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled || currentPage <= 1}
+                        onClick={() => {
+                            handlePageChange(currentPage - 1);
+                        }}
+                        aria-label="Página anterior"
+                        title="Página anterior"
+                        className="size-9 shrink-0"
+                    >
+                        <ChevronLeft
+                            aria-hidden="true"
+                            className="size-4"
+                        />
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled || currentPage >= totalPages}
+                        onClick={() => {
+                            handlePageChange(currentPage + 1);
+                        }}
+                        aria-label="Próxima página"
+                        title="Próxima página"
+                        className="size-9 shrink-0"
+                    >
+                        <ChevronRight
+                            aria-hidden="true"
+                            className="size-4"
+                        />
+                    </Button>
+                </nav>
+            </div>
         </footer>
     );
 }

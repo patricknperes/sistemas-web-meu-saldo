@@ -4,7 +4,13 @@ import {
 } from "lucide-react";
 
 import Button from "../../../components/ui/Button.jsx";
-import { buildHistoryPaginationItems } from "../utils/historyFormatters.js";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../../components/ui/Select.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -13,30 +19,33 @@ function HistoryPagination({
     onPageChange,
     disabled = false,
 }) {
-    const totalItems = Number(
-        pagination?.totalItems
-        ?? pagination?.total
-        ?? 0,
+    const totalItems = Math.max(
+        Number(
+            pagination?.totalItems
+            ?? pagination?.total
+            ?? 0,
+        ) || 0,
+        0,
     );
 
-    const pageSize = Number(
-        pagination?.pageSize
-        ?? pagination?.limit
-        ?? pagination?.size
-        ?? PAGE_SIZE,
-    ) || PAGE_SIZE;
-
-    const apiTotalPages = Number(
-        pagination?.totalPages,
-    ) || 0;
+    const pageSize = Math.max(
+        Number(
+            pagination?.pageSize
+            ?? pagination?.limit
+            ?? pagination?.size
+            ?? PAGE_SIZE,
+        ) || PAGE_SIZE,
+        1,
+    );
 
     const calculatedTotalPages = Math.ceil(
         totalItems / pageSize,
     );
 
     const totalPages = Math.max(
-        apiTotalPages,
+        Number(pagination?.totalPages) || 0,
         calculatedTotalPages,
+        1,
     );
 
     const requestedPage = Number(
@@ -45,206 +54,163 @@ function HistoryPagination({
 
     const currentPage = Math.min(
         Math.max(requestedPage, 1),
-        Math.max(totalPages, 1),
-    );
-
-    const pages = buildHistoryPaginationItems(
-        currentPage,
         totalPages,
     );
 
-    if (totalItems <= 0) {
-        return null;
-    }
-
-    if (totalPages <= 1) {
-        return (
-            <p
-                className="
-                    border-t border-border
-                    px-4 py-3
-                    text-center
-                    text-xs
-                    text-subtle-foreground
-                    sm:px-5
-                "
-            >
-                {totalItems}{" "}
-                {totalItems === 1
-                    ? "movimentação encontrada"
-                    : "movimentações encontradas"}
-            </p>
-        );
-    }
-
-    const firstItem = (
-        (currentPage - 1) * pageSize
-    ) + 1;
+    const firstItem = totalItems > 0
+        ? ((currentPage - 1) * pageSize) + 1
+        : 0;
 
     const lastItem = Math.min(
         currentPage * pageSize,
         totalItems,
     );
 
+    const pages = Array.from(
+        { length: totalPages },
+        (_, index) => index + 1,
+    );
+
     function handlePageChange(nextPage) {
+        const normalizedPage = Number(nextPage);
+
         if (
             disabled
-            || nextPage < 1
-            || nextPage > totalPages
-            || nextPage === currentPage
+            || !Number.isFinite(normalizedPage)
+            || normalizedPage < 1
+            || normalizedPage > totalPages
+            || normalizedPage === currentPage
         ) {
             return;
         }
 
-        onPageChange?.(nextPage);
+        onPageChange?.(normalizedPage);
+    }
+
+    if (totalItems <= 0) {
+        return null;
     }
 
     return (
         <footer
             className="
-                flex flex-col gap-3
+                overflow-x-auto
+                overscroll-x-contain
                 border-t border-border
                 px-4 py-3
-                sm:flex-row
-                sm:items-center
-                sm:justify-between
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
                 sm:px-5
             "
         >
-            <p className="text-center text-xs text-subtle-foreground sm:text-left">
-                Exibindo {firstItem}–{lastItem} de{" "}
-                {totalItems} movimentações
-            </p>
-
-            <nav
-                aria-label="Paginação do histórico"
+            <div
                 className="
-                    flex min-w-0
-                    items-center justify-center
-                    gap-1
-                    sm:justify-end
+                    flex min-w-max
+                    flex-nowrap
+                    items-center justify-between
+                    gap-5
+                    whitespace-nowrap
                 "
             >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={
-                        disabled
-                        || currentPage <= 1
-                    }
-                    onClick={() => {
-                        handlePageChange(
-                            currentPage - 1,
-                        );
-                    }}
-                    aria-label="Página anterior"
-                    title="Página anterior"
+                <p className="shrink-0 text-xs text-subtle-foreground">
+                    <span className="sm:hidden">
+                        {firstItem}–{lastItem} de {totalItems}
+                    </span>
+
+                    <span className="hidden sm:inline">
+                        Exibindo {firstItem}–{lastItem} de {totalItems} movimentações
+                    </span>
+                </p>
+
+                <nav
+                    aria-label="Paginação do histórico"
                     className="
-                        size-9
-                        min-h-9 min-w-9
-                        shrink-0
+                        ml-auto
+                        flex shrink-0
+                        flex-nowrap
+                        items-center
+                        gap-2
                     "
                 >
-                    <ChevronLeft
-                        aria-hidden="true"
-                        className="size-4"
-                    />
-                </Button>
+                    <span className="hidden text-xs text-subtle-foreground sm:inline">
+                        Página
+                    </span>
 
-                {pages.map((page, index) => {
-                    const previousPage = pages[index - 1];
-
-                    const hasGap = previousPage
-                        && page - previousPage > 1;
-
-                    return (
-                        <span
-                            key={page}
-                            className="contents"
+                    <Select
+                        value={String(currentPage)}
+                        disabled={disabled || totalPages <= 1}
+                        onValueChange={handlePageChange}
+                    >
+                        <SelectTrigger
+                            aria-label="Selecionar página do histórico"
+                            className="
+                                h-9 w-[70px]
+                                shrink-0
+                                px-2.5
+                                text-sm
+                            "
                         >
-                            {hasGap && (
-                                <span
-                                    aria-hidden="true"
-                                    className="
-                                        inline-flex size-9
-                                        items-center justify-center
-                                        text-sm
-                                        text-subtle-foreground
-                                    "
+                            <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent align="end">
+                            {pages.map((page) => (
+                                <SelectItem
+                                    key={page}
+                                    value={String(page)}
                                 >
-                                    …
-                                </span>
-                            )}
+                                    {page}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                            <button
-                                type="button"
-                                disabled={disabled}
-                                onClick={() => {
-                                    handlePageChange(page);
-                                }}
-                                aria-label={`Ir para a página ${page}`}
-                                aria-current={
-                                    page === currentPage
-                                        ? "page"
-                                        : undefined
-                                }
-                                className="
-                                    inline-flex size-9
-                                    shrink-0
-                                    items-center justify-center
-                                    rounded-control-sm
-                                    text-sm font-semibold
-                                    text-muted-foreground
-                                    outline-none
-                                    transition-colors
+                    <span className="text-xs text-subtle-foreground">
+                        de {totalPages}
+                    </span>
 
-                                    hover:bg-primary-soft
-                                    hover:text-primary
-
-                                    focus-visible:ring-2
-                                    focus-visible:ring-primary/30
-
-                                    aria-[current=page]:bg-primary
-                                    aria-[current=page]:text-primary-foreground
-
-                                    disabled:pointer-events-none
-                                    disabled:opacity-50
-                                "
-                            >
-                                {page}
-                            </button>
-                        </span>
-                    );
-                })}
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={
-                        disabled
-                        || currentPage >= totalPages
-                    }
-                    onClick={() => {
-                        handlePageChange(
-                            currentPage + 1,
-                        );
-                    }}
-                    aria-label="Próxima página"
-                    title="Próxima página"
-                    className="
-                        size-9
-                        min-h-9 min-w-9
-                        shrink-0
-                    "
-                >
-                    <ChevronRight
+                    <span
                         aria-hidden="true"
-                        className="size-4"
+                        className="mx-1 h-6 w-px shrink-0 bg-border"
                     />
-                </Button>
-            </nav>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled || currentPage <= 1}
+                        onClick={() => {
+                            handlePageChange(currentPage - 1);
+                        }}
+                        aria-label="Página anterior"
+                        title="Página anterior"
+                        className="size-9 shrink-0"
+                    >
+                        <ChevronLeft
+                            aria-hidden="true"
+                            className="size-4"
+                        />
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={disabled || currentPage >= totalPages}
+                        onClick={() => {
+                            handlePageChange(currentPage + 1);
+                        }}
+                        aria-label="Próxima página"
+                        title="Próxima página"
+                        className="size-9 shrink-0"
+                    >
+                        <ChevronRight
+                            aria-hidden="true"
+                            className="size-4"
+                        />
+                    </Button>
+                </nav>
+            </div>
         </footer>
     );
 }
